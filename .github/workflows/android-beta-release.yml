@@ -1,0 +1,102 @@
+name: Publish Android Beta Release
+
+on:
+  push:
+    tags:
+      - "v0.1.0-beta.1"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Verify APK and publish test prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify version and approved CI source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "v0.1.0-beta.1"
+          python3 tools/ci/check_project.py
+          python3 tools/ci/check_release_tag.py v0.1.0
+          CI_SHA=3bf708cf8f9b4f8276b90dc5798650d04af91fa2
+          git cat-file -e "$CI_SHA^{commit}"
+          git diff --exit-code "$CI_SHA" "$GITHUB_SHA" -- app/ build.gradle.kts gradle/ gradle.properties gradlew gradlew.bat settings.gradle.kts tools/ci/
+
+      - name: Download verified APK from successful CI run 11
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 40681757399 --repo "$GITHUB_REPOSITORY" --name "NotesTakingApp-debug-11" --dir release-artifacts
+          test -s release-artifacts/app-debug.apk
+
+      - name: Verify archive and create checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile("release-artifacts/app-debug.apk") as z:
+              assert z.testzip() is None, "Corrupt APK archive"
+              names = set(z.namelist())
+              assert "classes.dex" in names, "Android DEX missing"
+              for abi in ("arm64-v8a", "armeabi-v7a", "x86_64"):
+                  for lib in ("libnotestakingts.so", "libnotestakingpdf.so"):
+                      assert f"lib/{abi}/{lib}" in names, f"Missing {abi}/{lib}"
+          PY
+          mkdir -p dist
+          cp release-artifacts/app-debug.apk dist/NotesTakingApp-v0.1.0-beta.1-debug.apk
+          (cd dist && sha256sum NotesTakingApp-v0.1.0-beta.1-debug.apk > NotesTakingApp-v0.1.0-beta.1-debug.apk.sha256)
+
+      - name: Write prerelease notes
+        shell: bash
+        run: |
+          cat > notes.md <<'EOF'
+          ## NotesTaking App v0.1.0 Beta 1 — Android testing
+
+          First downloadable beta for NotesTaking App, built with Kotlin and Jetpack Compose.
+
+          ### Included features
+          - Handwriting, stylus input and drawing canvases
+          - PDF reading and annotation
+          - Markdown and note organization
+          - Local document import and export
+
+          ### Install
+          Download the APK from the Assets section and open it on Android 8.0 (API 26) or later. Allow installation from your chosen source if prompted. Back up important notes before testing.
+
+          ### Verification
+          - Android CI run #11 passed Kotlin unit tests, Lint, APK assembly, and package/native library checks.
+          - Original tested commit: 3bf708cf8f9b4f8276b90dc5798650d04af91fa2
+          - SHA-256 checksum is attached as a separate asset.
+
+          **Testing build:** This APK uses debug signing and the package name com.notestaking.app.debug. It is not a production-signed Android release, not on Google Play, and still requires real-device testing. Production distribution needs the separate Signed Android Release workflow with a persistent private signing key.
+
+          This derivative is based on MIT-licensed XNotes. See the repository LICENSE and NOTICE.md for attribution.
+          EOF
+
+      - name: Create published prerelease with APK assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            dist/NotesTakingApp-v0.1.0-beta.1-debug.apk \
+            dist/NotesTakingApp-v0.1.0-beta.1-debug.apk.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --prerelease \
+            --title "NotesTaking App v0.1.0 Beta 1 (Android)" \
+            --notes-file notes.md
