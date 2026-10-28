@@ -21,7 +21,7 @@ Android [DocumentsProvider API](https://developer.android.com/reference/android/
 - The structural source scanner is not a Kotlin compiler. GitHub Android CI must pass unit tests, lint, and APK assembly on this branch before merging.
 - A live Android SAF instrumentation test remains outstanding (no `app/src/androidTest` suite in the current repository). Check `DocumentsContract` URI grants, rename/move/delete behavior, provider fault injection, recovery after low-storage and read-only directory errors, performance and responsiveness on tablets.
 - Staged directory copies are not made durable via directory fsync; and a concurrent filesystem writer can still race path checks. The app-owned root is protected by Android app sandbox and MANAGE_DOCUMENTS, but this is **not** a complete multi-process transactional filesystem.
-- `deleteDocument` still uses recursive deletion, which can fail partway. A future Trash/undo feature should stage deletion with recovery semantics rather than promise rollback.
+- `deleteDocument` uses NIO `Files.walkFileTree` without following symlinks, so a nested link does not cause deletion outside the Notes root. Deletion can still fail partway; a future Trash/undo workflow should stage deletion with recovery semantics rather than promise rollback.
 - A hard limit on copying very large folders is intentional; adjust based on device benchmarks and explicit product limits rather than silently allowing unbounded I/O.
 - Import attack surfaces (ZIP/XML, PDFs, images, clipboard) and backup privacy are separate P0 tasks. This patch does not fix them.
 

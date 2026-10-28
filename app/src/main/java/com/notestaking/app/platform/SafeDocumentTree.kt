@@ -4,6 +4,10 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.FileVisitResult
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 
 /**
  * SAF document-id and tree-operation boundary for the app-owned Notes directory.
@@ -90,7 +94,24 @@ internal class SafeDocumentTree(base: File) {
     fun delete(documentId: String) {
         val source = resolve(documentId)
         requireNotRoot(source)
-        if (!source.deleteRecursively()) throw FileNotFoundException("Delete failed")
+        // walkFileTree does NOT follow symbolic links by default. A link inside a note
+        // directory is deleted as a link; it cannot recurse into an external target.
+        try {
+            Files.walkFileTree(source.toPath(), object : SimpleFileVisitor<Path>() {
+                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                    Files.delete(file)
+                    return FileVisitResult.CONTINUE
+                }
+
+                override fun postVisitDirectory(dir: Path, error: IOException?): FileVisitResult {
+                    if (error != null) throw error
+                    Files.delete(dir)
+                    return FileVisitResult.CONTINUE
+                }
+            })
+        } catch (_: IOException) {
+            throw FileNotFoundException("Delete failed")
+        }
     }
 
     fun move(sourceId: String, sourceParentId: String, targetParentId: String): String {

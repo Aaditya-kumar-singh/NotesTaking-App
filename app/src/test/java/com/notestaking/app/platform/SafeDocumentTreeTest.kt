@@ -122,6 +122,20 @@ class SafeDocumentTreeTest {
         assertFalse(tree.isChild("root/a", "root/ab"))
     }
 
+    @Test fun deletionDoesNotFollowNestedSymbolicLinks() = withTree { tree, root, outside ->
+        val folder = File(root, "folder").apply { mkdir() }
+        File(folder, "note.xnote").writeText("notes")
+        val privateFile = File(outside, "other-user-document").apply { writeText("must survive") }
+        val linked = runCatching {
+            Files.createSymbolicLink(File(folder, "escape").toPath(), outside.toPath())
+        }.isSuccess
+        if (linked) {
+            tree.delete("root/folder")
+            assertFalse(folder.exists())
+            assertEquals("must survive", privateFile.readText())
+        }
+    }
+
     @Test fun symbolicLinksAreRejectedWhenSupported() = withTree { tree, root, outside ->
         File(outside, "secret").writeText("secret")
         val link = File(root, "link")
