@@ -759,6 +759,13 @@
     <string name="image_png">Image (PNG)</string>
     <string name="back_save_as">"‹  Save as"</string>
     <string name="add_page">Add page</string>
+    <string name="canvas_all_tools">All tools</string>
+    <string name="canvas_eraser_tool_hint">Tap again for eraser size and mode</string>
+    <string name="canvas_eraser_settings">Eraser size and mode</string>
+    <string name="canvas_pen_settings">Pen size and pressure</string>
+    <string name="canvas_page_before">Insert page before current</string>
+    <string name="canvas_page_after">Insert page after current</string>
+    <string name="canvas_page_end">Insert page at end</string>
     <string name="insert_pdf">Insert PDF</string>
     <string name="erase_page">Erase page</string>
     <string name="share_ellipsis">Share…</string>

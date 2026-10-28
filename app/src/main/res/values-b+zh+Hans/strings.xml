@@ -630,6 +630,13 @@
     <string name="image_png">图片（PNG）</string>
     <string name="back_save_as">"‹  另存为"</string>
     <string name="add_page">添加页面</string>
+    <string name="canvas_all_tools">全部工具</string>
+    <string name="canvas_eraser_tool_hint">再次点击以调整橡皮擦大小和模式</string>
+    <string name="canvas_eraser_settings">橡皮擦大小和模式</string>
+    <string name="canvas_pen_settings">画笔粗细和压力</string>
+    <string name="canvas_page_before">在当前页之前插入页面</string>
+    <string name="canvas_page_after">在当前页之后插入页面</string>
+    <string name="canvas_page_end">在末尾插入页面</string>
     <string name="insert_pdf">插入 PDF</string>
     <string name="erase_page">清空页面</string>
     <string name="erase">清空</string>

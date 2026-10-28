@@ -6650,9 +6650,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     }
 
     /**
-     * Append a blank page at the very end — used by the pull-past-the-end gesture. Stays at the
-     * current scroll position so the user is not yanked to the new page; they can scroll to it.
+     * Insert a writing sheet before the current page, unless this is the cover.
+     * The insertion is undoable and leaves the original PDF content untouched.
      */
+    fun addPageBeforeCurrent() {
+        val current = state.currentPageIndex()
+        if (currentPageIsCover) return
+        goToPage(insertBlankPageAt(current, current))
+    }
+
+    /** Append a sheet and navigate to it, for the visible + Page menu. */
+    fun addPageAtEndAndOpen() {
+        val at = insertBlankPageAt(state.document.pages.size, state.document.pages.lastIndex)
+        goToPage(at)
+    }
+
+    /** Append a blank page without changing scroll position (the pull-past-end gesture). */
     fun addPageAtEnd() {
         insertBlankPageAt(state.document.pages.size, state.document.pages.lastIndex)
     }
