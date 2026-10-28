@@ -21,6 +21,23 @@ class SessionStoreTest {
     private fun pdfDir(): File = Files.createTempDirectory("xnotes-pdfsrc").toFile()
     private fun imageDir(): File = Files.createTempDirectory("xnotes-img").toFile()
 
+    @Test fun failsClosedWhenSessionDocumentCannotBeReplaced() {
+        val dir = tempDir()
+        try {
+            val blocked = File(dir, "document.xnote").apply { mkdir() }
+            val store = SessionStore(dir, codec(), pdfDir(), imageDir())
+            val success = store.save(
+                Document.blank(1), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            )
+            org.junit.Assert.assertFalse(success)
+            assertTrue(blocked.isDirectory) // the replacement failure must not delete existing data
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun roundTripsDocumentIdentityAndViewState() {
         val dir = tempDir()
         val doc = Document.blank(2).apply {

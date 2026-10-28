@@ -1,6 +1,8 @@
 # --- Planning / spec / AI artifacts (never commit) ---
 CLAUDE.md
 .claude/
+# Local MCP safety backups (not repository source)
+.mcp-backups/
 
 # --- Gradle ---
 .gradle/

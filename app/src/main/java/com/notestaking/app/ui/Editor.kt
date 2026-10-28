@@ -458,6 +458,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     private val canvasSession = com.notestaking.app.platform.CanvasSessionStore(sessionDir, canvasCodec, imageDir)
     private val viewStates = com.notestaking.app.platform.ViewStateStore(com.notestaking.app.platform.JsonStore.viewStates(appContext))
     private var lastSessionContentVersion = -1
+    private var lastSessionDocument: Document? = null
+    private val sessionSaveMutex = kotlinx.coroutines.sync.Mutex()
+    private var sessionSaveGeneration = 0L
     private var sessionLoaded = false
 
     // The disk cache is shared by both panes and remembers which theme produced its pixels.
@@ -2912,22 +2915,48 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      *  reopens this note where the user left off, unsaved edits included. */
     private fun saveSession() {
         if (!sessionLoaded) return // don't overwrite the saved note before restore has applied
-        if (!noteOpen || canvasOpen) { session.clear(); return } // nothing paged on top: wipe any stale session
-        val contentChanged = contentVersion != lastSessionContentVersion
-        lastSessionContentVersion = contentVersion
+        if (!noteOpen || canvasOpen) {
+            sessionSaveGeneration++
+            autosaveScope.launch {
+                sessionSaveMutex.lock()
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { session.clear() }
+                    lastSessionContentVersion = -1
+                    lastSessionDocument = null
+                } finally {
+                    sessionSaveMutex.unlock()
+                }
+            }
+            return
+        }
+        val documentIdentity = state.document
+        val version = contentVersion
+        val generation = sessionSaveGeneration
+        // Advance the watermark only when the background session commit succeeds.
         // Snapshot on the main thread, then write the session off-thread, so saving a big note's
         // session never freezes the UI. Unconditionally, even for a view-state-only refresh: the
         // store re-encodes whatever it is handed when the session file is missing, and handing it
         // the live document would put the writer back on the mutating model.
-        val snapshot = state.document.snapshot()
+        val snapshot = documentIdentity.snapshot()
         val zoom = state.zoom
         val sx = state.scrollX
         val sy = state.scrollY
         val locked = zoomLocked
         val vo = viewOverrides
         autosaveScope.launch {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                session.save(snapshot, zoom, sx, sy, locked, vo, writeDocument = contentChanged)
+            sessionSaveMutex.lock()
+            try {
+                if (generation != sessionSaveGeneration) return@launch
+                val contentChanged = lastSessionDocument !== documentIdentity || version != lastSessionContentVersion
+                val committed = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    session.save(snapshot, zoom, sx, sy, locked, vo, writeDocument = contentChanged)
+                }
+                if (committed && generation == sessionSaveGeneration) {
+                    lastSessionContentVersion = version
+                    lastSessionDocument = documentIdentity
+                }
+            } finally {
+                sessionSaveMutex.unlock()
             }
         }
     }

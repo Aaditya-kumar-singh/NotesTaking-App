@@ -6,25 +6,19 @@ import com.notestaking.app.format.DocumentCodec
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 
 /**
- * Persists the working session — the open document (including unsaved edits) plus
- * the view state (zoom/scroll) — under a private directory, so relaunching reopens
- * the last note where the user left off instead of a blank one.
+ * Persists the open paged note and its view state, including edits not yet saved to a picked file.
+ * Failure must never discard the last committed snapshot.
  *
- * The document is written in the normal `.xnote` format via [DocumentCodec]; the
- * file's identity ([Document.path]/[Document.displayName]/[Document.dirty], which
- * the codec doesn't carry) and the view state go in a small sidecar JSON.
- * Best-effort: failures are swallowed, and a missing or corrupt session restores
- * nothing.
+ * This store serializes its own reads/writes; the Editor orders async requests and only records
+ * a content version as saved after this method acknowledges success.
  */
 class SessionStore(private val dir: File, private val codec: DocumentCodec, private val pdfDir: File, private val imageDir: File) {
 
     private val docFile = File(dir, "document.xnote")
     private val meta = JsonStore(File(dir, "session.json"))
 
-    /** A restored session: the document plus the view state to reapply. */
     class Snapshot(
         val document: Document,
         val zoom: Double,
@@ -34,11 +28,8 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
         val viewOverrides: ViewOverrides,
     )
 
-    /**
-     * Save [document] and view state. Pass [writeDocument] = false to refresh only
-     * the (cheap) view-state sidecar when the document content hasn't changed since
-     * the last save — avoiding re-serializing a large note on every pause.
-     */
+    /** Return false if either document or metadata did not commit. Preserve the previous file on failure. */
+    @Synchronized
     fun save(
         document: Document,
         zoom: Double,
@@ -47,16 +38,10 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
         zoomLocked: Boolean,
         viewOverrides: ViewOverrides,
         writeDocument: Boolean,
-    ) {
-        runCatching {
-            dir.mkdirs()
+    ): Boolean {
+        return try {
             if (writeDocument || !docFile.exists()) {
-                val tmp = File(dir, "document.xnote.tmp")
-                FileOutputStream(tmp).use { codec.write(document, it) }
-                if (!tmp.renameTo(docFile)) {
-                    docFile.delete()
-                    tmp.renameTo(docFile)
-                }
+                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
             }
             val m = JSONObject()
                 .put("dirty", document.dirty)
@@ -66,12 +51,14 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
                 .put("zoomLocked", zoomLocked)
             document.path?.let { m.put("path", it) }
             document.displayName?.let { m.put("displayName", it) }
-            meta.write(ViewOverridesJson.write(m, viewOverrides))
+            meta.writeChecked(ViewOverridesJson.write(m, viewOverrides))
+        } catch (_: Exception) {
+            false
         }
     }
 
-    /** Discard any saved session (document + sidecar), so the next launch restores nothing.
-     *  Used when the app is left with no note open, so a closed note isn't kept on disk. */
+    /** Deliberately close the working session; never called for a failed save attempt. */
+    @Synchronized
     fun clear() {
         runCatching {
             docFile.delete()
@@ -79,7 +66,8 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
         }
     }
 
-    /** Load the saved session, or null when there is none or it can't be read. */
+    /** Load the latest completely committed note; missing/corrupt sessions restore nothing. */
+    @Synchronized
     fun load(): Snapshot? {
         if (!docFile.exists()) return null
         val doc = runCatching { FileInputStream(docFile).use { codec.read(it, pdfDir, imageDir) } }.getOrNull() ?: return null
