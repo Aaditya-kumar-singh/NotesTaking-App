@@ -36,9 +36,9 @@ class BoundedZipInputStreamTest {
         val manifest = """{"format":"xnote"}""".toByteArray()
         val bytes = archive("assets/image-000.png" to byteArrayOf(1, 2, 3), "manifest.json" to manifest)
         BoundedZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
-            assertEquals("assets/image-000.png", zip.nextEntry.name)
+            assertEquals("assets/image-000.png", zip.nextEntry!!.name)
             assertArrayEquals(byteArrayOf(1, 2, 3), zip.readBytes())
-            assertEquals("manifest.json", zip.nextEntry.name)
+            assertEquals("manifest.json", zip.nextEntry!!.name)
             assertArrayEquals(manifest, zip.readBytes())
             assertEquals(null, zip.nextEntry)
         }
