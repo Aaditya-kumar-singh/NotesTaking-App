@@ -462,6 +462,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     private val sessionSaveMutex = kotlinx.coroutines.sync.Mutex()
     private var sessionSaveGeneration = 0L
     private var sessionLoaded = false
+    private val workspaceStore = com.notestaking.app.platform.WorkspaceSessionStore(
+        java.io.File(appContext.filesDir, "workspace.json"),
+    )
+    private var workspaceReady = false
 
     // The disk cache is shared by both panes and remembers which theme produced its pixels.
     private val thumbCache = com.notestaking.app.platform.NoteThumbnailCache(java.io.File(appContext.filesDir, "note_thumbs"))
@@ -813,6 +817,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         canvasAutosaveUri?.let { rememberStamp(it) }
         canvasOpen = true
         noteOpen = true
+        (if (pane == Pane.PRIMARY) this else sibling)?.saveWorkspaceState()
         canvas.recoverRecordings(fromSession)
     }
 
@@ -2928,6 +2933,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 renderScale = renderScale,
             )
         }
+        if (pane == Pane.PRIMARY) saveWorkspaceState()
         if (noteOpen) saveViewState() // remember this folder note's view for next time
         settingsRepo.save(settings)
         // The note + session writes are heavy for a big note; run them off the main thread so pressing
@@ -2942,12 +2948,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Persist the open canvas, or clear the stored one when a canvas is not what is open. */
     private fun saveCanvasSession() {
-        val canvas = infiniteOrNull
-        if (!canvasOpen || canvas == null) {
-            canvasSession.clear()
-            return
+        if (!sessionLoaded) return // Do not clear recovery data before restoration has completed.
+        val snapshot = infiniteOrNull?.takeIf { canvasOpen }?.document?.snapshotForWrite()
+        autosaveScope.launch {
+            sessionSaveMutex.lock()
+            try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    if (snapshot == null) canvasSession.clear()
+                    else canvasSession.save(snapshot, writeDocument = true)
+                }
+            } finally {
+                sessionSaveMutex.unlock()
+            }
         }
-        canvasSession.save(canvas.document, writeDocument = true)
     }
 
     /** Persist the working session (open document + zoom/scroll) so the next launch
@@ -3000,10 +3013,37 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         }
     }
 
+    /**
+     * Restore the lightweight workspace marker, then independently restore the two pane
+     * snapshots. A stale/corrupt secondary never replaces the primary's recovered note.
+     * Pre-existing single-note sessions without a workspace marker keep the home-first flow.
+     */
+    suspend fun restoreWorkspace() {
+        if (pane != Pane.PRIMARY) { restoreSession(); return }
+        val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            workspaceStore.load()
+        }
+        // A malformed session is not allowed to trap the app behind its startup loader.
+        runCatching { restoreSession(openDocument = saved?.primaryOpen == true) }
+            .onFailure { sessionLoaded = true }
+        if (saved?.secondaryOpen == true) {
+            val other = secondaryPane(restoring = true)
+            val restored = runCatching { other.restoreSession(openDocument = true) }.getOrDefault(false)
+            if (restored) {
+                secondaryStarted = true
+                splitRatio = saved.splitRatio
+                focusedPane = if (saved.focusedSecondary || !noteOpen) Pane.SECONDARY else Pane.PRIMARY
+            } else {
+                abandonSecondary() // never discard primary when secondary snapshot is unavailable
+            }
+        }
+        workspaceReady = true
+    }
+
     /** Reopen the last session (document + view state). The heavy load runs off the
      *  main thread; the apply runs on the caller's (main) dispatcher. A no-op when
      *  there is no saved session. Drives the launch loader, so it's safe to await. */
-    suspend fun restoreSession() {
+    suspend fun restoreSession(openDocument: Boolean = false): Boolean {
         // A canvas was open last time: it takes precedence, since only one document is ever on top.
         val canvasDoc = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             if (canvasSession.exists()) canvasSession.load() else null
@@ -3011,7 +3051,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         if (canvasDoc != null) {
             openCanvasDocument(canvasDoc, canvasDoc.path, canvasDoc.displayName, fromSession = true)
             sessionLoaded = true
-            return
+            noteOpen = openDocument
+            return true
         }
         val snap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { session.load() }
         if (snap != null) {
@@ -3039,8 +3080,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             refreshContent()
             view.requestRender()
             recoverRecordings(fromSession = true)
+            noteOpen = openDocument
         }
         sessionLoaded = true
+        return snap != null
     }
 
     private fun refreshView() {
@@ -3676,6 +3719,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             state.lastSaveBytes = fileBytes // the on-disk size, until the first autosave rewrites it
             maybeBindAutosave(uri) // resume autosaving if this note lives in the granted folder
             noteOpen = true // push the editor on top of backstage (only on a successful open)
+            (if (pane == Pane.PRIMARY) this else sibling)?.saveWorkspaceState()
             rememberOpened(uri, name)
         } catch (e: XNoteFormatException) {
             message = appContext.getString(R.string.err_not_notes_document)
@@ -9060,6 +9104,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         refreshContent()
         view.requestRender()
         noteOpen = true // push the editor on top of backstage
+        (if (pane == Pane.PRIMARY) this else sibling)?.saveWorkspaceState()
     }
 
     // --- split view ---
@@ -9103,7 +9148,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Build the second pane on first use. It shares the temp dirs and the live settings with this
      *  one, and keeps its own document, history, canvas and session slot. */
-    fun secondaryPane(): Editor = secondary ?: Editor(viewContext, Pane.SECONDARY).also {
+    fun secondaryPane(restoring: Boolean = false): Editor = secondary ?: Editor(viewContext, Pane.SECONDARY).also {
+        // A freshly opened pane must be allowed to persist. A restoring pane must first load.
+        if (!restoring) it.sessionLoaded = true
         it.keyActions = keyActions // the shortcuts already resolve their target pane themselves
         it.sibling = this
         sibling = it
@@ -9121,7 +9168,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Give [pane] the keyboard and the file actions. */
     fun focusPane(pane: Pane) {
-        if (focusedPane != pane) focusedPane = pane
+        if (focusedPane != pane) {
+            focusedPane = pane
+            saveWorkspaceState()
+        }
     }
 
     /** Set once the second pane has actually had a document pushed onto it, so it is not released in
@@ -9142,6 +9192,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         sibling = null
         secondary = null
         focusedPane = Pane.PRIMARY
+        saveWorkspaceState()
     }
 
     /** The URI and title of the visible document, not the inactive paged buffer behind a canvas. */
@@ -9150,6 +9201,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     val visibleDocumentTitle: String
         get() = if (canvasOpen) infiniteOrNull?.document?.title ?: title else title
+
+    /** Keep the tiny workspace record separate from per-pane document snapshots. */
+    private fun saveWorkspaceState() {
+        if (pane != Pane.PRIMARY || !workspaceReady) return
+        workspaceStore.save(
+            com.notestaking.app.platform.WorkspaceSessionStore.State(
+                primaryOpen = noteOpen,
+                secondaryOpen = secondary?.noteOpen == true,
+                focusedSecondary = focusedPane == Pane.SECONDARY,
+                splitRatio = splitRatio,
+            ),
+        )
+    }
 
     /** Whether the visible document has a writable folder binding (not the hidden paged buffer). */
     val canAutoSaveCurrent: Boolean
@@ -9202,6 +9266,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 canvasAutosaveUri = null
                 canvasOpen = false
                 noteOpen = false
+                (if (pane == Pane.PRIMARY) this else sibling)?.saveWorkspaceState()
             }
             return
         }
@@ -9215,6 +9280,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             autosaveUri?.let { uri -> autosaveScope.launch { regenerateClosedNoteThumb(uri) } }
             autosaveUri = null
             noteOpen = false
+            (if (pane == Pane.PRIMARY) this else sibling)?.saveWorkspaceState()
         }
     }
 }
