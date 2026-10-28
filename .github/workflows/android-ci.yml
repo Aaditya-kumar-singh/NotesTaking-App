@@ -1,0 +1,101 @@
+name: Android CI
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-checks:
+    name: Source, resources and attribution
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify project structure, brand and assets
+        run: python3 tools/ci/check_project.py
+
+      - name: Check support scripts
+        run: python3 -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py
+
+  build-debug:
+    name: JDK 17 / tests / lint / debug APK
+    needs: source-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install app's pinned SDK, NDK and CMake
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+
+      - name: Configure Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Run Kotlin unit tests, build APK, and lint
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+
+      - name: Validate generated APK and both native libraries
+        run: |
+          python3 tools/ci/verify_apk.py \
+            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --package com.notestaking.app.debug \
+            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+        shell: bash
+
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotesTakingApp-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Gradle test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotesTakingApp-ci-reports-${{ github.run_number }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: warn
+          retention-days: 14

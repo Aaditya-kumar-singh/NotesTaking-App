@@ -1,0 +1,72 @@
+name: CodeQL Kotlin Security Scan
+
+on:
+  schedule:
+    - cron: "30 2 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+    paths:
+      - "app/src/main/java/**"
+      - "app/src/test/java/**"
+      - "app/build.gradle.kts"
+      - ".github/workflows/codeql.yml"
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Java/Kotlin security analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install SDK and pinned native build tools
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Initialize CodeQL for Java and Kotlin
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          queries: security-extended
+
+      - name: Build Kotlin sources for CodeQL extraction
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace --max-workers=2 :app:assembleDebug
+
+      - name: Upload CodeQL findings to GitHub code scanning
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:java-kotlin

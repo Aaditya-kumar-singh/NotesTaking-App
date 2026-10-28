@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement to NotesTaking App
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Explain the need rather than only naming a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe how the feature should work on an Android phone or tablet.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Explain how a developer can verify the feature works.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      options: [Handwriting and stylus, PDF annotation, Note organization, Tablet multitasking, Import and export, Accessibility, Other]

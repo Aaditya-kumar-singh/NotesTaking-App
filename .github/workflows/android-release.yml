@@ -1,0 +1,138 @@
+name: Signed Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing Git tag matching app version, for example v0.1.0"
+        required: true
+        type: string
+      create_draft_release:
+        description: "Also create a GitHub Release draft (never auto-publish)"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  signed-release:
+    name: Build and sign Android release APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: release
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release tag and version
+        shell: bash
+        run: |
+          python3 tools/ci/check_project.py
+          python3 tools/ci/check_release_tag.py "$RELEASE_TAG"
+          git rev-parse --verify "refs/tags/$RELEASE_TAG" >/dev/null
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install SDK 36, pinned NDK and CMake
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Create ephemeral signing files from repository secrets
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" ||
+                -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "::error::Configure all four Android signing secrets before releasing."
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/release-upload.jks
+          printf 'storeFile=release-upload.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" \
+            > keystore.properties
+
+      - name: Unit tests, release lint, and release APK
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            :app:testDebugUnitTest :app:lintRelease :app:assembleRelease
+
+      - name: Validate package, JNI libraries, and APK signature
+        shell: bash
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          python3 tools/ci/verify_apk.py \
+            --apk "$APK" \
+            --package com.notestaking.app \
+            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify \
+            --verbose --print-certs "$APK"
+          (cd app/build/outputs/apk/release && sha256sum app-release.apk > app-release.apk.sha256)
+
+      - name: Upload signed release for review
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotesTakingApp-signed-${{ inputs.tag }}
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create draft GitHub Release
+        if: ${{ inputs.create_draft_release }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/app-release.apk.sha256 \
+            --draft --verify-tag --generate-notes \
+            --title "NotesTaking App $RELEASE_TAG"
+
+      - name: Remove signing material from the runner
+        if: always()
+        shell: bash
+        run: rm -f keystore.properties app/release-upload.jks
+
+      - name: Upload build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotesTakingApp-release-failure-${{ github.run_number }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: warn
+          retention-days: 14

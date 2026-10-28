@@ -1,0 +1,45 @@
+name: Android Dependency Graph
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "**/*.gradle.kts"
+      - "gradle/**"
+      - "settings.gradle.kts"
+      - ".github/workflows/dependency-graph.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-graph:
+    name: Submit Gradle dependencies to GitHub security
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK for Gradle configuration
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+
+      - name: Submit resolved dependency graph
+        uses: gradle/actions/dependency-submission@v6
+        with:
+          cache-provider: basic
