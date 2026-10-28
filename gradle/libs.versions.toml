@@ -11,7 +11,7 @@ json = "20240303"
 pdfboxAndroid = "2.0.27.0"
 androidsvg = "1.4"
 latex = "1.5.0-kt2.1.0"
-commonmark = "0.30.1"
+commonmark = "0.31.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
