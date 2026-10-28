@@ -115,10 +115,18 @@ require(lookup.get("app_name") == "NotesTaking App", "Incorrect launcher display
 # English fallback text is retained for entries whose Chinese translation is pending.
 zh_strings = ET.parse(RES / "values-b+zh+Hans/strings.xml").getroot()
 zh_keys = {node.get("name") for node in zh_strings if node.tag == "string"}
+zh_plural_keys = {node.get("name") for node in zh_strings if node.tag == "plurals"}
+for plural in zh_strings:
+    if plural.tag == "plurals":
+        require(any(item.tag == "item" and item.get("quantity") == "other" for item in plural),
+                "Missing Chinese plural 'other' form: " + str(plural.get("name")))
 for node in strings:
     if node.tag == "string" and node.get("translatable") != "false":
         require(node.get("name") in zh_keys,
                 "Missing Chinese fallback string: " + str(node.get("name")))
+    if node.tag == "plurals" and node.get("translatable") != "false":
+        require(node.get("name") in zh_plural_keys,
+                "Missing Chinese plural resource: " + str(node.get("name")))
 
 renderer = read("app/src/main/java/com/notestaking/app/platform/AndroidRenderer.kt")
 require("if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n            nativeBlend(blend)?.let" in renderer,
