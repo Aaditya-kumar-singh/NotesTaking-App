@@ -9,7 +9,7 @@
 Android's official [AtomicFile](https://developer.android.com/reference/android/util/AtomicFile) documentation specifies that a durable replacement first writes and syncs a new file, then atomically replaces the original. It explicitly warns that file replacement does not serialize concurrent writers. This project targets Android API 26+, so `java.nio.file.Files.move` with `ATOMIC_MOVE` and `REPLACE_EXISTING` is available for app-private files. The implementation uses a small JVM-testable helper instead of an Android-only AtomicFile wrapper:
 
 - create a **unique** same-directory staging file (so concurrent writes never share a `.tmp` name);
-- write fully, close and `FileDescriptor.sync()`;
+- write fully, allow the ZIP encoder to finish and close its borrowed stream, flush, then `FileDescriptor.sync()` **before** closing the owned file descriptor;
 - atomically rename into place without first deleting the old session;
 - on any failure, delete **only the new stage**; if atomic replacement is unavailable, **fail closed** and retain the committed file.
 
@@ -27,9 +27,16 @@ This is per-file atomicity, not a cross-file transaction between `.xnote` and `.
 
 ## New regression tests
 
-- `SafeFileWriterTest`: initial write and replacement, partial writer exception preserving last good copy, first-write failure leaving no destination, concurrent writers producing whole noninterleaved files.
+- `SafeFileWriterTest`: initial write and replacement, partial writer exception preserving last good copy, first-write failure leaving no destination, concurrent writers producing whole noninterleaved files, and a ZIP encoder explicitly closing its borrowed stream.
 - `SessionStoreTest`: failure to replace a blocked document slot returns false without deleting the existing directory and without leaving staged files.
-- Existing SessionStore roundtrip/view-state tests remain unchanged.
+- Existing `SessionStoreTest` roundtrip/view-state cases now assert `save()` succeeded **before** attempting `load()`. This exposes persistence failures directly instead of failing later with an unrelated-looking null assertion.
+- `CanvasSessionStoreTest`: real `CanvasCodec`/ZIP roundtrip and blocked replacement protection.
+
+## 2026-10-28 CI regression and correction
+
+The first CI run for commit `296d847` (https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/40714613984) compiled but failed three session roundtrip tests. Inspection found both `DocumentCodec.write` and `CanvasCodec.write` use `ZipOutputStream(out).use`, which **closes** the supplied stream on completion. The initial `SafeFileWriter` passed its owned `FileOutputStream` to these codecs and then attempted `FileDescriptor.sync()` on the closed stream. That made the checked save return false and the test reload returned null.
+
+The correction supplies a borrowed `FilterOutputStream` whose `close()` flushes but does not close the owned descriptor. The outer owner syncs after the codec has finished and closes the descriptor itself. Test cases now cover this exact stream ownership contract. Java's official [ZipOutputStream.close documentation](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/util/zip/ZipOutputStream.html) confirms it closes its underlying stream; [Android FileDescriptor.sync documentation](https://developer.android.com/reference/java/io/FileDescriptor#sync()) requires unbuffered data to be flushed before synchronization. Confirm correction with new GitHub CI; it is not considered verified merely from source inspection.
 
 ## Remaining safety gates
 

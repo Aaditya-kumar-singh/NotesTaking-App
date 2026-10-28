@@ -45,7 +45,7 @@ class SessionStoreTest {
             displayName = "Notes.xnote"
             dirty = true
         }
-        SessionStore(dir, codec(), pdfDir(), imageDir()).save(doc, zoom = 2.04, scrollX = 120.0, scrollY = 340.0, zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = true)
+        assertTrue(SessionStore(dir, codec(), pdfDir(), imageDir()).save(doc, zoom = 2.04, scrollX = 120.0, scrollY = 340.0, zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = true))
 
         val snap = SessionStore(dir, codec(), pdfDir(), imageDir()).load()!!
         assertEquals(2, snap.document.pages.size)
@@ -65,9 +65,9 @@ class SessionStoreTest {
 
     @Test fun viewStateRefreshKeepsExistingDocument() {
         val dir = tempDir()
-        SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(3), zoom = 1.0, scrollX = 0.0, scrollY = 0.0, zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true)
+        assertTrue(SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(3), zoom = 1.0, scrollX = 0.0, scrollY = 0.0, zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true))
         // A metadata-only update (writeDocument = false) must not lose the document.
-        SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(9), zoom = 1.5, scrollX = 10.0, scrollY = 20.0, zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false)
+        assertTrue(SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(9), zoom = 1.5, scrollX = 10.0, scrollY = 20.0, zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false))
 
         val snap = SessionStore(dir, codec(), pdfDir(), imageDir()).load()!!
         assertEquals(3, snap.document.pages.size) // the original document, not the 9-page one
@@ -90,7 +90,7 @@ class SessionStoreTest {
             scrollbar = true,
             freeMovement = true,
         )
-        SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(1), zoom = 1.0, scrollX = 0.0, scrollY = 0.0, zoomLocked = false, viewOverrides = vo, writeDocument = true)
+        assertTrue(SessionStore(dir, codec(), pdfDir(), imageDir()).save(Document.blank(1), zoom = 1.0, scrollX = 0.0, scrollY = 0.0, zoomLocked = false, viewOverrides = vo, writeDocument = true))
 
         assertEquals(vo, SessionStore(dir, codec(), pdfDir(), imageDir()).load()!!.viewOverrides)
     }

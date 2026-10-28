@@ -12,6 +12,27 @@ import java.util.concurrent.TimeUnit
 class SafeFileWriterTest {
     private fun directory(): File = Files.createTempDirectory("notestaking-atomic-").toFile()
 
+    @Test fun codecClosingZipStreamDoesNotCloseFileBeforeSync() {
+        val dir = directory()
+        try {
+            val target = File(dir, "document.xnote")
+            assertTrue(SafeFileWriter.write(target) { borrowed ->
+                java.util.zip.ZipOutputStream(borrowed).use { zip ->
+                    zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
+                    zip.write("{\"pageCount\":2}".toByteArray(Charsets.UTF_8))
+                    zip.closeEntry()
+                }
+            })
+            java.util.zip.ZipInputStream(target.inputStream()).use { zip ->
+                assertEquals("manifest.json", zip.nextEntry!!.name)
+                assertEquals("{\"pageCount\":2}", zip.readBytes().toString(Charsets.UTF_8))
+            }
+            assertEquals(listOf("document.xnote"), dir.listFiles()!!.map { it.name })
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun createsAndAtomicallyReplacesCompleteFile() {
         val dir = directory()
         try {

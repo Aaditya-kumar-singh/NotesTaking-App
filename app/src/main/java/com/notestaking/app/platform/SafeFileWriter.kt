@@ -2,6 +2,8 @@ package com.notestaking.app.platform
 
 import java.io.File
 import java.io.FileOutputStream
+import java.io.FilterOutputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -16,14 +18,21 @@ import java.nio.file.StandardCopyOption
  * replacement protects file integrity, not application-level write ordering.
  */
 internal object SafeFileWriter {
-    fun write(target: File, body: (FileOutputStream) -> Unit): Boolean {
+    fun write(target: File, body: (OutputStream) -> Unit): Boolean {
         var staged: File? = null
         return try {
             val parent = target.absoluteFile.parentFile ?: return false
             if (!parent.isDirectory && !parent.mkdirs()) return false
             staged = Files.createTempFile(parent.toPath(), ".${target.name}.", ".staged").toFile()
             FileOutputStream(staged).use { output ->
-                body(output)
+                // DocumentCodec/CanvasCodec close their ZipOutputStream when finished.
+                // Keep the real descriptor open until fsync succeeds, even if the codec
+                // closes the stream it received.
+                val borrowed = object : FilterOutputStream(output) {
+                    override fun close() { flush() }
+                }
+                body(borrowed)
+                borrowed.flush()
                 output.fd.sync()
             }
             Files.move(
