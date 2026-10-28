@@ -834,6 +834,36 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             }.getOrDefault(false)
         }
 
+    /** Save an unsaved/external canvas to a user-chosen SAF URI without blocking Compose. */
+    fun saveCanvasToThen(uri: String, name: String? = null, onDone: (Boolean) -> Unit) {
+        val doc = infiniteOrNull?.document
+        if (!canvasOpen || doc == null) { onDone(false); return }
+        canvasDebounceJob?.cancel()
+        val snapshot = doc.snapshotForWrite()
+        val wasDirty = doc.dirty
+        doc.dirty = false
+        savingNote = true
+        val previous = canvasWriteJob
+        canvasWriteJob = autosaveScope.launch {
+            previous?.join()
+            val written = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                writeCanvasSafely(uri, snapshot)
+            }
+            savingNote = false
+            if (written && infiniteOrNull?.document === doc) {
+                doc.path = uri
+                if (name != null) doc.displayName = name
+                canvasAutosaveUri = if (browseRoot?.let { isUnderTree(uri, it) } == true) uri else null
+                invalidateThumb(uri)
+            } else if (wasDirty && infiniteOrNull?.document === doc) {
+                doc.dirty = true
+            }
+            val complete = written && infiniteOrNull?.document === doc && !doc.dirty
+            if (!complete) message = appContext.getString(R.string.err_save_note)
+            onDone(complete)
+        }
+    }
+
     private fun scheduleCanvasAutosave() {
         val uri = canvasAutosaveUri ?: return
         canvasDebounceJob?.cancel()
@@ -856,7 +886,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         uri: String,
         doc: com.notestaking.app.core.infinite.InfiniteDocument,
         title: String,
-        onDone: (() -> Unit)? = null,
+        onDone: ((Boolean) -> Unit)? = null,
     ) {
         val snapshot = doc.snapshotForWrite()
         val wasDirty = doc.dirty
@@ -871,7 +901,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             } else if (wasDirty && infiniteOrNull?.document === doc) {
                 doc.dirty = true // nothing was written; the edits are still unsaved
             }
-            onDone?.invoke()
+            onDone?.invoke(res != null)
         }
     }
 
@@ -893,19 +923,28 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * stays instant. The sibling of [flushThen], for the same reason: a dense canvas takes long
      * enough to write that doing it on the main thread freezes the UI on close.
      */
-    private fun flushCanvasThen(showOverlay: Boolean, onDone: () -> Unit) {
+    private fun flushCanvasThen(showOverlay: Boolean, onDone: (Boolean) -> Unit) {
         canvasDebounceJob?.cancel()
         val uri = canvasAutosaveUri
         val doc = infiniteOrNull?.document
-        if (uri == null || doc == null || !doc.dirty) { onDone(); return }
+        if (uri == null || doc == null) { onDone(true); return }
         val title = doc.displayName ?: doc.title
         if (showOverlay) savingNote = true
         autosaveScope.launch {
-            canvasWriteJob?.join() // a write already going out finishes first; it may be all there was
-            if (!doc.dirty) { savingNote = false; onDone(); return@launch }
-            startCanvasWrite(uri, doc, title) {
+            canvasWriteJob?.join() // also wait when a prior writer temporarily cleared dirty
+            if (infiniteOrNull?.document !== doc) {
                 savingNote = false
-                onDone()
+                onDone(false)
+                return@launch
+            }
+            if (!doc.dirty) {
+                savingNote = false
+                onDone(true)
+                return@launch
+            }
+            startCanvasWrite(uri, doc, title) { written ->
+                savingNote = false
+                onDone(written && infiniteOrNull?.document === doc && !doc.dirty)
             }
         }
     }
@@ -3678,7 +3717,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * ANR: an explicit save targets whatever the system picker handed over, and openOutputStream on
      * a cloud provider is an untimed binder call into that provider's process.
      */
-    fun saveToThen(uri: String, onDone: (Boolean) -> Unit) {
+    fun saveToThen(uri: String, name: String? = null, onDone: (Boolean) -> Unit) {
         noteDebounceJob?.cancel() // this write supersedes a pending debounce
         val doc = state.document
         val startNs = System.nanoTime()
@@ -3702,6 +3741,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 // this save belongs to may have its path and autosave binding touched.
                 if (state.document === doc) {
                     doc.path = uri
+                    if (name != null) doc.displayName = name
                     maybeBindAutosave(uri)
                     refreshContent()
                 }
@@ -3711,7 +3751,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 message = appContext.getString(R.string.err_save_note)
             }
             state.lastSaveTotalMs = msSince(startNs)
-            onDone(ok)
+            // A new edit during the write must not be discarded by a guarded navigation.
+            onDone(ok && state.document === doc && !doc.dirty)
         }
     }
 
@@ -5175,7 +5216,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         snapshot: Document,
         title: String,
         startNs: Long,
-        onDone: (() -> Unit)? = null,
+        onDone: ((Boolean) -> Unit)? = null,
     ) {
         val doc = state.document
         // Clean from here, not once the bytes land: [snapshot] already holds these edits, so an edit
@@ -5208,7 +5249,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                     " + saf ${state.lastSaveCopyMs}" +
                     ", ${state.lastSaveBytes} bytes, ${res != null}",
             )
-            onDone?.invoke()
+            onDone?.invoke(res != null)
         }
     }
 
@@ -5237,20 +5278,30 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * (no save) when the note isn't a folder note or isn't dirty, so the common case stays instant.
      * Off-threading the write is what stops a large note from freezing the UI (ANR) on close/pause.
      */
-    private fun flushThen(showOverlay: Boolean, onDone: () -> Unit) {
+    private fun flushThen(showOverlay: Boolean, onDone: (Boolean) -> Unit) {
         noteDebounceJob?.cancel()
         val uri = autosaveUri
-        if (uri == null || !state.document.dirty) { onDone(); return }
+        if (uri == null) { onDone(true); return }
+        val doc = state.document
         if (showOverlay) savingNote = true
         autosaveScope.launch {
-            noteWriteJob?.join() // a write already going out finishes first; it may be all there was
-            if (!state.document.dirty) { savingNote = false; onDone(); return@launch }
-            val startNs = System.nanoTime()
-            val snapshot = state.document.snapshot() // main thread: its own page lists over the live items
-            state.lastSaveSnapshotMs = msSince(startNs)
-            startNoteWrite(uri, snapshot, state.document.displayName ?: state.document.title, startNs) {
+            noteWriteJob?.join() // do not skip an in-flight write just because dirty was cleared
+            if (state.document !== doc) {
                 savingNote = false
-                onDone()
+                onDone(false)
+                return@launch
+            }
+            if (!doc.dirty) {
+                savingNote = false
+                onDone(true)
+                return@launch
+            }
+            val startNs = System.nanoTime()
+            val snapshot = doc.snapshot()
+            state.lastSaveSnapshotMs = msSince(startNs)
+            startNoteWrite(uri, snapshot, doc.displayName ?: doc.title, startNs) { written ->
+                savingNote = false
+                onDone(written && state.document === doc && !doc.dirty)
             }
         }
     }
@@ -9093,6 +9144,40 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         focusedPane = Pane.PRIMARY
     }
 
+    /** The URI and title of the visible document, not the inactive paged buffer behind a canvas. */
+    val visibleDocumentUri: String?
+        get() = if (canvasOpen) infiniteOrNull?.document?.path else state.document.path
+
+    val visibleDocumentTitle: String
+        get() = if (canvasOpen) infiniteOrNull?.document?.title ?: title else title
+
+    /** Whether the visible document has a writable folder binding (not the hidden paged buffer). */
+    val canAutoSaveCurrent: Boolean
+        get() = if (canvasOpen) canvasAutosaveUri != null else autosaveUri != null
+
+    /** An unsaved canvas must not inherit the paged buffer's dirty flag. */
+    val hasUnsavedChanges: Boolean
+        get() = if (canvasOpen) infiniteOrNull?.document?.dirty == true else dirty || state.document.dirty
+
+    /** Flush the active text editor into the document before a save/navigation decision. */
+    fun commitPendingEdits() {
+        if (!noteOpen) return
+        if (canvasOpen) infinite.commitText()
+        else {
+            commitText()
+            flowText.endSession()
+        }
+    }
+
+    /** Wait for the current folder write before a guarded switch or close. */
+    fun saveBeforeNavigation(onDone: (Boolean) -> Unit) {
+        commitPendingEdits()
+        if (!noteOpen || !canAutoSaveCurrent) { onDone(true); return }
+        if (savingNote) return // prevent duplicate navigation while the save overlay is open
+        if (canvasOpen) flushCanvasThen(showOverlay = true, onDone = onDone)
+        else flushThen(showOverlay = true, onDone = onDone)
+    }
+
     /** Close every open pane, so the backstage is what's left. */
     fun goHomeAll() {
         secondary?.goHome()
@@ -9102,7 +9187,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Pop back to backstage: detach the current note (flush autosave, drop the binding) and clear
      *  [noteOpen] so the editor is removed from the stack. The document stays as an inert buffer. */
     fun goHome() {
-        if (!noteOpen) return
+        if (!noteOpen || savingNote) return
         // Closing the note places a recording still going, before the note is saved.
         AudioRecording.stopFor(this)
         infiniteOrNull?.let { AudioRecording.stopFor(it) }
@@ -9112,7 +9197,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         // so leaving one is just popping the layer.
         if (canvasOpen) {
             infinite.commitText() // an open label goes down with what was typed
-            flushCanvasThen(showOverlay = true) {
+            flushCanvasThen(showOverlay = true) { saved ->
+                if (!saved) { message = appContext.getString(R.string.err_save_note); return@flushCanvasThen }
                 canvasAutosaveUri = null
                 canvasOpen = false
                 noteOpen = false
@@ -9122,7 +9208,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         commitText() // commit an open text box before leaving (also hides its keyboard)
         flowText.endSession() // end any live flow caret (flushes typing, hides the keyboard)
         saveViewState() // remember this folder note's view before leaving
-        flushThen(showOverlay = true) {
+        flushThen(showOverlay = true) { saved ->
+            if (!saved) { message = appContext.getString(R.string.err_save_note); return@flushThen }
             // Regenerate this folder note's grid tile now that editing is done (off-thread, low priority);
             // a non-folder note (no autosave binding) isn't in the explorer, so there's nothing to do.
             autosaveUri?.let { uri -> autosaveScope.launch { regenerateClosedNoteThumb(uri) } }

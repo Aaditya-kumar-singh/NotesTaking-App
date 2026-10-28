@@ -325,7 +325,7 @@ private fun EditorScreen(
     var backstageView by remember { mutableStateOf(com.notestaking.app.ui.BackstageView.HOME) }
     var showShareChooser by remember { mutableStateOf(false) }
     var guardAction by remember { mutableStateOf<GuardRequest?>(null) }
-    var pendingAfterSave by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val pendingAfterSave = remember { com.notestaking.app.platform.GuardedSaveFlow() }
     // The pane an image was picked for, and where a long-press menu asked it to land. Held together
     // so the picker's result lands in the pane that opened it, whatever the focus does meanwhile.
     var pendingInsert by remember { mutableStateOf<PendingInsert?>(null) }
@@ -354,12 +354,31 @@ private fun EditorScreen(
     val createLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->
-        uri?.let {
-            runCatching { resolver.takePersistableUriPermission(it, rwFlags) }
-            val name = displayNameOf(resolver, it)
-            runCatching { resolver.openOutputStream(it, "wt")?.use { o -> savePane.save(o, it.toString(), name) } }
-                .onSuccess { val p = pendingAfterSave; pendingAfterSave = null; p?.invoke() }
-                .onFailure { editor.message = resources.getString(R.string.err_save_note); pendingAfterSave = null }
+        val completeGuardedSave = pendingAfterSave.consume() // Also clears on picker cancellation.
+        val target = savePane
+        if (uri != null) {
+            runCatching { resolver.takePersistableUriPermission(uri, rwFlags) }
+            val name = displayNameOf(resolver, uri)
+            target.saveToThen(uri.toString(), name) { saved ->
+                completeGuardedSave(saved)
+                else target.message = resources.getString(R.string.err_save_note)
+            }
+        }
+    }
+
+    // Infinite canvases use their own native .xcanvas codec; never write them as .xnote.
+    val createCanvasLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        val completeGuardedSave = pendingAfterSave.consume()
+        val target = savePane
+        if (uri != null) {
+            runCatching { resolver.takePersistableUriPermission(uri, rwFlags) }
+            val name = displayNameOf(resolver, uri)
+            target.saveCanvasToThen(uri.toString(), name) { saved ->
+                completeGuardedSave(saved)
+                else target.message = resources.getString(R.string.err_save_note)
+            }
         }
     }
 
@@ -589,26 +608,38 @@ private fun EditorScreen(
     /** Open the "Save as" picker for [target], remembering which pane its result belongs to. */
     fun launchSaveAs(target: Editor) {
         savePane = target
-        createLauncher.launch("${target.title}.xnote")
+        if (target.canvasOpen) createCanvasLauncher.launch("${target.visibleDocumentTitle}.xcanvas")
+        else createLauncher.launch("${target.visibleDocumentTitle}.xnote")
     }
 
     fun saveOrPrompt() {
         val target = editor.active
-        val uri = target.currentUri
+        if (target.savingNote) return
+        target.commitPendingEdits()
+        val uri = target.visibleDocumentUri
         if (uri == null) { launchSaveAs(target); return }
-        // The write is off the main thread now, so the Save-As fallback fires from its callback.
-        target.saveToThen(uri) { ok -> if (!ok) launchSaveAs(target) }
+        // A failed direct save may fall back to the system Save-As picker; no navigation
+        // continuation is attached to a manual Save operation.
+        if (target.canvasOpen) target.saveCanvasToThen(uri) { ok -> if (!ok) launchSaveAs(target) }
+        else target.saveToThen(uri) { ok -> if (!ok) launchSaveAs(target) }
     }
 
     // The prompt is about one pane's note, so it asks about — and saves — the pane being acted on.
     fun guarded(target: Editor = editor.active, action: () -> Unit) {
-        when {
-            // A canvas keeps its own autosave, and dirty/autosaveUri describe the paged buffer
-            // underneath it, so asking about those here would prompt over a note nobody is looking at.
-            target.canvasOpen -> action()
-            target.autosaveUri != null -> action() // autosaved notes are flushed on doc-swap; no prompt
-            target.dirty -> guardAction = GuardRequest(target, action)
-            else -> action()
+        if (target.savingNote) return // dirty can be false during an in-flight save
+        target.commitPendingEdits()
+        when (com.notestaking.app.platform.saveNavigationDecision(
+            target.savingNote, target.canAutoSaveCurrent, target.hasUnsavedChanges,
+        )) {
+            com.notestaking.app.platform.SaveNavigationDecision.BLOCK -> Unit
+            com.notestaking.app.platform.SaveNavigationDecision.FLUSH ->
+                target.saveBeforeNavigation { saved ->
+                    if (saved) action()
+                    else target.message = resources.getString(R.string.err_save_note)
+                }
+            com.notestaking.app.platform.SaveNavigationDecision.PROMPT ->
+                guardAction = GuardRequest(target, action)
+            com.notestaking.app.platform.SaveNavigationDecision.CONTINUE -> action()
         }
     }
 
@@ -1136,16 +1167,19 @@ private fun EditorScreen(
         com.notestaking.app.ui.AlertDialog(
             onDismissRequest = { guardAction = null },
             title = { androidx.compose.material3.Text(stringResource(R.string.unsaved_changes)) },
-            text = { androidx.compose.material3.Text(stringResource(R.string.unsaved_changes_prompt, guarded.title)) },
+            text = { androidx.compose.material3.Text(stringResource(R.string.unsaved_changes_prompt, guarded.visibleDocumentTitle)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     guardAction = null
-                    val uri = guarded.currentUri
+                    val uri = guarded.visibleDocumentUri
                     if (uri != null) {
-                        // Off-thread: what the prompt was guarding runs once the bytes have landed.
-                        guarded.saveToThen(uri) { action() }
+                        // Off-thread: what the prompt was guarding runs only on confirmed success.
+                        if (guarded.canvasOpen) guarded.saveCanvasToThen(uri) { saved -> if (saved) action() }
+                        else guarded.saveToThen(uri) { saved ->
+                            if (saved) action() // Never navigate after a failed write.
+                        }
                     } else {
-                        pendingAfterSave = action
+                        pendingAfterSave.queue(action)
                         launchSaveAs(guarded)
                     }
                 }) { androidx.compose.material3.Text(stringResource(R.string.save)) }
