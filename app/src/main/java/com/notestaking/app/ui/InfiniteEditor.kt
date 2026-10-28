@@ -1687,6 +1687,7 @@ class InfiniteEditor(context: Context) : ToolPopupHost, SelectionMenuHost, LongP
      * holds their pixels: each is decoded when drawn, at the size the screen can show.
      */
     fun insertImage(bytes: ByteArray, atContent: com.notestaking.app.core.geometry.Pt? = null): Boolean {
+        if (bytes.size > com.notestaking.app.platform.BoundedBytes.MAX_IMAGE_BYTES) return false
         val dir = imageDir ?: return false
         val file = runCatching {
             java.io.File.createTempFile("img", null, dir).apply { writeBytes(bytes) }

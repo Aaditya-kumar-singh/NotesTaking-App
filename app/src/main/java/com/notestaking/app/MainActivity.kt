@@ -494,9 +494,13 @@ private fun EditorScreen(
     val insertImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val pending = pendingInsert; pendingInsert = null
         if (uri != null && pending != null) {
-            runCatching {
-                resolver.openInputStream(uri)?.use { s -> pending.editor.insertImageAt(s.readBytes(), pending.at) }
-            }.onFailure { editor.message = resources.getString(R.string.err_read_image) }
+            scope.launch {
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { resolver.openInputStream(uri)?.use { com.notestaking.app.platform.BoundedBytes.read(it) } }.getOrNull()
+                }
+                if (bytes != null) pending.editor.insertImageAt(bytes, pending.at)
+                else pending.editor.message = resources.getString(R.string.err_read_image)
+            }
         }
     }
 
@@ -560,9 +564,14 @@ private fun EditorScreen(
 
     // Images picked for the sticker library (multi-select), stored on disk by the editor.
     val addStickersLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        uris.forEach { uri ->
-            runCatching { resolver.openInputStream(uri)?.use { s -> editor.addSticker(s.readBytes()) } }
-                .onFailure { editor.message = resources.getString(R.string.err_read_image) }
+        scope.launch {
+            for (uri in uris) {
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { resolver.openInputStream(uri)?.use { com.notestaking.app.platform.BoundedBytes.read(it) } }.getOrNull()
+                }
+                if (bytes != null) editor.addSticker(bytes)
+                else editor.message = resources.getString(R.string.err_read_image)
+            }
         }
     }
 
@@ -680,7 +689,7 @@ private fun EditorScreen(
         pendingPhoto = null
         scope.launch {
             val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                (if (taken) runCatching { file.readBytes() }.getOrNull() else null).also { file.delete() }
+                (if (taken) runCatching { com.notestaking.app.platform.BoundedBytes.readFile(file) }.getOrNull() else null).also { file.delete() }
             }
             if (bytes == null || bytes.isEmpty()) return@launch
             if (pane.canvasOpen) pane.infinite.insertImage(bytes) else pane.insertImageAt(bytes, null)
@@ -710,7 +719,7 @@ private fun EditorScreen(
         if (uri == null || pending == null) return@rememberLauncherForActivityResult
         scope.launch {
             val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                runCatching { resolver.openInputStream(uri)?.use { input -> input.readBytes() } }.getOrNull()
+                runCatching { resolver.openInputStream(uri)?.use { input -> com.notestaking.app.platform.BoundedBytes.read(input) } }.getOrNull()
             }
             if (bytes != null) pending.editor.infinite.insertImage(bytes, pending.at)
         }
