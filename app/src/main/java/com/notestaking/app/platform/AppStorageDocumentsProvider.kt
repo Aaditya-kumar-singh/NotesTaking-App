@@ -25,6 +25,7 @@ import java.io.FileNotFoundException
 class AppStorageDocumentsProvider : DocumentsProvider() {
 
     private val baseDir: File get() = rootDir(context!!)
+    private val safeTree: SafeDocumentTree get() = SafeDocumentTree(baseDir)
 
     override fun onCreate(): Boolean = true
 
@@ -39,73 +40,54 @@ class AppStorageDocumentsProvider : DocumentsProvider() {
 
     override fun queryChildDocuments(parentDocumentId: String, projection: Array<String>?, sortOrder: String?): Cursor {
         val cursor = MatrixCursor(projection ?: DEFAULT_DOCUMENT_PROJECTION)
-        fileFor(parentDocumentId).listFiles()?.forEach { child -> includeFile(cursor, docIdFor(child), child) }
+        val tree = safeTree
+        tree.children(parentDocumentId).forEach { child -> includeFile(cursor, tree.documentId(child), child) }
         return cursor
     }
 
     override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean =
-        documentId == parentDocumentId || documentId.startsWith("$parentDocumentId/")
+        safeTree.isChild(parentDocumentId, documentId)
 
-    // Ids are paths, so the chain from [parentDocumentId] down to the child is just its successive prefixes.
     override fun findDocumentPath(parentDocumentId: String?, childDocumentId: String): DocumentsContract.Path {
         val top = parentDocumentId ?: ROOT_DOC_ID
+        val tree = safeTree
+        tree.resolve(top)
+        tree.resolve(childDocumentId)
+        if (top != childDocumentId && !tree.isChild(top, childDocumentId))
+            throw FileNotFoundException("Not a descendant")
         val ids = com.notestaking.app.core.util.DocKeys.chain(top, childDocumentId)
-            ?: throw FileNotFoundException("$childDocumentId is not under $top")
+            ?: throw FileNotFoundException("Document is not under requested parent")
         return DocumentsContract.Path(if (parentDocumentId == null) ROOT_DOC_ID else null, ids)
     }
 
     override fun getDocumentType(documentId: String): String = mimeOf(fileFor(documentId))
 
-    override fun openDocument(documentId: String, mode: String, signal: CancellationSignal?): ParcelFileDescriptor =
-        ParcelFileDescriptor.open(fileFor(documentId), ParcelFileDescriptor.parseMode(mode))
-
-    override fun createDocument(parentDocumentId: String, mimeType: String, displayName: String): String {
-        val parent = fileFor(parentDocumentId)
-        if (!parent.exists()) parent.mkdirs()
-        val target = freeChild(parent, displayName)
-        val ok = if (mimeType == Document.MIME_TYPE_DIR) target.mkdir()
-        else runCatching { target.createNewFile() }.getOrDefault(false)
-        if (!ok) throw FileNotFoundException("Couldn't create $displayName under $parentDocumentId")
-        return docIdFor(target)
-    }
-
-    override fun deleteDocument(documentId: String) {
-        if (!fileFor(documentId).deleteRecursively()) throw FileNotFoundException("Couldn't delete $documentId")
-    }
-
-    override fun renameDocument(documentId: String, displayName: String): String {
+    override fun openDocument(documentId: String, mode: String, signal: CancellationSignal?): ParcelFileDescriptor {
         val file = fileFor(documentId)
-        val target = File(file.parentFile, displayName)
-        if (target.exists()) throw FileNotFoundException("$displayName already exists")
-        if (!file.renameTo(target)) throw FileNotFoundException("Couldn't rename $documentId")
-        return docIdFor(target)
+        if (!file.isFile) throw FileNotFoundException("Not a regular file")
+        return ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode(mode))
     }
 
-    // Native copy keeps the source's name and recurses into subfolders; it throws on a name clash so
-    // the caller (Editor.copyDocumentInto) can fall through to making a renamed duplicate instead.
-    override fun copyDocument(sourceDocumentId: String, targetParentDocumentId: String): String {
-        val source = fileFor(sourceDocumentId)
-        val dest = File(fileFor(targetParentDocumentId), source.name)
-        if (dest.exists()) throw FileNotFoundException("${source.name} already exists")
-        copyTree(source, dest)
-        return docIdFor(dest)
-    }
+    @Synchronized
+    override fun createDocument(parentDocumentId: String, mimeType: String, displayName: String): String =
+        safeTree.create(parentDocumentId, displayName, mimeType == Document.MIME_TYPE_DIR)
 
-    override fun moveDocument(sourceDocumentId: String, sourceParentDocumentId: String, targetParentDocumentId: String): String {
-        val source = fileFor(sourceDocumentId)
-        val dest = File(fileFor(targetParentDocumentId), source.name)
-        if (dest.exists()) throw FileNotFoundException("${source.name} already exists")
-        if (!source.renameTo(dest)) throw FileNotFoundException("Couldn't move $sourceDocumentId")
-        return docIdFor(dest)
-    }
+    @Synchronized
+    override fun deleteDocument(documentId: String) = safeTree.delete(documentId)
 
-    private fun fileFor(documentId: String): File =
-        if (documentId == ROOT_DOC_ID) baseDir else File(baseDir, documentId.removePrefix("$ROOT_DOC_ID/"))
+    @Synchronized
+    override fun renameDocument(documentId: String, displayName: String): String =
+        safeTree.rename(documentId, displayName)
 
-    private fun docIdFor(file: File): String {
-        if (file == baseDir) return ROOT_DOC_ID
-        return "$ROOT_DOC_ID/" + file.absolutePath.removePrefix(baseDir.absolutePath + File.separator)
-    }
+    @Synchronized
+    override fun copyDocument(sourceDocumentId: String, targetParentDocumentId: String): String =
+        safeTree.copy(sourceDocumentId, targetParentDocumentId)
+
+    @Synchronized
+    override fun moveDocument(sourceDocumentId: String, sourceParentDocumentId: String, targetParentDocumentId: String): String =
+        safeTree.move(sourceDocumentId, sourceParentDocumentId, targetParentDocumentId)
+
+    private fun fileFor(documentId: String): File = safeTree.resolve(documentId)
 
     private fun includeFile(cursor: MatrixCursor, documentId: String, file: File) {
         val isDir = file.isDirectory
@@ -126,27 +108,6 @@ class AppStorageDocumentsProvider : DocumentsProvider() {
 
     private fun mimeOf(file: File): String =
         if (file.isDirectory) Document.MIME_TYPE_DIR else "application/octet-stream"
-
-    // A free name in [parent]: the given one, else "<stem> (N)<.ext>" (SAF's de-dupe convention).
-    private fun freeChild(parent: File, name: String): File {
-        var candidate = File(parent, name)
-        if (!candidate.exists()) return candidate
-        val dot = name.lastIndexOf('.')
-        val stem = if (dot > 0) name.substring(0, dot) else name
-        val ext = if (dot > 0) name.substring(dot) else ""
-        var n = 1
-        while (candidate.exists()) candidate = File(parent, "$stem ($n)$ext").also { n++ }
-        return candidate
-    }
-
-    private fun copyTree(src: File, dest: File) {
-        if (src.isDirectory) {
-            dest.mkdirs()
-            src.listFiles()?.forEach { copyTree(it, File(dest, it.name)) }
-        } else {
-            src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
-        }
-    }
 
     companion object {
         private const val ROOT_DOC_ID = "root"
