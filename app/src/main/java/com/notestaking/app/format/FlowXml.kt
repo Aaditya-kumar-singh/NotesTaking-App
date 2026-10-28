@@ -19,7 +19,6 @@ import com.notestaking.app.core.text.TextFlow
 import com.notestaking.app.core.text.normalizeTables
 import java.io.ByteArrayInputStream
 import kotlin.math.roundToInt
-import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
@@ -316,9 +315,7 @@ object FlowXml {
     /** Populate [flow] from [bytes]; malformed XML leaves it untouched (loads empty). */
     fun readInto(flow: TextFlow, bytes: ByteArray) {
         val root = try {
-            DocumentBuilderFactory.newInstance()
-                .apply { isNamespaceAware = true }
-                .newDocumentBuilder()
+            SecureXml.builder()
                 .parse(ByteArrayInputStream(bytes))
                 .documentElement
         } catch (_: Exception) {

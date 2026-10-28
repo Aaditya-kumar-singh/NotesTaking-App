@@ -3,6 +3,8 @@ package com.notestaking.app.format
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipException
@@ -39,6 +41,7 @@ object TemplatePackage {
         if (file.length() > MAX_BYTES) throw TemplateFormatException("template package is larger than 16 MiB")
         try {
             ZipFile(file).use { zip ->
+                if (zip.size() > 1_000) throw TemplateFormatException("too many template entries")
                 val e = zip.getEntry(JSON_ENTRY) ?: throw TemplateFormatException("package has no $JSON_ENTRY")
                 val bytes = zip.getInputStream(e).use { readAtMost(it, TemplateReader.MAX_BYTES) }
                     ?: throw TemplateFormatException("template is larger than 1 MiB")
@@ -51,19 +54,49 @@ object TemplatePackage {
 
     /** Whether [src] is a path an `image` may name: relative, with no `..` segment (SPEC §5.3). */
     fun validSrc(src: String): Boolean =
-        src.isNotEmpty() && !src.startsWith("/") && src.split('/').none { it == ".." }
+        src.isNotEmpty() && src.length <= 255 && !src.startsWith("/") && '\\' !in src &&
+            src.split('/').all { it.isNotEmpty() && it != "." && it != ".." } &&
+            src.none { it.code < 32 || it.code == 127 }
 
     /** Copy picture [src] out of [file] into [dest]; false when it is missing or not allowed. */
     fun extract(file: File, src: String, dest: File): Boolean {
-        if (!validSrc(src)) return false
-        return runCatching {
+        if (!validSrc(src) || file.length() > MAX_BYTES) return false
+        var stage: File? = null
+        return try {
+            val parent = dest.absoluteFile.parentFile ?: return false
+            if (!parent.isDirectory) return false
             ZipFile(file).use { zip ->
-                val e = zip.getEntry(src)?.takeIf { !it.isDirectory } ?: return false
-                zip.getInputStream(e).use { input -> FileOutputStream(dest).use { input.copyTo(it) } }
+                if (zip.size() > 1_000) return false
+                val entry = zip.getEntry(src)?.takeIf { !it.isDirectory } ?: return false
+                if (entry.size > MAX_IMAGE_BYTES) return false
+                val temporary = Files.createTempFile(parent.toPath(), ".template-img-", ".tmp").toFile()
+                stage = temporary
+                zip.getInputStream(entry).use { input ->
+                    FileOutputStream(temporary).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        var total = 0L
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            total += read
+                            if (total > MAX_IMAGE_BYTES) throw java.io.IOException("Template image too large")
+                            output.write(buffer, 0, read)
+                        }
+                        output.fd.sync()
+                    }
+                }
+                Files.move(stage!!.toPath(), dest.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
                 true
             }
-        }.getOrDefault(false)
+        } catch (_: Exception) {
+            false
+        } finally {
+            stage?.delete()
+        }
     }
+
+    private const val MAX_IMAGE_BYTES = 32L * 1024L * 1024L
 
     /** Write a package of [json] and [pictures] (entry name to file) to [out]; pictures are stored, being compressed already. */
     fun write(out: File, json: String, pictures: List<Pair<String, File>>) {

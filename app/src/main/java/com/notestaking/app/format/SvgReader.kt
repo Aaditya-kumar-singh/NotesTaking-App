@@ -17,7 +17,6 @@ import com.notestaking.app.core.vector.VectorPath
 import com.notestaking.app.core.vector.VectorScene
 import com.notestaking.app.core.vector.VectorSeg
 import java.io.ByteArrayInputStream
-import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -45,13 +44,7 @@ object SvgReader {
      */
     fun parse(bytes: ByteArray, glyphs: GlyphOutliner? = null): VectorScene {
         val root = runCatching {
-            DocumentBuilderFactory.newInstance()
-                .apply {
-                    isNamespaceAware = true
-                    runCatching { setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false) }
-                    runCatching { isExpandEntityReferences = false }
-                }
-                .newDocumentBuilder()
+            SecureXml.builder()
                 .parse(ByteArrayInputStream(bytes))
                 .documentElement
         }.getOrNull() ?: return VectorScene.EMPTY

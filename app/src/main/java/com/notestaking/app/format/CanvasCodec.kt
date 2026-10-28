@@ -485,7 +485,9 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
         var manifest: ParsedManifest? = null
         val imageFiles = HashMap<String, File>()
         val audioFiles = HashMap<String, File>()
-        ZipInputStream(input).use { zis ->
+        val extracted = ArrayList<File>()
+        try {
+        BoundedZipInputStream(input).use { zis ->
             var entry: ZipEntry? = zis.nextEntry
             while (entry != null) {
                 if (!entry.isDirectory) {
@@ -503,6 +505,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
                     } else if (name.startsWith("assets/image-")) {
                         if (imageDir != null) {
                             val f = File.createTempFile("img", null, imageDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             imageFiles[name] = f
                         }
@@ -510,6 +513,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
                         // A recording streams to disk beside the images; it is played from the file.
                         if (imageDir != null) {
                             val f = File.createTempFile("aud", null, imageDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             audioFiles[name] = f
                         }
@@ -554,6 +558,10 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
         m.glue.resolve()
         doc.addAll(items)
         return doc
+        } catch (error: Exception) {
+            extracted.forEach { runCatching { it.delete() } }
+            throw error
+        }
     }
 
     /**
@@ -566,7 +574,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
 
     /** [peek] for a canvas that only comes as a stream. */
     fun peek(input: InputStream): CanvasPeek? = runCatching {
-        ZipInputStream(input).use { zis ->
+        BoundedZipInputStream(input).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
                 if (entry.name == "manifest.json") return@runCatching peekManifest(zis)

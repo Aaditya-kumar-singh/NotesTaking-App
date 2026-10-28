@@ -69,6 +69,27 @@ class TemplatePackageTest {
         assertThrows(TemplateFormatException::class.java) { TemplatePackage.readJson(temp("PK not a zip".toByteArray())) }
     }
 
+    @Test fun inflatedTemplateImageCannotReplaceExistingImage() {
+        val pkg = temp()
+        java.util.zip.ZipOutputStream(pkg.outputStream()).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry("images/oversized.png"))
+            val chunk = ByteArray(64 * 1024) { 88 }
+            repeat(33 * 16) { zip.write(chunk) }
+            zip.closeEntry()
+        }
+        val destination = temp("last-good-image".toByteArray())
+        assertFalse(TemplatePackage.extract(pkg, "images/oversized.png", destination))
+        assertEquals("last-good-image", destination.readText())
+    }
+
+    @Test fun templateImagePathRejectsBackslashDotAndControl() {
+        assertFalse(TemplatePackage.validSrc("images\\\\escape.png"))
+        assertFalse(TemplatePackage.validSrc("images/./photo.png"))
+        assertFalse(TemplatePackage.validSrc("images//photo.png"))
+        assertFalse(TemplatePackage.validSrc("images/\u0000photo.png"))
+        assertTrue(TemplatePackage.validSrc("images/..a.jpg"))
+    }
+
     @Test fun kindReadsCoverAndEverythingElseAsPage() {
         fun kindOf(v: String?) = TemplateReader.read(
             """{ "xtemplate": 1, "name": "x", ${if (v == null) "" else "\"kind\": $v,"} "items": [] }""",

@@ -15,7 +15,6 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * Reads/writes a note's text markups as `markups.xfdf` inside the `.xnote` bundle: XFDF (ISO
@@ -161,12 +160,7 @@ object MarkupsXfdf {
     }
 
     private fun parse(bytes: ByteArray): Element? = try {
-        val f = DocumentBuilderFactory.newInstance()
-        f.isNamespaceAware = true
-        f.isExpandEntityReferences = false
-        // A note is a file from anywhere: refuse document types, so no entity reaches out of it.
-        runCatching { f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
-        f.newDocumentBuilder().parse(ByteArrayInputStream(bytes)).documentElement
+        SecureXml.builder().parse(ByteArrayInputStream(bytes)).documentElement
     } catch (_: Exception) {
         null
     }

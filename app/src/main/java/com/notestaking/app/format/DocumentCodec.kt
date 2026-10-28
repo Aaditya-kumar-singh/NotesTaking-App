@@ -730,7 +730,9 @@ class DocumentCodec(
         val imageFiles = HashMap<String, File>()
         val audioFiles = HashMap<String, File>()
         var pdfFile: File? = null
-        ZipInputStream(input).use { zis ->
+        val extracted = ArrayList<File>() // roll back partial assets if decoding fails
+        try {
+        BoundedZipInputStream(input).use { zis ->
             var entry: ZipEntry? = zis.nextEntry
             while (entry != null) {
                 if (!entry.isDirectory) {
@@ -755,6 +757,7 @@ class DocumentCodec(
                         if (pdfDir != null) {
                             val started = System.nanoTime()
                             val f = File.createTempFile("src", ".pdf", pdfDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             pdfFile = f
                             timing?.assetsMs += (System.nanoTime() - started) / 1_000_000L
@@ -765,6 +768,7 @@ class DocumentCodec(
                         if (imageDir != null) {
                             val started = System.nanoTime()
                             val f = File.createTempFile("img", null, imageDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             imageFiles[name] = f
                             timing?.assetsMs += (System.nanoTime() - started) / 1_000_000L
@@ -774,6 +778,7 @@ class DocumentCodec(
                         if (imageDir != null) {
                             val started = System.nanoTime()
                             val f = File.createTempFile("aud", null, imageDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             audioFiles[name] = f
                             timing?.assetsMs += (System.nanoTime() - started) / 1_000_000L
@@ -783,6 +788,7 @@ class DocumentCodec(
                         val key = name.substring(TEMPLATE_ASSET.length, name.length - TEMPLATE_EXT.length)
                         if (imageDir != null && TEMPLATE_KEY.matches(key)) {
                             val f = File.createTempFile("tpl", TEMPLATE_EXT, imageDir)
+                            extracted.add(f)
                             FileOutputStream(f).use { zis.copyTo(it) }
                             packages[key] = f
                         }
@@ -875,6 +881,10 @@ class DocumentCodec(
             timing?.compactMs = (System.nanoTime() - compactStart) / 1_000_000L
         }
         return doc
+        } catch (error: Exception) {
+            extracted.forEach { runCatching { it.delete() } }
+            throw error
+        }
     }
 
     // --- streaming json -> model ---
@@ -934,7 +944,7 @@ class DocumentCodec(
 
     /** [peek] for a note that only comes as a stream: reads through to the manifest, skipping what comes before it. */
     fun peek(input: InputStream): NotePeek? = runCatching {
-        ZipInputStream(input).use { zis ->
+        BoundedZipInputStream(input).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
                 if (entry.name == "manifest.json") return@runCatching peekManifest(zis)
