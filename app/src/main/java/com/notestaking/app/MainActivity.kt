@@ -361,7 +361,7 @@ private fun EditorScreen(
             val name = displayNameOf(resolver, uri)
             target.saveToThen(uri.toString(), name) { saved ->
                 completeGuardedSave(saved)
-                else target.message = resources.getString(R.string.err_save_note)
+                if (!saved) target.message = resources.getString(R.string.err_save_note)
             }
         }
     }
@@ -377,7 +377,7 @@ private fun EditorScreen(
             val name = displayNameOf(resolver, uri)
             target.saveCanvasToThen(uri.toString(), name) { saved ->
                 completeGuardedSave(saved)
-                else target.message = resources.getString(R.string.err_save_note)
+                if (!saved) target.message = resources.getString(R.string.err_save_note)
             }
         }
     }
