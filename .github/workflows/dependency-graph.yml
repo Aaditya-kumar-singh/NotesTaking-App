@@ -1,13 +1,8 @@
 name: Android Dependency Graph
 
+# The repository must have GitHub Dependency Graph enabled before this
+# workflow can upload Gradle snapshots. Keep it manual until that setting is on.
 on:
-  push:
-    branches: [master, main]
-    paths:
-      - "**/*.gradle.kts"
-      - "gradle/**"
-      - "settings.gradle.kts"
-      - ".github/workflows/dependency-graph.yml"
   workflow_dispatch:
 
 permissions:
