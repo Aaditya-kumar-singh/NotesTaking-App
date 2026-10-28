@@ -86,6 +86,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.IntentCompat
 import androidx.core.view.WindowInsetsCompat
@@ -202,6 +203,9 @@ class MainActivity : ComponentActivity() {
     // Stylus side-button keys (Bluetooth/USI pens report the button only this way) are caught here,
     // before Compose focus routing, so the controller sees both press and release regardless of
     // which view holds focus. Other keys fall through to the normal dispatch.
+    // Overriding ComponentActivity's dispatch method is required to intercept stylus keys.
+    // The upstream method carries a library-group restriction; we only call super on other events.
+    @Suppress("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         // The pen writes in whichever pane has the focus, so its button keys go to that pane too.
         if (editor?.active?.onStylusButtonKey(event) == true) return true
@@ -301,6 +305,7 @@ private fun EditorScreen(
     onImportConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val snackbar = remember { SnackbarHostState() }
     // The LaTeX renderer resolves its fonts through the composition, so this is the
     // only place it can be built; the flow reaches it through MathRendering after.
@@ -354,7 +359,7 @@ private fun EditorScreen(
             val name = displayNameOf(resolver, it)
             runCatching { resolver.openOutputStream(it, "wt")?.use { o -> savePane.save(o, it.toString(), name) } }
                 .onSuccess { val p = pendingAfterSave; pendingAfterSave = null; p?.invoke() }
-                .onFailure { editor.message = context.getString(R.string.err_save_note); pendingAfterSave = null }
+                .onFailure { editor.message = resources.getString(R.string.err_save_note); pendingAfterSave = null }
         }
     }
 
@@ -384,7 +389,7 @@ private fun EditorScreen(
         if (temp != null) {
             if (uri != null) {
                 val ok = runCatching { resolver.openOutputStream(uri)?.use { o -> temp.inputStream().use { it.copyTo(o) } } != null }.getOrDefault(false)
-                editor.message = if (ok) context.getString(R.string.exported_pdf) else context.getString(R.string.err_export_pdf)
+                editor.message = if (ok) resources.getString(R.string.exported_pdf) else resources.getString(R.string.err_export_pdf)
             }
             temp.delete() // discard the temp whether saved or the picker was dismissed
         }
@@ -401,11 +406,11 @@ private fun EditorScreen(
             val r = editor.exportPdfsAsync(root, pending.picked, uri.toString())
             when {
                 r.cancelled -> null
-                r.found == 0 -> context.getString(R.string.no_notes_to_export)
-                !r.kept -> context.getString(R.string.err_export_pdf)
-                com.notestaking.app.ui.lonePdf(pending.picked) != null -> context.getString(R.string.exported_pdf)
-                r.written < r.found -> context.getString(R.string.exported_some_pdfs, r.written, r.found)
-                else -> context.resources.getQuantityString(R.plurals.exported_pdfs, r.written, r.written)
+                r.found == 0 -> resources.getString(R.string.no_notes_to_export)
+                !r.kept -> resources.getString(R.string.err_export_pdf)
+                com.notestaking.app.ui.lonePdf(pending.picked) != null -> resources.getString(R.string.exported_pdf)
+                r.written < r.found -> resources.getString(R.string.exported_some_pdfs, r.written, r.found)
+                else -> resources.getQuantityString(R.plurals.exported_pdfs, r.written, r.written)
             }?.let { editor.message = it }
         }
     }
@@ -419,7 +424,7 @@ private fun EditorScreen(
         val src = pendingSaveCopyUri; pendingSaveCopyUri = null
         if (uri != null && src != null) {
             runCatching { resolver.openOutputStream(uri)?.use { o -> editor.copyFileTo(src, o) } }
-                .onFailure { editor.message = context.getString(R.string.err_save_copy) }
+                .onFailure { editor.message = resources.getString(R.string.err_save_copy) }
         }
     }
 
@@ -435,7 +440,7 @@ private fun EditorScreen(
                     val png = pending.editor.pageImagePng(index) ?: return@runCatching false
                     resolver.openOutputStream(uri)?.use { it.write(png) } != null
                 }.getOrDefault(false)
-                if (!ok) editor.message = context.getString(R.string.err_save_image)
+                if (!ok) editor.message = resources.getString(R.string.err_save_image)
             }
         }
     }
@@ -462,7 +467,7 @@ private fun EditorScreen(
                     }
                     n
                 }.getOrDefault(0)
-                editor.message = if (saved > 0) context.resources.getQuantityString(R.plurals.saved_images, saved, saved) else context.getString(R.string.err_save_images)
+                editor.message = if (saved > 0) resources.getQuantityString(R.plurals.saved_images, saved, saved) else resources.getString(R.string.err_save_images)
             }
         }
     }
@@ -472,7 +477,7 @@ private fun EditorScreen(
         if (uri != null && pending != null) {
             runCatching {
                 resolver.openInputStream(uri)?.use { s -> pending.editor.insertImageAt(s.readBytes(), pending.at) }
-            }.onFailure { editor.message = context.getString(R.string.err_read_image) }
+            }.onFailure { editor.message = resources.getString(R.string.err_read_image) }
         }
     }
 
@@ -491,7 +496,7 @@ private fun EditorScreen(
         } else {
             // Once Android stops asking, only Settings can grant it, so the message offers the way there.
             val asks = activity?.let { androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(it, android.Manifest.permission.RECORD_AUDIO) } == true
-            val settings = context.getString(R.string.mic_settings) to {
+            val settings = resources.getString(R.string.mic_settings) to {
                 runCatching {
                     context.startActivity(
                         Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
@@ -500,7 +505,7 @@ private fun EditorScreen(
                 }
                 Unit
             }
-            pane.say(context.getString(R.string.err_mic_needed), if (asks) null else settings)
+            pane.say(resources.getString(R.string.err_mic_needed), if (asks) null else settings)
         }
     }
 
@@ -516,7 +521,7 @@ private fun EditorScreen(
             val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 runCatching { resolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } } != null }.getOrDefault(false)
             }
-            pane.say(context.getString(if (ok) R.string.audio_saved else R.string.err_save_audio))
+            pane.say(resources.getString(if (ok) R.string.audio_saved else R.string.err_save_audio))
         }
     }
 
@@ -538,7 +543,7 @@ private fun EditorScreen(
     val addStickersLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
             runCatching { resolver.openInputStream(uri)?.use { s -> editor.addSticker(s.readBytes()) } }
-                .onFailure { editor.message = context.getString(R.string.err_read_image) }
+                .onFailure { editor.message = resources.getString(R.string.err_read_image) }
         }
     }
 
@@ -548,7 +553,7 @@ private fun EditorScreen(
             runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }
                 .getOrNull()
                 ?.let { editor.importCodeTheme(it, displayNameOf(resolver, uri)) }
-                ?: run { editor.message = context.getString(R.string.err_read_file) }
+                ?: run { editor.message = resources.getString(R.string.err_read_file) }
         }
     }
 
@@ -569,7 +574,7 @@ private fun EditorScreen(
             runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }
                 .getOrNull()
                 ?.let { editor.importFont(it, displayNameOf(resolver, uri)) }
-                ?: run { editor.message = context.getString(R.string.err_read_file) }
+                ?: run { editor.message = resources.getString(R.string.err_read_file) }
         }
     }
 
@@ -623,7 +628,7 @@ private fun EditorScreen(
             val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 runCatching { resolver.openOutputStream(uri, "wt")?.use { editor.exportSettings(it) } != null }.getOrDefault(false)
             }
-            editor.message = context.getString(if (ok) R.string.settings_exported else R.string.err_export_settings)
+            editor.message = resources.getString(if (ok) R.string.settings_exported else R.string.err_export_settings)
         }
     }
     var pendingBackup by remember { mutableStateOf<Editor.SettingsBackup?>(null) }
@@ -633,7 +638,7 @@ private fun EditorScreen(
             val backup = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 runCatching { resolver.openInputStream(uri)?.use { editor.readSettingsBackup(it) } }.getOrNull()
             }
-            if (backup == null) editor.message = context.getString(R.string.err_import_settings) else pendingBackup = backup
+            if (backup == null) editor.message = resources.getString(R.string.err_import_settings) else pendingBackup = backup
         }
     }
 
@@ -662,7 +667,7 @@ private fun EditorScreen(
             takePhotoLauncher.launch(uri)
         } catch (_: android.content.ActivityNotFoundException) {
             pendingPhoto = null
-            pane.message = context.getString(R.string.err_no_camera)
+            pane.message = resources.getString(R.string.err_no_camera)
         }
     }
 
@@ -707,7 +712,7 @@ private fun EditorScreen(
             // A file that would not open leaves no half-built pane behind; the other stays as it is.
             if (!second.noteOpen) {
                 editor.abandonSecondary()
-                editor.message = context.getString(R.string.err_open_second)
+                editor.message = resources.getString(R.string.err_open_second)
             }
         }
     }
@@ -765,7 +770,7 @@ private fun EditorScreen(
                 when {
                     cancel.get() -> temp.delete()
                     ok -> onReady(temp)
-                    else -> { temp.delete(); if (exportCancel === cancel) editor.message = context.getString(R.string.err_export_pdf) }
+                    else -> { temp.delete(); if (exportCancel === cancel) editor.message = resources.getString(R.string.err_export_pdf) }
                 }
             }
         }
@@ -778,7 +783,7 @@ private fun EditorScreen(
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_named, stem)))
+        context.startActivity(Intent.createChooser(send, resources.getString(R.string.share_named, stem)))
     }
 
     fun shareFile(uriStr: String, asPdf: Boolean) {
@@ -787,7 +792,7 @@ private fun EditorScreen(
             // Render with progress, then share the finished PDF (writes into cache/share for FileProvider).
             runPdfExport(stem, shareDir = true, counting = countingOf(uriStr),
                 render = { o, prog, cancel -> editor.exportFileToPdf(uriStr, o, prog, cancel) },
-                onReady = { temp -> runCatching { launchShare(temp, stem, "application/pdf") }.onFailure { editor.message = context.getString(R.string.err_share_note) } })
+                onReady = { temp -> runCatching { launchShare(temp, stem, "application/pdf") }.onFailure { editor.message = resources.getString(R.string.err_share_note) } })
         } else {
             // Sharing the bundle itself is just a fast byte copy — no render, no dialog needed. It
             // keeps the source's own extension, so a canvas is shared as a canvas.
@@ -797,7 +802,7 @@ private fun EditorScreen(
                 val file = java.io.File(dir, "$stem${kindOf(uriStr).suffix}")
                 java.io.FileOutputStream(file).use { o -> editor.copyFileTo(uriStr, o) }
                 launchShare(file, stem, "application/octet-stream")
-            }.onFailure { editor.message = context.getString(R.string.err_share_note) }
+            }.onFailure { editor.message = resources.getString(R.string.err_share_note) }
         }
     }
 
@@ -828,7 +833,7 @@ private fun EditorScreen(
                 }
             }.getOrNull()
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                if (intent != null) context.startActivity(Intent.createChooser(intent, context.resources.getQuantityString(R.plurals.share_n_notes, uris.size, uris.size))) else editor.message = context.getString(R.string.err_share_notes)
+                if (intent != null) context.startActivity(Intent.createChooser(intent, resources.getQuantityString(R.plurals.share_n_notes, uris.size, uris.size))) else editor.message = resources.getString(R.string.err_share_notes)
             }
         }
     }
@@ -840,7 +845,7 @@ private fun EditorScreen(
         if (asPdf) {
             runPdfExport(stem, shareDir = true,
                 render = { o, prog, cancel -> from.exportPagesToPdf(pages, o, prog, cancel) },
-                onReady = { temp -> runCatching { launchShare(temp, stem, "application/pdf") }.onFailure { editor.message = context.getString(R.string.err_share_pages) } })
+                onReady = { temp -> runCatching { launchShare(temp, stem, "application/pdf") }.onFailure { editor.message = resources.getString(R.string.err_share_pages) } })
             return
         }
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
@@ -862,7 +867,7 @@ private fun EditorScreen(
                 }
             }.getOrNull()
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                if (intent != null) context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_named, stem))) else editor.message = context.getString(R.string.err_share_pages)
+                if (intent != null) context.startActivity(Intent.createChooser(intent, resources.getString(R.string.share_named, stem))) else editor.message = resources.getString(R.string.err_share_pages)
             }
         }
     }
@@ -1018,7 +1023,7 @@ private fun EditorScreen(
                 onTakePhoto = { pane -> takePhoto(pane) },
                 onShareImage = { file ->
                     runCatching { launchShare(file, file.nameWithoutExtension, "image/png") }
-                        .onFailure { editor.message = context.getString(R.string.err_share_image) }
+                        .onFailure { editor.message = resources.getString(R.string.err_share_image) }
                 },
                 onOpenFile = { pane, uri -> scope.launch { openInto(pane, uri) } },
                 onAddStickers = { addStickersLauncher.launch(arrayOf("image/*")) },
@@ -1038,8 +1043,8 @@ private fun EditorScreen(
                                 java.io.File(dir, audioFileName(item)).also { item.audio.file.copyTo(it, overwrite = true) }
                             }.getOrNull()
                         }
-                        if (shared == null) pane.say(context.getString(R.string.err_share_audio))
-                        else runCatching { launchShare(shared, item.name, audioMime(item.audio.ext)) }.onFailure { pane.say(context.getString(R.string.err_share_audio)) }
+                        if (shared == null) pane.say(resources.getString(R.string.err_share_audio))
+                        else runCatching { launchShare(shared, item.name, audioMime(item.audio.ext)) }.onFailure { pane.say(resources.getString(R.string.err_share_audio)) }
                     }
                 },
                 onRecordAudio = { pane ->

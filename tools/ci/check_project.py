@@ -111,6 +111,24 @@ strings = ET.parse(RES / "values/strings.xml").getroot()
 lookup = {node.get("name"): node.text for node in strings if node.tag == "string"}
 require(lookup.get("app_name") == "NotesTaking App", "Incorrect launcher display name")
 
+# All translatable default strings must have explicit Simplified Chinese values.
+# English fallback text is retained for entries whose Chinese translation is pending.
+zh_strings = ET.parse(RES / "values-b+zh+Hans/strings.xml").getroot()
+zh_keys = {node.get("name") for node in zh_strings if node.tag == "string"}
+for node in strings:
+    if node.tag == "string" and node.get("translatable") != "false":
+        require(node.get("name") in zh_keys,
+                "Missing Chinese fallback string: " + str(node.get("name")))
+
+renderer = read("app/src/main/java/com/notestaking/app/platform/AndroidRenderer.kt")
+require("if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n            nativeBlend(blend)?.let" in renderer,
+        "Android 26 raster blend API guard missing")
+for name in ("app/src/main/java/com/notestaking/app/MainActivity.kt",
+             "app/src/main/java/com/notestaking/app/ui/Backstage.kt",
+             "app/src/main/java/com/notestaking/app/ui/TrashPane.kt"):
+    text = read(name)
+    require("LocalResources.current" in text, "Compose locale-aware resource local missing: " + name)
+
 drawables = {p.stem for p in RES.rglob("*.png")}
 drawables.update(p.stem for p in RES.rglob("*.xml"))
 for item in RES.rglob("*.xml"):

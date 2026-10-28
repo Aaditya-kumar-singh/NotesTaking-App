@@ -767,7 +767,7 @@ class CanvasView @JvmOverloads constructor(
     fun setUnbufferedStylus(on: Boolean) {
         if (android.os.Build.VERSION.SDK_INT < 30) return
         requestUnbufferedDispatch(
-            if (on) android.view.InputDevice.SOURCE_STYLUS else android.view.InputDevice.SOURCE_CLASS_NONE,
+            if (on) android.view.InputDevice.SOURCE_CLASS_POINTER else android.view.InputDevice.SOURCE_CLASS_NONE,
         )
     }
 

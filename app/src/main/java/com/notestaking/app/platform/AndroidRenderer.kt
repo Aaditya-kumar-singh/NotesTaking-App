@@ -316,7 +316,9 @@ class AndroidRenderer(private val canvas: Canvas) : Renderer {
         rasterBlendPaint.isFilterBitmap = true
         rasterBlendPaint.isDither = true
         rasterBlendPaint.alpha = (alpha.coerceIn(0.0, 1.0) * 255).toInt()
-        nativeBlend(blend)?.let { rasterBlendPaint.blendMode = it }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            nativeBlend(blend)?.let { rasterBlendPaint.blendMode = it }
+        }
         val srcRect = src?.let {
             android.graphics.Rect(it.left.toInt(), it.top.toInt(), it.right.toInt(), it.bottom.toInt())
         }
