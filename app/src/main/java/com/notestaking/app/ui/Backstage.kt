@@ -2009,7 +2009,7 @@ private fun ExplorerSection(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                DestructiveTextButton(onClick = {
                     val items = targets.toList()
                     pendingDelete = null; selection.clear(); opError = null
                     scope.launch {
@@ -2321,7 +2321,7 @@ private fun NameDialog(
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onRemove != null) TextButton(onClick = onRemove) { Text(stringResource(R.string.delete)) }
+                if (onRemove != null) DestructiveTextButton(onClick = onRemove) { Text(stringResource(R.string.delete)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },

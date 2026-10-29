@@ -1,6 +1,6 @@
 # NotesTaking App — Brand/UI Screen and Component Audit Matrix
 
-**Created:** 2026-10-28. **Document state:** Planning audit based on code only; no device screenshot validation yet.
+**Created:** 2026-10-28. **Document state:** Planning audit with partial BR-1 / BR-3 / BR-4 source changes on `feature/modern-paper-ink-foundation`; no device screenshot validation yet. See `docs/engineering/BRAND_DIALOG_CANVAS_BATCH_2026-10-29.md`.
 **Companion:** VISUAL_BRANDING_THEME_AND_INTERACTIONS_PLAN.md
 **Tag meanings:** EXISTING = source evidence; REVIEW = visually unverified/needs QA; UPGRADE = proposed consistency work.
 
@@ -69,4 +69,4 @@
 - BR-4: screens use shared components, stylus/scroll/nav unchanged.
 - BR-5: Android CI + real-device side-by-side screenshot QA, accessibility and release icon resources.
 
-All tasks are PLANNED and need code changes, builds, tests and device verification before they are called complete.
+Some first-pass brand assets, popup styles and canvas chrome are implemented in source. The remaining redesign and all final visual/device acceptance gates are pending; no UI item is considered fully verified until Android CI and hardware review pass.
