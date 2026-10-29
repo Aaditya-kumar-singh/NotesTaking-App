@@ -1,9 +1,10 @@
 name: Android CI
 
 on:
-  # Only integrated main receives automatic post-merge verification.
+  # Local commits are free; each reviewed branch push publishes a batch and starts CI.
+  # ** includes branch names with slashes (feature/, fix/, chore/, etc.).
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review]
@@ -52,7 +53,7 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
-      # Default to ARM64 on PRs; Select native ABI coverage overrides this for native/build changes.
+      # Default to ARM64 on feature branches; native/build changes select all three ABIs.
       CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && !inputs.full_abis }}
     steps:
       - name: Check out code
@@ -67,9 +68,27 @@ jobs:
         run: |
           set -euo pipefail
           arm64_only="$CI_ARM64_ONLY"
+          compare_base=""
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             # PR checkout is the merge commit; its first parent is the target branch.
-            changed=$(git diff --name-only HEAD^1 HEAD -- \
+            compare_base=HEAD^1
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" != "refs/heads/main" ]]; then
+            # Compare the entire pushed batch, not only its last commit.
+            before="${{ github.event.before }}"
+            if [[ "$before" =~ ^[0-9a-f]{40}$ && ! "$before" =~ ^0+$ ]]; then
+              git cat-file -e "$before^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$before" || true
+              if git cat-file -e "$before^{commit}" 2>/dev/null; then
+                compare_base="$before"
+              fi
+            fi
+            if [[ -z "$compare_base" ]]; then
+              # Initial branch pushes and rewritten history use main as a safe baseline.
+              git fetch --no-tags --depth=1 origin main
+              compare_base=FETCH_HEAD
+            fi
+          fi
+          if [[ -n "$compare_base" ]]; then
+            changed=$(git diff --name-only "$compare_base" HEAD -- \
               app/src/main/cpp/ app/src/main/jniLibs/ \
               app/build.gradle.kts build.gradle.kts settings.gradle.kts \
               gradle.properties gradle/ \
