@@ -893,6 +893,7 @@ private fun ExplorerSection(
     link: ExplorerLink,
 ) {
     val palette = LocalPalette.current
+    val focusManager = LocalFocusManager.current
     val root = editor.browseRoot
     val nav = link.nav
     if (root == null) {
@@ -1360,11 +1361,20 @@ private fun ExplorerSection(
     LaunchedEffect(opError) { opError?.let { editor.say(it); opError = null } }
     val empty = when {
         colorFilter != null && colorResults == null -> EmptyState(stringResource(R.string.finding))
-        colorFilter != null && colorResults!!.isEmpty() -> EmptyState(stringResource(R.string.nothing_this_colour), EmptyArt.SEARCH)
+        colorFilter != null && colorResults!!.isEmpty() -> EmptyState(
+            stringResource(R.string.nothing_this_colour), EmptyArt.SEARCH,
+            recovery = EmptyRecovery(stringResource(R.string.clear_colour_filter)) { colorFilter = null; selection.clear() },
+        )
         searching && results == null -> EmptyState(stringResource(R.string.searching))
-        searching && results!!.isEmpty() -> EmptyState(stringResource(R.string.no_notes_match, trimmed), EmptyArt.SEARCH)
+        searching && results!!.isEmpty() -> EmptyState(
+            stringResource(R.string.no_notes_match, trimmed), EmptyArt.SEARCH,
+            recovery = EmptyRecovery(stringResource(R.string.clear_search)) { query = ""; focusManager.clearFocus() },
+        )
         showRecent && recents == null -> EmptyState(stringResource(R.string.loading))
-        showRecent && recents!!.isEmpty() -> EmptyState(stringResource(R.string.recent_empty), EmptyArt.RECENT)
+        showRecent && recents!!.isEmpty() -> EmptyState(
+            stringResource(R.string.recent_empty), EmptyArt.RECENT,
+            recovery = EmptyRecovery(stringResource(R.string.home)) { showRecent = false; stack.clear(); selection.clear() },
+        )
         source == null -> EmptyState(stringResource(R.string.loading))
         layout == ExplorerLayout.COLUMNS -> null
         pinned.isNotEmpty() -> null
@@ -1381,6 +1391,7 @@ private fun ExplorerSection(
                 EntryKind.CANVAS -> stringResource(R.string.kind_no_canvases)
             },
             EmptyArt.SEARCH,
+            recovery = if (kindFilter == null) null else EmptyRecovery(stringResource(R.string.all_kinds)) { kindFilter = null },
         )
         else -> null
     }
@@ -1607,18 +1618,21 @@ private fun ExplorerSection(
                 empty != null && !shelves -> Column(Modifier.fillMaxSize()) {
                     Spacer(Modifier.height(EXPLORER_HEADER))
                     chipRow(48.dp)
-                    EmptyPane(empty.text, empty.art, if (!empty.offersCreate) null else { {
-                        PrimaryButton(NotesTakingIcons.edit, stringResource(R.string.new_note_menu)) { onCreateMode(CreateMode.FILE) }
-                        TextButton(onClick = { onCreateMode(CreateMode.CANVAS) }) {
-                            Icon(NotesTakingIcons.canvas, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.new_canvas_menu))
+                    EmptyPane(empty.text, empty.art, if (!empty.offersCreate && empty.recovery == null) null else { {
+                        if (empty.offersCreate) {
+                            PrimaryButton(NotesTakingIcons.edit, stringResource(R.string.new_note_menu)) { onCreateMode(CreateMode.FILE) }
+                            TextButton(onClick = { onCreateMode(CreateMode.CANVAS) }) {
+                                Icon(NotesTakingIcons.canvas, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.new_canvas_menu))
+                            }
+                            TextButton(onClick = calls.importPdf) {
+                                Icon(NotesTakingIcons.importDoc, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.import_pdf))
+                            }
                         }
-                        TextButton(onClick = calls.importPdf) {
-                            Icon(NotesTakingIcons.importDoc, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.import_pdf))
-                        }
+                        empty.recovery?.let { action -> TextButton(onClick = action.onClick) { Text(action.label) } }
                     } })
                 }
                 layout == ExplorerLayout.GRID -> GridBody(body, gridState, gridColumns(screenWidthDp, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())
@@ -2395,8 +2409,16 @@ private fun PrimaryButton(icon: ImageVector, label: String, modifier: Modifier =
     }
 }
 
-/** What an empty explorer body says, the picture above it, and whether it offers to make something. */
-private class EmptyState(val text: String, val art: EmptyArt? = null, val offersCreate: Boolean = false)
+/** A contextual way out of an empty filtered or recent view. */
+private class EmptyRecovery(val label: String, val onClick: () -> Unit)
+
+/** What an empty explorer body says, the picture above it, and its available actions. */
+private class EmptyState(
+    val text: String,
+    val art: EmptyArt? = null,
+    val offersCreate: Boolean = false,
+    val recovery: EmptyRecovery? = null,
+)
 
 /** An empty body: a picture, what is (not) here, and ways to fill it; scrolls when the window is short. */
 @OptIn(ExperimentalLayoutApi::class)
