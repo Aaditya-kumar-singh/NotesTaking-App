@@ -3,8 +3,12 @@ package com.notestaking.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -58,7 +62,7 @@ fun TextStyleBar(editor: TextEditHost) {
 
     // The bar wraps its content so a long font name never clips the trailing controls;
     // its width is known only after layout, so centre by an estimate then the measured value.
-    var measuredWidthPx by remember { mutableStateOf<Float?>(null) }
+    var measuredWidthPx by remember(bar.editing) { mutableStateOf<Float?>(null) }
     val estWidth = if (bar.editing) 264.dp else 216.dp
     val barHeightPx = with(density) { 48.dp.toPx() }
     val barWidthPx = measuredWidthPx ?: with(density) { estWidth.toPx() }
@@ -70,23 +74,30 @@ fun TextStyleBar(editor: TextEditHost) {
 
     val rect = bar.rect
     val centerX = ((rect.left + rect.right) / 2.0).toFloat()
-    val xPx = (centerX - barWidthPx / 2f).coerceAtLeast(minX)
     val above = rect.top.toFloat() - barHeightPx - gapPx - stackPx
     val yPx = if (above > 0f) above else rect.bottom.toFloat() + gapPx + stackPx
-
-    val xDp = with(density) { xPx.toDp() }
     val yDp = with(density) { yPx.toDp() }
 
-    // Tips open upward so they don't cover the box being styled.
-    CompositionLocalProvider(LocalTipSide provides TipSide.ABOVE) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // The toolbar may be wider than a narrow editor pane; keep it onscreen and scroll its contents.
+        val maxBarWidth = (maxWidth - 16.dp).coerceAtLeast(48.dp)
+        val visibleWidthPx = minOf(barWidthPx, with(density) { maxBarWidth.toPx() })
+        val xDp = with(density) {
+            textStyleBarLeft(centerX, visibleWidthPx, maxWidth.toPx(), minX).toDp()
+        }
+
+        // Tips open upward so they don't cover the box being styled.
+        CompositionLocalProvider(LocalTipSide provides TipSide.ABOVE) {
         Row(
             modifier = Modifier
                 .offset(xDp, yDp)
+                .widthIn(max = maxBarWidth)
                 .height(48.dp)
                 .onSizeChanged { measuredWidthPx = it.width.toFloat() }
                 .clip(MaterialTheme.shapes.medium)
                 .background(palette.menuBg.toComposeColor())
-                .border(1.dp, palette.border.toComposeColor(), MaterialTheme.shapes.medium),
+                .border(1.dp, palette.border.toComposeColor(), MaterialTheme.shapes.medium)
+                .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FacePicker(current = bar.face) { editor.setTextFace(it) }
@@ -116,8 +127,13 @@ fun TextStyleBar(editor: TextEditHost) {
                 }
             }
         }
+        }
     }
 }
+
+/** Bar positioning stays within its editor pane even when the text box is at the right edge. */
+internal fun textStyleBarLeft(centerX: Float, barWidth: Float, viewportWidth: Float, margin: Float): Float =
+    (centerX - barWidth / 2f).coerceIn(margin, (viewportWidth - barWidth - margin).coerceAtLeast(margin))
 
 @Composable
 private fun FacePicker(current: FontFace, onPick: (FontFace) -> Unit) {

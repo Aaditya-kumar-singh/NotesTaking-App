@@ -30,7 +30,7 @@
 | UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, Backstage.kt | EXISTING | Shared hover/selection/thumbnail/metadata states | BR-4 |
 | UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | REVIEW | BrandEmptyState with one key action, no huge illustrations | BR-4 |
 | UI-22 | New note screen | ui/NewNoteScreen.kt | EXISTING | Clear creation steps and template cards | BR-4 |
-| UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt, TextStyleBar.kt, TextFormatBar.kt | PARTIAL SOURCE FIX: floating text-box font-size and bottom text-format +/- controls now use 48dp accessible buttons and 6–96 pt disabled boundaries; floating bar height/Done target match | Verify toolbar anchor near viewport edges, text editing/Undo, keyboard, TalkBack and 200% text on phone/tablet | BR-4 |
+| UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt, TextStyleBar.kt, TextFormatBar.kt | PARTIAL SOURCE FIX: 48dp font-size and Done controls, 6–96 pt disabled boundaries; floating bar now clamps to the measured pane and scrolls when too wide | Verify right-edge anchoring, horizontal scrolling/Done, text editing/Undo, keyboard, TalkBack and 200% font scale on phone/tablet | BR-4 |
 | UI-24 | Infinite canvas controls | ui/InfiniteEditor.kt, InfiniteToolbar.kt | EXISTING | Match note editor token hierarchy without GL changes | BR-4 |
 | UI-25 | Eraser picker and preview | ui/Popups.kt:919+, controllers | EXISTING: Stroke/Area/size slider | See CV-061–070, live radius and better preset controls | BR-4 |
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |

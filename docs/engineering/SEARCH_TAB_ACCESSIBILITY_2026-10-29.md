@@ -1,8 +1,8 @@
 # Search tab touch targets and result accessibility — local checkpoint
 
-**Branch:** `feature/shape-count-controls-a11y` (not pushed).
+**Branch:** `feature/shape-count-controls-a11y` (batch verification branch).
 **Base:** Paper & Ink PR #8, commit `e181918`.
-**Status:** Source-only implementation; Android compilation and device acceptance still required.
+**Status:** Source-level verification complete; GitHub compilation and device acceptance still required.
 
 ## What changed
 

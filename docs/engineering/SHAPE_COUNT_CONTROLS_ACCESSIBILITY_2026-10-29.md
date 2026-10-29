@@ -1,7 +1,7 @@
 # Shape count controls — local accessibility checkpoint (2026-10-29)
 
 **Branch:** `feature/shape-count-controls-a11y`, based on Paper & Ink PR #8 at `e181918`.
-**Status:** Source-only implementation; no push, Android build, or hardware acceptance.
+**Status:** Source-only implementation; GitHub build and hardware acceptance are pending on the published batch SHA.
 
 ## Implemented
 - The Shape popup's star-point/polygon-side count and the selection-style popup's existing shape-count editor use **48 x 48 dp** Material IconButton hit targets with 8dp horizontal spacing.
