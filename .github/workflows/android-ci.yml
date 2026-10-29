@@ -27,8 +27,11 @@ jobs:
       - name: Verify project structure, brand and assets
         run: python3 tools/ci/check_project.py
 
+      - name: Verify backup and device-transfer privacy rules
+        run: python3 tools/ci/check_backup_privacy.py
+
       - name: Check support scripts
-        run: python3 -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py
+        run: python3 -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py tools/ci/check_backup_privacy.py
 
   build-debug:
     name: JDK 17 / tests / lint / debug APK
