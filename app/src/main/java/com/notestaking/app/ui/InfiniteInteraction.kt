@@ -174,6 +174,7 @@ class InfiniteInteraction(
     private val stylusButtons = StylusButtonLatch()
 
     private var eraseSession: EraseSession? = null
+    private var previousErasePoint: Pt? = null
 
     // The shape being dragged out with the shape tool.
     private var pendingShape: ShapeItem? = null
@@ -1820,7 +1821,8 @@ class InfiniteInteraction(
     private fun beginErase(vx: Double, vy: Double) {
         eraseSession = onEraseBegin() ?: return
         mode = CanvasPointerMode.ERASE
-        eraseAt(vx, vy)
+        previousErasePoint = null
+        eraseAlong(vx, vy)
     }
 
     private fun extendErase(e: MotionEvent) {
@@ -1829,9 +1831,17 @@ class InfiniteInteraction(
         // The historical points matter here as much as when drawing: a fast sweep that only sampled
         // the newest event would skip over strokes between one frame and the next.
         for (h in 0 until e.historySize) {
-            eraseAt(e.getHistoricalX(idx, h).toDouble(), e.getHistoricalY(idx, h).toDouble())
+            eraseAlong(e.getHistoricalX(idx, h).toDouble(), e.getHistoricalY(idx, h).toDouble())
         }
-        eraseAt(e.getX(idx).toDouble(), e.getY(idx).toDouble())
+        eraseAlong(e.getX(idx).toDouble(), e.getY(idx).toDouble())
+    }
+
+    private fun eraseAlong(vx: Double, vy: Double) {
+        val next = Pt(vx, vy)
+        com.notestaking.app.core.geometry.EraserSweep.visit(
+            previousErasePoint, next, eraserRadius() * viewport.zoom,
+        ) { eraseAt(it.x, it.y) }
+        previousErasePoint = next
     }
 
     private fun eraseAt(vx: Double, vy: Double) {
@@ -1845,6 +1855,7 @@ class InfiniteInteraction(
     private fun endErase() {
         val session = eraseSession ?: return
         eraseSession = null
+        previousErasePoint = null
         onEraserCursor(null, 0.0)
         onEraseEnd(session)
         requestRender()
