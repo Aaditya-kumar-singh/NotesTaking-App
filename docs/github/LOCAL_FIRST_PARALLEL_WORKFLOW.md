@@ -31,7 +31,7 @@ The two lanes overlap. While PR X is building, continue task Y locally on anothe
 ## 3. Branch and release discipline
 
 - `main`: GitHub integration branch. No direct unverified push or merge without checks. GitHub's **default branch is still `master`**, which needs an admin-reviewed change; don't change it automatically.
-- `feature/modern-paper-ink-foundation`: published **PR #8** at SHA `e181918`, ready for review; **do not add the next feature to this live CI branch**.
+- `feature/modern-paper-ink-foundation`: published **PR #8** at SHA `e181918`, Android CI **passed**; tablet/phone visual and interaction acceptance is still pending. **Do not add the next feature to that PR branch**.
 - `feature/post-brand-home-polish`: **local next-batch branch** created at the PR #8 head. Work on Home/Explorer/empty-state UI here while its parent PR builds; it should not be pushed yet. After PR #8 merges, use `main` as the updated base (cherry-pick/rebase only this branch's new commits); keep earlier PR contents out of the next PR.
 - `chore/codeql-compile-only`: **separate local** CI optimization commit `a979652`, based on `origin/main`; publish and verify separately, after the current UI CI checkpoint. Compile-only CodeQL coverage remains **unverified** until GitHub proves extraction and findings upload.
 - Every new batch must have one owner branch, a parent SHA, a bounded purpose, source-only checks, and a clear status. Multiple local branches are fine; simultaneous modifications to a live ready PR are not.
@@ -58,8 +58,8 @@ This is a **snapshot**, not a background monitor. Refresh statuses when starting
 
 | Priority | Task and scope | Track | State / next action |
 |---|---|---|---|
-| P0 — Release gate | PR #8 Paper & Ink visual foundation, popup/menu, toolbar accessibility, Settings reset and preview | Published PR #8 | Android CI at `e181918` running when this plan was created. Inspect any failure, later run tablet/phone visual and TalkBack QA; no merge on CI alone if device QA is required |
-| **P1 — Work now** | **Home + Explorer + Empty states (UI-19/20/21)**. Improve readable hierarchy, consistent selection/focus, compact empty text and clear next action; preserve file operations | **Local `feature/post-brand-home-polish`** | **Next implementable task while PR #8 runs**. Inspect `Backstage.kt`, `ExplorerTiles.kt` and existing empty-state handlers before editing |
+| P0 — Release gate | PR #8 Paper & Ink visual foundation, popup/menu, toolbar accessibility, Settings reset and preview | Published PR #8 | Android CI passed at `e181918` on 2026-10-29; tablet/phone visual, stylus, dialog and TalkBack QA still pending. Do not equate a green build with hardware acceptance |
+| **P1 — Work now** | **Home + Explorer + Empty states (UI-19/20/21)**. Improve readable hierarchy, consistent selection/focus, compact empty text and clear next action; preserve file operations | **Local `feature/post-brand-home-polish`** | **In progress locally (begun while PR #8 was running).** Empty-folder action hierarchy improved without removing New Canvas/Import PDF; inspect Home/Explorer tile focus and other empty/search/filter states next |
 | P1 | Settings/toolbar appearance and 48dp touch-target accessibility on phone/tablet; assess color contrast, no paint-engine changes | Next UI batch | Backlog after Home/Explorer; combine with UI accessibility QA where safe |
 | P1 | CodeQL: replace duplicate `assembleDebug` with JVM compilation and validate findings | Local `chore/codeql-compile-only`, commit `a979652` | Source-only checks passed; keep separate from UI. Publish for GitHub CodeQL verification at a later checkpoint; don't claim time savings until measured |
 | P1 — Reliability | XN-033/034 stylus/palm rejection, XN-035 area eraser, XN-036 undo/redo | Existing fix branches | Review branch diffs against `main`; keep separate from cosmetic UI. Tests/hardware needed before closing findings |
@@ -69,7 +69,7 @@ This is a **snapshot**, not a background monitor. Refresh statuses when starting
 
 ## 6. Example of how the next work proceeds
 
-- **Now:** PR #8 runs in GitHub. On its own local child branch, inspect Home/Explorer and complete an independent UI improvement; save local commit(s) without pushes.
+- **Example during a running PR:** While GitHub builds PR #8 (now green), continue Home/Explorer changes on its own local child branch; save local commits without pushes.
 - **While the build continues:** Move to the next local item, or prepare source-level regression assertions. Switch to an independent local branch if the next item touches unrelated code.
 - **If PR #8 fails:** Prioritize fixing the specific GitHub error on its PR branch without discarding the next local batch.
 - **If PR #8 passes:** Review device acceptance before merging. Once merged, rebase/cherry-pick the post-brand Home/Explorer-only commits onto `main`; push as **one batch** when ready for its own PR/build.

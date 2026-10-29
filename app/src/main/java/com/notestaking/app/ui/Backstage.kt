@@ -1609,8 +1609,16 @@ private fun ExplorerSection(
                     chipRow(48.dp)
                     EmptyPane(empty.text, empty.art, if (!empty.offersCreate) null else { {
                         PrimaryButton(NotesTakingIcons.edit, stringResource(R.string.new_note_menu)) { onCreateMode(CreateMode.FILE) }
-                        PrimaryButton(NotesTakingIcons.canvas, stringResource(R.string.new_canvas_menu)) { onCreateMode(CreateMode.CANVAS) }
-                        PrimaryButton(NotesTakingIcons.importDoc, stringResource(R.string.import_pdf), onClick = calls.importPdf)
+                        TextButton(onClick = { onCreateMode(CreateMode.CANVAS) }) {
+                            Icon(NotesTakingIcons.canvas, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.new_canvas_menu))
+                        }
+                        TextButton(onClick = calls.importPdf) {
+                            Icon(NotesTakingIcons.importDoc, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.import_pdf))
+                        }
                     } })
                 }
                 layout == ExplorerLayout.GRID -> GridBody(body, gridState, gridColumns(screenWidthDp, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())

@@ -28,7 +28,7 @@
 | UI-18 | PDF import/export progress | MainActivity.kt:1642+, 1714+, 1749+, 1792+ | EXISTING: progress modal classes | Honest progress/cancel/error states, visual consistency | BR-3 |
 | UI-19 | Home + sidebar | ui/Backstage.kt | EXISTING: navigation/create/folders | Stronger hierarchy and spacing, same routes | BR-4 |
 | UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, Backstage.kt | EXISTING | Shared hover/selection/thumbnail/metadata states | BR-4 |
-| UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | REVIEW | BrandEmptyState with one key action, no huge illustrations | BR-4 |
+| UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | PARTIAL SOURCE FIX: empty folder keeps New Note primary, demotes New Canvas/Import PDF to text actions; existing palette illustration retained | Check 320dp and tablet widths, font scale, TalkBack, and other empty/search/filter states | BR-4 |
 | UI-22 | New note screen | ui/NewNoteScreen.kt | EXISTING | Clear creation steps and template cards | BR-4 |
 | UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt | EXISTING | Quiet chrome/paper separation, page navigation, tools | BR-4 |
 | UI-24 | Infinite canvas controls | ui/InfiniteEditor.kt, InfiniteToolbar.kt | EXISTING | Match note editor token hierarchy without GL changes | BR-4 |
