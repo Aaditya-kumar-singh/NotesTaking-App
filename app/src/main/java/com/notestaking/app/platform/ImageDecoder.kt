@@ -227,13 +227,29 @@ object ImageDecoder {
         }
         if (bmp == null) {
             val t = System.nanoTime()
-            bmp = runCatching {
-                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { paintSlice(Canvas(it), svg, x0, y0, docW, docH) }
-            }.getOrNull() ?: return null
+            bmp = rasterizeSvg(w, h, svg, x0, y0, docW, docH) ?: return null
             cost.software = elapsedPerMpx(t, mpx, cost.software)
         }
         svgBitmapCache.put(key, bmp)
         return bmp
+    }
+
+    /** A malformed SVG may fail after bitmap allocation; never strand its pixel buffer. */
+    private fun rasterizeSvg(w: Int, h: Int, svg: SVG, x0: Int, y0: Int, docW: Int, docH: Int): Bitmap? {
+        var pending: Bitmap? = null
+        return try {
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            pending = bitmap
+            paintSlice(Canvas(bitmap), svg, x0, y0, docW, docH)
+            pending = null // cached bitmap takes ownership
+            bitmap
+        } catch (_: RuntimeException) {
+            null
+        } catch (_: OutOfMemoryError) {
+            null
+        } finally {
+            pending?.recycle()
+        }
     }
 
     // The viewport is the whole document at this bucket; the target's bounds clip to the slice.
@@ -303,6 +319,7 @@ object ImageDecoder {
 
     private fun cachedSvg(path: String): SVG? {
         svgCache.get(path)?.let { return it }
+        if (!Svg.withinParseLimit(File(path))) return null
         val svg = runCatching { FileInputStream(path).use { SVG.getFromInputStream(it) } }.getOrNull() ?: return null
         // Without a viewBox the content wouldn't scale to the render viewport, so synthesize one.
         if (svg.documentViewBox == null) {
@@ -344,9 +361,7 @@ object ImageDecoder {
         val s = bucket.toDouble() / max(size.width, size.height)
         val bw = (size.width * s).toInt().coerceAtLeast(1)
         val bh = (size.height * s).toInt().coerceAtLeast(1)
-        val bmp = runCatching {
-            Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888).also { paintSlice(Canvas(it), svg, 0, 0, bw, bh) }
-        }.getOrNull() ?: return null
+        val bmp = rasterizeSvg(bw, bh, svg, 0, 0, bw, bh) ?: return null
         svgBitmapCache.put(key, bmp)
         return bmp
     }
