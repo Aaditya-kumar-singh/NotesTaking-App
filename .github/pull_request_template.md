@@ -5,10 +5,10 @@ Describe what changed in NotesTaking App.
 Link the GitHub issue or explain the problem.
 
 ## Verification
-- [ ] `python3 tools/ci/check_project.py`
-- [ ] `./gradlew :app:testDebugUnitTest`
-- [ ] `./gradlew :app:assembleDebug`
-- [ ] `./gradlew :app:lintDebug`
+- [ ] Source-only dry run completed locally (`python tools/ci/check_project.py`, `git diff --check`)
+- [ ] **GitHub Actions**: Kotlin unit tests passed on the ready PR's current commit
+- [ ] **GitHub Actions**: ARM64 debug APK built and verified; all three ABIs verified when native/toolchain changes are included
+- [ ] **GitHub Actions**: Android lint and source/resource checks passed
 - [ ] Tested on an emulator or physical Android device (or explain why not)
 
 ## Important app checks

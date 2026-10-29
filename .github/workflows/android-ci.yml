@@ -1,10 +1,20 @@
 name: Android CI
 
 on:
+  # Only integrated main receives automatic post-merge verification.
   push:
-    branches: [master, main, develop, 'feature/**', 'fix/**']
+    branches: [main]
   pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  # Run manually on a selected branch when a feature batch is ready.
   workflow_dispatch:
+    inputs:
+      full_abis:
+        description: 'Build all three ABIs (native changes / full-device validation)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -16,6 +26,8 @@ concurrency:
 jobs:
   source-checks:
     name: Source, resources and attribution
+    # Draft pull requests defer validation until the batch is ready for review.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -40,11 +52,37 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+      # Default to ARM64 on PRs; Select native ABI coverage overrides this for native/build changes.
+      CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && !inputs.full_abis }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 2
+
+      - name: Select native ABI coverage
+        id: abi_mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm64_only="$CI_ARM64_ONLY"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # PR checkout is the merge commit; its first parent is the target branch.
+            changed=$(git diff --name-only HEAD^1 HEAD -- \
+              app/src/main/cpp/ app/src/main/jniLibs/ \
+              app/build.gradle.kts build.gradle.kts settings.gradle.kts \
+              gradle.properties gradle/ \
+              .github/workflows/android-ci.yml \
+              .github/workflows/android-release.yml \
+              tools/ci/verify_apk.py)
+            if [[ -n "$changed" ]]; then
+              arm64_only=false
+              printf 'Native/build changes require all ABIs:\n%s\n' "$changed"
+            fi
+          fi
+          echo "CI_ARM64_ONLY=$arm64_only" >> "$GITHUB_ENV"
+          echo "arm64_only=$arm64_only" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java 17
         uses: actions/setup-java@v6
@@ -74,20 +112,26 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            "-PciArm64Only=$CI_ARM64_ONLY" \
             :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 
       - name: Validate generated APK and both native libraries
         run: |
+          abi_args=()
+          if [[ "$CI_ARM64_ONLY" == "true" ]]; then
+            abi_args=(--abi arm64-v8a)
+          fi
           python3 tools/ci/verify_apk.py \
             --apk app/build/outputs/apk/debug/app-debug.apk \
             --package com.notestaking.app.debug \
-            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt" \
+            "${abi_args[@]}"
         shell: bash
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: NotesTakingApp-debug-${{ github.run_number }}
+          name: NotesTakingApp-debug-${{ steps.abi_mode.outputs.arm64_only == 'true' && 'arm64' || 'all-abis' }}-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

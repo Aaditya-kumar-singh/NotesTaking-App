@@ -1,12 +1,12 @@
 # NotesTaking App — GitHub automation
 
-This directory documents the GitHub setup for the Android codebase. The workflows were authored locally; **they have not been executed on GitHub yet**. The app has **no local `.git` directory or configured GitHub remote** until you decide to publish it.
+This directory documents the active GitHub setup for the Android codebase. Builds and tests run on GitHub Actions; local Windows work is restricted to source inspection and dry-run checks. See `BATCHED_CI_POLICY.md` before pushing feature changes.
 
 ## What's automated
 
 | File | When | What it does |
 | --- | --- | --- |
-| `.github/workflows/android-ci.yml` | Push to `main`/`develop`, pull request, manual | Verify package/resource/license structure, install JDK 17 + Android SDK 36 + NDK + CMake, run Gradle unit tests/lint, create a debug APK, verify APK/native libraries, upload build artifacts and test reports. |
+| `.github/workflows/android-ci.yml` | Ready PR targeting `main`, manual dispatch, or push to `main` | Draft PRs skip jobs and ordinary feature/fix branch pushes do not trigger builds. A ready PR runs source checks, Kotlin tests, lint and an ARM64 debug APK for UI-only changes; native/build changes automatically run all three ABIs. `main` gets full-three-ABI post-merge verification; manual `full_abis` remains available. |
 | `.github/workflows/android-release.yml` | Manual only | Check an existing Git tag against `versionName`, use GitHub Secrets to sign the release APK, verify signature, upload signed APK + SHA-256, optionally create a **draft** GitHub Release. |
 | `.github/workflows/dependency-graph.yml` | Main branch Gradle changes, manual | Resolve and submit Gradle dependency graph to GitHub dependency monitoring. |
 | `.github/workflows/codeql.yml` | Main Kotlin changes, weekly, manual | Build Kotlin source for CodeQL and upload Java/Kotlin security findings (requires repository code-scanning availability). |
@@ -15,10 +15,10 @@ This directory documents the GitHub setup for the Android codebase. The workflow
 
 ## One-time GitHub configuration
 
-1. Create a **new** repository in your GitHub account, for example `NotesTaking-App`. Do not reuse the old XNotes upstream repository or its remote.
-2. Upload the current NotesTaking App source, including the `.github/` folder, using the GitHub web interface or a newly initialized Git repository when you choose. The automation files alone cannot upload the source.
+1. The repository is `Aaditya-kumar-singh/NotesTaking-App`, not the old XNotes upstream. Keep its remote and attribution intact.
+2. Git pushes are performed from the configured SSH remote. Keep integration work on `main` and avoid directly pushing unverified feature changes there.
 3. In your repo's **Settings → Actions → General**, enable workflows and set the default `GITHUB_TOKEN` to read-only where the UI offers that option. The release and dependency graph workflows request the specific write permission they need.
-4. Set the default branch to `main`. The CI and scheduled workflows assume `main`, with `develop` also supported for CI.
+4. As of this policy update, GitHub still reports `master` as its default branch; the active integration branch is `main`. Change the default to `main` separately after reviewing release and protection settings; the batched Android CI PR trigger targets `main`.
 5. Add branch protection/rulesets for `main`: require a pull request, require the **Source, resources and attribution** and **JDK 17 / tests / lint / debug APK** checks after their first successful run, block force-pushes, and optionally require reviews. Do not enable a check before its first run appears in the UI.
 6. Enable GitHub Dependency graph, Dependabot alerts, Dependabot security updates and Code scanning if the repository and your account plan support them.
 7. Review Actions runs to confirm that the chosen GitHub-hosted runner has enough disk/CPU for the large vendored PDFium/Tree-sitter builds. If it doesn't, move these workflows to a suitable larger runner rather than silently skipping build failures.
@@ -50,9 +50,9 @@ The workflow intentionally **does not auto-publish** a public release, does not 
 
 ## Development workflow on GitHub
 
-Make changes on a branch such as `feature/pdf-annotations`; open a pull request to `main`. GitHub Actions runs source checks, unit tests, lint and debug build. Review the resulting reports and debug APK attached to the Actions run. After approval and passing checks, merge. Dependabot opens dependency update PRs instead of silently modifying your codebase.
+Follow the batch policy in `BATCHED_CI_POLICY.md`: edit and dry-run locally, commit related changes in a feature branch, push when the batch needs review, and optionally open a **draft** PR. Neither an ordinary feature branch push nor a draft PR starts the Android build. When the batch is ready, mark its PR **Ready for review** (or create a non-draft PR) to run the full GitHub checks. Subsequent pushes to a ready PR rerun CI for its latest commit. Merge to `main` only after green checks and review; a `main` push performs post-merge verification. Dependabot continues opening dependency PRs separately.
 
-For a manually requested debug APK, open **Actions → Android CI → Run workflow**, then download the APK from the completed job's **Artifacts** section. Debug APKs use the separate application ID `com.notestaking.app.debug` and should not be used as production releases.
+For a manual batch verification, open **Actions → Android CI → Run workflow**, select the **feature branch** under `Use workflow from`, and run it after the final push. The checked SHA must match the batch being reviewed. Debug APK artifacts use application ID `com.notestaking.app.debug`; they are not production releases.
 
 ## Security and limitations
 
@@ -74,13 +74,13 @@ python tools/ci/check_release_tag.py v0.1.0
 python -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py tools/ci/check_release_tag.py
 ```
 
-On a machine with JDK 17, Android SDK/NDK and CMake installed:
+The following Gradle command runs **only on GitHub Actions**, not on the Windows development machine:
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 ```
 
-The scripts under `tools/ci/` are the same source and APK verification commands the GitHub Actions runner uses.
+Local source-only checks do not compile the application. Actual Kotlin tests, lint, native compilation, APK verification and artifacts run on GitHub Actions only. The scripts under `tools/ci/` are shared with the GitHub runner.
 
 ## References
 
