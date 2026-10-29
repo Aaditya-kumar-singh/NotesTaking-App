@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -77,13 +78,15 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** Columns the grid shows at [size], from the screen's width so folding the sidebar never reflows it. */
-internal fun gridColumns(screenWidthDp: Int, size: TileSize): Int {
-    val tile = when (size) { TileSize.S -> 180f; TileSize.M -> 240f; TileSize.L -> 320f; TileSize.XL -> 420f }
-    return Math.round(screenWidthDp / tile).coerceIn(1, 10)
+private val GRID_GAP = 12.dp
+
+/** Keep grid tiles at least the chosen size within the actual Explorer pane, including split-screen. */
+internal fun gridColumns(width: Dp, size: TileSize): Int {
+    val tile = when (size) { TileSize.S -> 180.dp; TileSize.M -> 240.dp; TileSize.L -> 320.dp; TileSize.XL -> 420.dp }
+    return ((width + GRID_GAP) / (tile + GRID_GAP)).toInt().coerceIn(1, 10)
 }
 
-/** Columns the gallery shows at [size]: as many upright pages as stand side by side in [width], the explorer's beside the rail. */
+/** Gallery columns use the measured Explorer pane instead of an estimate from screen width. */
 internal fun galleryColumns(width: Dp, size: TileSize): Int {
     val page = (galleryShelf(size) - 14.dp) * A4_RATIO + 8.dp
     return ((width + GALLERY_GAP) / (page + GALLERY_GAP)).toInt().coerceAtLeast(1)
@@ -105,7 +108,7 @@ internal fun GridBody(b: ExplorerBody, state: LazyGridState, columns: Int, chips
         columns = GridCells.Fixed(columns),
         state = state,
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(GRID_GAP),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(top = EXPLORER_HEADER, bottom = 88.dp),
     ) {
@@ -150,7 +153,7 @@ internal fun ListBody(
             item(key = "pinned", contentType = "pinned") { PinnedShelf(b, whole = false, Modifier.padding(top = 4.dp, bottom = 8.dp)) }
         }
         item(key = "columnHeads", contentType = "columnHeads") {
-            Row(Modifier.fillMaxWidth().height(36.dp).padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 ColumnHead(stringResource(R.string.sort_name), ExplorerSortKey.NAME, b, onSort, Modifier.weight(1f).padding(start = inset))
                 if (wide) {
                     ColumnHead(stringResource(R.string.group_kind), null, b, null, Modifier.width(LIST_KIND_W))
@@ -194,11 +197,11 @@ private fun ColumnHead(
     val active = key != null && b.view.sortKey == key
     val tint = (if (active) palette.accent else palette.textDim).toComposeColor()
     Row(
-        modifier.then(if (key != null && onSort != null) Modifier.clickable { onSort(key) } else Modifier),
+        modifier.heightIn(min = 48.dp).then(if (key != null && onSort != null) Modifier.clickable { onSort(key) } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (align == TextAlign.End) Arrangement.End else Arrangement.Start,
     ) {
-        Text(label, color = tint, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(label, color = tint, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (active) {
             Spacer(Modifier.width(4.dp))
             Icon(if (b.view.descending) NotesTakingIcons.arrowDown else NotesTakingIcons.arrowUp, null, tint = tint, modifier = Modifier.size(14.dp))
@@ -301,8 +304,8 @@ internal fun ColumnsBody(
     Column(modifier) {
         Hairline()
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val columnW = 272.dp
-            val previewMin = 360.dp
+            val columnW = minOf(272.dp, maxWidth / 2)
+            val previewMin = minOf(360.dp, maxWidth / 2)
             val columnsW = (maxWidth - previewMin).coerceAtLeast(columnW)
             Row(Modifier.fillMaxSize()) {
                 Row(Modifier.width(minOf(columnsW, columnW * levels.size)).fillMaxHeight().horizontalScroll(scroll)) {
@@ -331,7 +334,7 @@ internal fun ColumnsBody(
                                     Row(
                                         Modifier
                                             .fillMaxWidth()
-                                            .height(44.dp)
+                                            .heightIn(min = 48.dp)
                                             .clip(shape)
                                             .background(
                                                 when {
@@ -340,6 +343,7 @@ internal fun ColumnsBody(
                                                     else -> Color.Transparent
                                                 },
                                             )
+                                            .explorerTileAccessibility(b, e, shape)
                                             .combinedClickable(
                                                 interactionSource = remember { MutableInteractionSource() },
                                                 indication = null,

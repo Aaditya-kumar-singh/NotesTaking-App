@@ -1,6 +1,6 @@
 # Batched GitHub CI policy
 
-**Scope:** NotesTaking App development on the `main` integration branch. The Windows machine is for editing, source inspection, and dry-run checks only: **no local Gradle, Kotlin test execution, lint, native compilation, APK builds, or device installation**.
+**Scope:** NotesTaking App development on the `main` integration branch. The Windows machine is for editing, source inspection, and dry-run checks only: **no local Gradle, Kotlin test execution, lint, native compilation, APK builds, or device installation**. **Running CI must never pause independent local development**; follow `LOCAL_FIRST_PARALLEL_WORKFLOW.md` to manage parallel work and the next task.
 
 ## When an Android build runs
 

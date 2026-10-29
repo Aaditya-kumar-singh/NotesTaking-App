@@ -1,6 +1,6 @@
 # NotesTaking App — GitHub automation
 
-This directory documents the active GitHub setup for the Android codebase. Builds and tests run on GitHub Actions; local Windows work is restricted to source inspection and dry-run checks. See `BATCHED_CI_POLICY.md` before pushing feature changes.
+This directory documents the active GitHub setup for the Android codebase. Builds and tests run on GitHub Actions; local Windows work is restricted to source inspection and dry-run checks. Follow `LOCAL_FIRST_PARALLEL_WORKFLOW.md` to **keep developing locally while CI runs**, and `BATCHED_CI_POLICY.md` before pushing feature changes.
 
 ## What's automated
 

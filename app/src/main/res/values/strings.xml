@@ -757,6 +757,8 @@
     <string name="contents">Contents</string>
     <string name="bookmarks">Bookmarks</string>
     <string name="selected">Selected</string>
+    <string name="select_item">Select item</string>
+    <string name="deselect_item">Deselect item</string>
     <string name="page_options">Page options</string>
     <string name="back_share_as">"‹  Share as"</string>
     <string name="image_png">Image (PNG)</string>
