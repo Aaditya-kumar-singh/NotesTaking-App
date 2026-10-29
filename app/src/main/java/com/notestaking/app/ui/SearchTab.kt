@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -113,7 +115,7 @@ private fun QueryField(editor: Editor) {
         Modifier
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 2.dp)
-            .height(36.dp)
+            .height(48.dp)
             .clip(CircleShape)
             .background(palette.surface.toComposeColor())
             .border(1.dp, palette.border.toComposeColor(), CircleShape)
@@ -154,14 +156,13 @@ private fun QueryField(editor: Editor) {
         }
         if (field.text.isNotEmpty()) {
             Tooltip(stringResource(R.string.clear_search)) {
-                Icon(
-                    NotesTakingIcons.close, stringResource(R.string.clear_search),
-                    tint = palette.textDim.toComposeColor(),
-                    modifier = Modifier.size(16.dp).clip(CircleShape).clickable {
-                        field = TextFieldValue("")
-                        editor.searchFor("")
-                    },
-                )
+                IconButton(onClick = {
+                    field = TextFieldValue("")
+                    editor.searchFor("")
+                }, modifier = Modifier.size(48.dp)) {
+                    Icon(NotesTakingIcons.close, stringResource(R.string.clear_search),
+                        tint = palette.textDim.toComposeColor(), modifier = Modifier.size(18.dp))
+                }
             }
         }
     }
@@ -180,6 +181,7 @@ private fun QueryBar(editor: Editor, results: SearchResults?) {
             fontSize = 12.sp,
             textAlign = TextAlign.Center,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         StepButton(NotesTakingIcons.chevronUp, stringResource(R.string.previous_match), any, Keys.PREV_MATCH) { editor.searchStep(forward = false) }
@@ -202,21 +204,19 @@ private fun Toggle(label: String, description: String, on: Boolean, onToggle: ()
     val palette = LocalPalette.current
     Tooltip(description) {
         Box(
-            Modifier
-                .size(32.dp)
-                .padding(3.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(if (on) palette.selectionBackground.toComposeColor() else Color.Transparent)
+            Modifier.size(48.dp)
                 .toggleable(value = on, role = Role.Checkbox, onValueChange = { onToggle() })
                 .semantics { contentDescription = description },
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                label,
-                color = (if (on) palette.selectionForeground else palette.textDim).toComposeColor(),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Box(
+                Modifier.size(28.dp).clip(RoundedCornerShape(6.dp))
+                    .background(if (on) palette.selectionBackground.toComposeColor() else Color.Transparent),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, color = (if (on) palette.selectionForeground else palette.textDim).toComposeColor(),
+                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -225,7 +225,7 @@ private fun Toggle(label: String, description: String, on: Boolean, onToggle: ()
 private fun StepButton(icon: ImageVector, description: String, enabled: Boolean, shortcut: String, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Tooltip(description, shortcut = shortcut) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(36.dp)) {
+        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
             Icon(icon, description, tint = (if (enabled) palette.text else palette.textDim).toComposeColor(), modifier = Modifier.size(18.dp))
         }
     }
@@ -307,9 +307,11 @@ private fun MatchRow(hit: SearchHit, current: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 6.dp, vertical = 1.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(if (current) palette.selectionBackground.toComposeColor() else Color.Transparent)
             .clickable(onClick = onClick)
+            .semantics { selected = current }
             .padding(horizontal = 6.dp, vertical = 5.dp),
     )
 }
