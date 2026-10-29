@@ -8,6 +8,12 @@ import java.io.File
  * Content-based on purpose: inserted images live in extension-less temp files.
  */
 object Svg {
+    /** Bounds DOM parsing on both software and GPU vector rendering paths. */
+    const val MAX_PARSE_BYTES = 12L * 1024L * 1024L
+
+    fun withinParseLimit(file: File): Boolean =
+        file.isFile && file.length() in 1..MAX_PARSE_BYTES
+
     fun isSvgFile(file: File): Boolean = runCatching {
         file.inputStream().use { input ->
             val head = ByteArray(64)

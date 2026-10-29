@@ -31,11 +31,11 @@ object VectorScenes {
         cache.get(path)?.let { return it }
         if (!ImageDecoder.isVector(path)) return null
         val length = runCatching { file.length() }.getOrDefault(0L)
-        if (length > MAX_BYTES) {
-            Log.w(TAG, "svg not meshed, $length bytes is past the $MAX_BYTES parse ceiling: $path")
+        if (!com.notestaking.app.core.util.Svg.withinParseLimit(file)) {
+            Log.w(TAG, "svg not meshed, $length bytes is past the ${com.notestaking.app.core.util.Svg.MAX_PARSE_BYTES} parse ceiling: $path")
             return null
         }
-        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return null
+        val bytes = runCatching { BoundedBytes.readFile(file, com.notestaking.app.core.util.Svg.MAX_PARSE_BYTES.toInt()) }.getOrNull() ?: return null
         val scene = SvgReader.parse(bytes, glyphs)
         cache.put(path, scene)
         report(path, scene)
@@ -49,9 +49,6 @@ object VectorScenes {
         }
         if (scene.isEmpty) Log.w(TAG, "svg has nothing this pipeline can draw: $path")
     }
-
-    /** A ceiling on what is worth pulling through a DOM parser, which costs several times the file. */
-    private const val MAX_BYTES = 12L shl 20
 
     private const val TAG = "VectorScenes"
 }
