@@ -19,6 +19,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,7 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
@@ -248,28 +251,27 @@ private fun CountRow(config: ShapeConfig, onChange: (Int) -> Unit) {
     val range = config.chip.kind.nRange ?: return
     val palette = LocalPalette.current
     val count = config.count.coerceIn(range.first, range.last)
-    Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            stringResource(countLabel(config.chip.kind.countKind)),
-            color = palette.text.toComposeColor(), fontSize = 12.sp, modifier = Modifier.width(120.dp),
-        )
-        StepButton("−", stringResource(R.string.count_fewer), enabled = count > range.first) { onChange(count - 1) }
-        Text("$count", color = palette.text.toComposeColor(), fontSize = 14.sp, modifier = Modifier.width(36.dp).padding(horizontal = 8.dp))
-        StepButton("+", stringResource(R.string.count_more), enabled = count < range.last) { onChange(count + 1) }
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(stringResource(countLabel(config.chip.kind.countKind)), color = palette.text.toComposeColor(), fontSize = 12.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+            StepButton(NotesTakingIcons.minus, stringResource(R.string.count_fewer), enabled = count > range.first) { onChange(count - 1) }
+            Text("$count", color = palette.text.toComposeColor(), fontSize = 14.sp,
+                modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+            StepButton(NotesTakingIcons.plus, stringResource(R.string.count_more), enabled = count < range.last) { onChange(count + 1) }
+        }
     }
 }
 
 @Composable
-private fun StepButton(glyph: String, label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Tooltip(label) {
-        Box(
-            Modifier.size(30.dp).clip(CircleShape)
-                .border(1.dp, palette.border.toComposeColor(), CircleShape)
-                .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(glyph, color = (if (enabled) palette.text else palette.textDim).toComposeColor(), fontSize = 16.sp)
+        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
+            Box(Modifier.size(30.dp).clip(CircleShape).border(1.dp, palette.border.toComposeColor(), CircleShape),
+                contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = label,
+                    tint = (if (enabled) palette.text else palette.textDim).toComposeColor(), modifier = Modifier.size(16.dp))
+            }
         }
     }
 }

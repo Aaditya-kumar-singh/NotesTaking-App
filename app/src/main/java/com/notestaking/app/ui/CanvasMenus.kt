@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,6 +50,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
@@ -479,12 +481,14 @@ private fun SelectionStylePopup(host: SelectionMenuHost, onDismiss: () -> Unit) 
             host.selectionCount()?.let { sc ->
                 val count = sc.n
                 val range = sc.range
-                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     StyleCaption(stringResource(countLabel(sc.kind)))
-                    Spacer(Modifier.width(12.dp))
-                    StepDot("\u2212", stringResource(R.string.count_fewer), enabled = count > range.first) { host.setSelectionCount(count - 1) }
-                    Text("$count", color = palette.text.toComposeColor(), fontSize = 14.sp, modifier = Modifier.padding(horizontal = 10.dp))
-                    StepDot("+", stringResource(R.string.count_more), enabled = count < range.last) { host.setSelectionCount(count + 1) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                        StepDot(NotesTakingIcons.minus, stringResource(R.string.count_fewer), enabled = count > range.first) { host.setSelectionCount(count - 1) }
+                        Text("$count", color = palette.text.toComposeColor(), fontSize = 14.sp,
+                            modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                        StepDot(NotesTakingIcons.plus, stringResource(R.string.count_more), enabled = count < range.last) { host.setSelectionCount(count + 1) }
+                    }
                 }
             }
             if (fillsOnly) return@Column
@@ -537,15 +541,15 @@ private fun MatchDot(outline: Rgba, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun StepDot(glyph: String, label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun StepDot(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Tooltip(label) {
-        Box(
-            Modifier.size(30.dp).clip(CircleShape).border(1.dp, palette.border.toComposeColor(), CircleShape)
-                .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(glyph, color = (if (enabled) palette.text else palette.textDim).toComposeColor(), fontSize = 16.sp)
+        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
+            Box(Modifier.size(30.dp).clip(CircleShape).border(1.dp, palette.border.toComposeColor(), CircleShape),
+                contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = label,
+                    tint = (if (enabled) palette.text else palette.textDim).toComposeColor(), modifier = Modifier.size(16.dp))
+            }
         }
     }
 }
