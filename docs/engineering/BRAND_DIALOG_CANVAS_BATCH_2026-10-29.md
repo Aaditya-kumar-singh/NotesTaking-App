@@ -29,5 +29,5 @@
 ## Work still outstanding
 
 - Complete app-wide typography, dialog iconography, consistent progress and feedback overlays, selectable pen favorites, tablet layout polish and larger touch targets.
-- Resolve old `master` default branch and integrate `chore/batched-android-ci` through the GitHub PR/full-ABI gate; connected GitHub API currently reports no collaborator rights, so PR creation is blocked. Do not push directly to `main`.
+- CI policy PR #7 was merged into `main` after full-three-ABI GitHub checks passed. GitHub's repository default is still `master`; change it to `main` separately with repository-admin access. This design batch is tracked in draft PR #8; do not push directly to `main`.
 - Reconcile all 45 original XNotes findings with GitHub evidence; this UI batch closes **none** of the historical defects by itself.

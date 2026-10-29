@@ -28,4 +28,4 @@
 
 ## Scope and status
 
-This local batch addresses the **Settings UI**, not an original XN issue closure. The 45 historical audit rows remain unchanged. PR #7's full ABI CI must finish before the pending feature-batch push; PR #8 stays draft until the CI branch is merged and the branding branch is reconciled with `main`.
+This local batch addresses the **Settings UI**, not an original XN issue closure. The 45 historical audit rows remain unchanged. PR #7 passed its full-ABI GitHub checks and merged into `main` at `1ef9e1e`. The branding work has been replayed locally onto that baseline without duplicate CI commits; draft PR #8 stays unpushed until the post-merge checks complete.

@@ -1,6 +1,6 @@
 # Modern Paper & Ink — foundation implementation checkpoint (2026-10-29)
 
-**Branch:** `feature/modern-paper-ink-foundation` based on `main` at `5a93bd7`.
+**Branch:** `feature/modern-paper-ink-foundation`. Original branding baseline was `5a93bd7`; the batched Paper & Ink integration was replayed onto `main` commit `1ef9e1e` after CI policy PR #7 merged.
 **Scope:** original brand mark, launcher assets, initial Material color alignment, system splash/loading, shared popup styling. No changes to saved notes, PDF rendering, `.xnote`, `.xcanvas`, or `.xtemplate` formats.
 
 ## Implemented
