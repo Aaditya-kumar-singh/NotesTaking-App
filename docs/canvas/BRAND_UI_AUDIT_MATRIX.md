@@ -39,7 +39,7 @@
 | UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt; ui/ToolbarCustomizer.kt | UPDATED IN SOURCE: theme preview and reset confirmation; toolbar customizer chips now expose accessible visibility states with 48dp targets | Verify theme persistence, draggable sections, chip toggles and delete on phone/tablet with TalkBack | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt; ui/ToolbarCustomizer.kt | PARTIAL SOURCE FIX: drawing tools and ink colors expose selection; toolbar-customization chips expose checkbox state and TalkBack toggle action; section controls have 48dp touch areas | Check TalkBack chip toggles, section drag/arrange, switch/accessibility state, focus, contrast and large text on devices | BR-5 |
+| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt; ui/ToolbarCustomizer.kt; ui/Popups.kt | PARTIAL SOURCE FIX: drawing tools/ink selection, customizer checkbox semantics, plus labeled 48dp PDF filter/zoom +/- controls and an accessible two-row zoom-limit popup | Check TalkBack labels, disabled bounds, section drag, keyboard focus, 200% font scale and narrow-window layout on devices | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
