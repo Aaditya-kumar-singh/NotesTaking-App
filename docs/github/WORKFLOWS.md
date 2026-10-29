@@ -6,7 +6,7 @@ This directory documents the active GitHub setup for the Android codebase. Build
 
 | File | When | What it does |
 | --- | --- | --- |
-| `.github/workflows/android-ci.yml` | Ready PR targeting `main`, manual dispatch, or push to `main` | Draft PRs skip jobs and ordinary feature/fix branch pushes do not trigger builds. A ready PR runs source checks, Kotlin tests, lint and an ARM64 debug APK for UI-only changes; native/build changes automatically run all three ABIs. `main` gets full-three-ABI post-merge verification; manual `full_abis` remains available. |
+| `.github/workflows/android-ci.yml` | **Every completed batch push to any branch**, ready PR targeting `main`, or manual dispatch | Branch pushes run source checks, Kotlin tests, lint and an ARM64 debug APK for UI-only batches; native/build batches run all three ABIs. Ready PRs also verify the merge result (may produce a second run); draft PR events skip but pushes still run. `main` always gets full-three-ABI verification; manual `full_abis` remains available. |
 | `.github/workflows/android-release.yml` | Manual only | Check an existing Git tag against `versionName`, use GitHub Secrets to sign the release APK, verify signature, upload signed APK + SHA-256, optionally create a **draft** GitHub Release. |
 | `.github/workflows/dependency-graph.yml` | Main branch Gradle changes, manual | Resolve and submit Gradle dependency graph to GitHub dependency monitoring. |
 | `.github/workflows/codeql.yml` | Main Kotlin changes, weekly, manual | Build Kotlin source for CodeQL and upload Java/Kotlin security findings (requires repository code-scanning availability). |
