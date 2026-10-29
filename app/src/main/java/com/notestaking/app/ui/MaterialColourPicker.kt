@@ -67,9 +67,11 @@ private val singleTonePresets = listOf(
     ColourPreset(R.string.material_amber, rgb(0xffc107)),
 )
 
-// Base2Tone D3 accents and B3 surface seeds; attribution and revision in assets/licenses/base2tone.txt.
+// Preserve the original Base2Tone presets alongside the new Paper & Ink brand preset.
+// Base2Tone attribution and revision are in assets/licenses/base2tone.txt.
 private val dualTonePresets = listOf(
-    ColourPreset(R.string.material_morning, Preferences.DEFAULT_MATERIAL_DUAL, Preferences.DEFAULT_MATERIAL_SURFACE),
+    ColourPreset(R.string.material_paper_ink, Preferences.DEFAULT_MATERIAL_DUAL, Preferences.DEFAULT_MATERIAL_SURFACE),
+    ColourPreset(R.string.material_morning, rgb(0x9a7c42), rgb(0x3d75e6)),
     ColourPreset(R.string.material_evening, rgb(0xffa142), rgb(0x9a86fd)),
     ColourPreset(R.string.material_sea, rgb(0x0db57d), rgb(0x57718e)),
     ColourPreset(R.string.material_forest, rgb(0xb1c44f), rgb(0x687d68)),

@@ -1180,7 +1180,8 @@ internal fun DropdownMenu(
         modifier = modifier,
         offset = LocalMenuOffset.current,
         properties = properties,
-        containerColor = palette.menuBg.toComposeColor(),
+        containerColor = palette.panel.toComposeColor(),
+        shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, palette.border.toComposeColor()),
     ) {
         // A menu or tip opened from inside this one hangs off its own row, not beside the rail.
@@ -1202,8 +1203,8 @@ internal fun AlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    shape: Shape = MaterialTheme.shapes.large,
-    containerColor: Color = LocalPalette.current.menuBg.toComposeColor(),
+    shape: Shape = MaterialTheme.shapes.extraLarge,
+    containerColor: Color = LocalPalette.current.panel.toComposeColor(),
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,

@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Original monochrome notebook and pencil artwork for themed Android launcher icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF" android:strokeWidth="5"
-        android:strokeLineJoin="round"
-        android:pathData="M29,15 H72 Q80,15 80,23 V80 Q80,88 72,88 H29 Q21,88 21,80 V23 Q21,15 29,15 Z" />
-    <path android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF" android:strokeWidth="4"
-        android:pathData="M37,32 H64 M37,46 H63 M37,60 H58" />
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M61,85 L82,56 L90,62 L70,91 L59,94 Z" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="4.5" android:strokeLineJoin="round" android:pathData="M33,24 H63 L79,40 V79 Q79,84 74,84 H33 Q29,84 29,80 V28 Q29,24 33,24 Z"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="4" android:pathData="M63,24 V40 H79"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="4.8" android:strokeLineCap="round" android:pathData="M39,71 C44,62 50,78 57,70 C63,62 67,60 72,63"/>
 </vector>
