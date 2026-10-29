@@ -7,7 +7,7 @@ Link the GitHub issue or explain the problem.
 ## Verification
 - [ ] Source-only dry run completed locally (`python tools/ci/check_project.py`, `git diff --check`)
 - [ ] **GitHub Actions**: Kotlin unit tests passed on the ready PR's current commit
-- [ ] **GitHub Actions**: debug APK built and verified, including native libraries
+- [ ] **GitHub Actions**: ARM64 debug APK built and verified; all three ABIs verified when native/toolchain changes are included
 - [ ] **GitHub Actions**: Android lint and source/resource checks passed
 - [ ] Tested on an emulator or physical Android device (or explain why not)
 

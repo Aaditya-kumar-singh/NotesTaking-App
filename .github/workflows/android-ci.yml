@@ -9,6 +9,12 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
   # Run manually on a selected branch when a feature batch is ready.
   workflow_dispatch:
+    inputs:
+      full_abis:
+        description: 'Build all three ABIs (native changes / full-device validation)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -46,6 +52,8 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+      # PRs/feature dispatch build ARM64 only; main and explicit full-ABI dispatch build all three.
+      CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && !inputs.full_abis }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
@@ -80,20 +88,26 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            "-PciArm64Only=$CI_ARM64_ONLY" \
             :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 
       - name: Validate generated APK and both native libraries
         run: |
+          abi_args=()
+          if [[ "$CI_ARM64_ONLY" == "true" ]]; then
+            abi_args=(--abi arm64-v8a)
+          fi
           python3 tools/ci/verify_apk.py \
             --apk app/build/outputs/apk/debug/app-debug.apk \
             --package com.notestaking.app.debug \
-            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+            --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt" \
+            "${abi_args[@]}"
         shell: bash
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: NotesTakingApp-debug-${{ github.run_number }}
+          name: NotesTakingApp-debug-${{ env.CI_ARM64_ONLY == 'true' && 'arm64' || 'all-abis' }}-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

@@ -15,6 +15,9 @@ def main():
     parser.add_argument("--apk", type=Path, required=True)
     parser.add_argument("--package", required=True)
     parser.add_argument("--aapt", type=Path, required=True)
+    parser.add_argument("--abi", action="append",
+                        choices=("arm64-v8a", "armeabi-v7a", "x86_64"),
+                        help="Expected native ABI (repeat to override the default three)")
     args = parser.parse_args()
 
     if not args.apk.is_file():
@@ -26,7 +29,7 @@ def main():
         files = set(z.namelist())
         if z.testzip():
             raise SystemExit("APK ZIP CRC verification failed")
-        expected_abis = ("arm64-v8a", "armeabi-v7a", "x86_64")
+        expected_abis = args.abi or ("arm64-v8a", "armeabi-v7a", "x86_64")
         native = ("libnotestakingts.so", "libnotestakingpdf.so")
         missing = [
             f"lib/{abi}/{library}"
@@ -35,6 +38,11 @@ def main():
         ]
         if missing:
             raise SystemExit("Missing APK native libraries: " + ", ".join(missing))
+        packaged_abis = {name.split("/")[1] for name in files
+                         if name.startswith("lib/") and name.endswith(".so")}
+        if packaged_abis != set(expected_abis):
+            raise SystemExit(f"Unexpected native ABI set: {sorted(packaged_abis)}; "
+                             f"expected {sorted(set(expected_abis))}")
         if "classes.dex" not in files:
             raise SystemExit("APK is missing classes.dex")
 
