@@ -36,10 +36,10 @@
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |
 | UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | EXISTING | Source text legibility, accessible options, focus | BR-4 |
 | UI-28 | Audio/recording player | ui/AudioChip.kt, platform/RecordingService.kt | EXISTING | Consistent progress/state and contrast; notification safe | BR-4 |
-| UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
+| UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt; ui/ToolbarCustomizer.kt | UPDATED IN SOURCE: theme preview and reset confirmation; toolbar customizer chips now expose accessible visibility states with 48dp targets | Verify theme persistence, draggable sections, chip toggles and delete on phone/tablet with TalkBack | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt, ExplorerTiles.kt, ExplorerLayouts.kt | PARTIAL SOURCE FIX: toolbar selected state and color labels; explorer focus visibility, selection semantics and minimum 48dp compact-row/menu targets | Check TalkBack selection action and announcements, focus order, 200% font scaling, contrast, keyboard and system bars on devices | BR-5 |
+| UI-32 | Accessibility/focus/IME | ui/Toolbar.kt, ExplorerTiles.kt, ExplorerLayouts.kt, ToolbarCustomizer.kt, Popups.kt, TableUi.kt | PARTIAL SOURCE FIX: selected-tool/ink state, explorer focus/selection semantics and 48dp list controls, toolbar customizer checkbox states, labeled 48dp PDF/zoom/table steppers | Verify TalkBack labels and selection, disabled bounds, section dragging, tablet split-screen, 200% font, contrast, keyboard and touch targets | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
