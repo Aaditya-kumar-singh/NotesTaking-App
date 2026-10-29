@@ -913,16 +913,10 @@ private fun ExplorerSection(
                 }
             }
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.weight(1f))
-                EmptyIllustration(EmptyArt.PAGES)
-                Spacer(Modifier.height(20.dp))
-                Text(stringResource(R.string.choose_folder_hint), color = palette.textDim.toComposeColor(), fontSize = 14.sp, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(16.dp))
-                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PrimaryButton(NotesTakingIcons.folder, stringResource(R.string.choose_folder), Modifier.fillMaxHeight(), calls.pickRoot)
-                    PrimaryButton(NotesTakingIcons.database, stringResource(R.string.use_app_storage), Modifier.fillMaxHeight()) { editor.useInternalStorage() }
+                EmptyPane(stringResource(R.string.choose_folder_hint), EmptyArt.PAGES) {
+                    PrimaryButton(NotesTakingIcons.folder, stringResource(R.string.choose_folder), onClick = calls.pickRoot)
+                    PrimaryButton(NotesTakingIcons.database, stringResource(R.string.use_app_storage)) { editor.useInternalStorage() }
                 }
-                Spacer(Modifier.weight(1f))
             }
         }
         return
@@ -935,8 +929,6 @@ private fun ExplorerSection(
     val density = LocalDensity.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val compactScreen = screenWidthDp < COMPACT_WIDTH_DP
-    // The pane's width with the rail beside it (a compact screen's drawer covers it instead), so folding the sidebar never reflows the gallery.
-    val railedWidth = screenWidthDp.dp - (if (compactScreen) 0.dp else RAIL_WIDTH) - PANE_GUTTER * 2
     val prefs = remember(editor.prefsVersion) { editor.preferences }
     val rootDocId = remember(root) { editor.browseRootDocId(root) }
     val stack = remember(root) { mutableStateListOf<Pair<String, String>>() }
@@ -1635,11 +1627,15 @@ private fun ExplorerSection(
                         empty.recovery?.let { action -> TextButton(onClick = action.onClick) { Text(action.label) } }
                     } })
                 }
-                layout == ExplorerLayout.GRID -> GridBody(body, gridState, gridColumns(screenWidthDp, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())
-                layout == ExplorerLayout.GALLERY -> GalleryBody(body, galleryState, galleryColumns(railedWidth, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())
+                layout == ExplorerLayout.GRID -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                    GridBody(body, gridState, gridColumns(maxWidth, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())
+                }
+                layout == ExplorerLayout.GALLERY -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                    GalleryBody(body, galleryState, galleryColumns(maxWidth, view.tileSize), chipRow, gridTop, Modifier.fillMaxSize())
+                }
                 layout == ExplorerLayout.LIST -> BoxWithConstraints(Modifier.fillMaxSize()) {
                     ListBody(
-                        body, listState, wide = maxWidth >= 720.dp,
+                        body, listState, wide = maxWidth >= 720.dp * density.fontScale.coerceAtLeast(1f),
                         onSort = if (showRecent) null else ({ k -> setView(if (view.sortKey == k) view.copy(descending = !view.descending) else view.copy(sortKey = k, descending = k != ExplorerSortKey.NAME)) }),
                         chips = chipRow,
                         top = shelfBlock?.let { c -> { item(key = "shelves", contentType = "shelves") { c() } } }, modifier = Modifier.fillMaxSize(),
@@ -1690,6 +1686,7 @@ private fun ExplorerSection(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val wide = maxWidth >= 760.dp
                 val headerWidth = maxWidth
+                val reservedWidth = 96.dp + if (sidebarOpen) 0.dp else 48.dp
                 Row(Modifier.fillMaxWidth().height(EXPLORER_HEADER), verticalAlignment = Alignment.CenterVertically) {
                     if (!sidebarOpen) {
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
@@ -1745,7 +1742,7 @@ private fun ExplorerSection(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    ExplorerSearchField(query, { query = it }, expandedWidth = if (wide) 320.dp else (headerWidth - 144.dp).coerceAtLeast(160.dp), lift = liftNow)
+                    ExplorerSearchField(query, { query = it }, expandedWidth = if (wide) 320.dp else (headerWidth - reservedWidth).coerceAtLeast(SEARCH_HEIGHT), lift = liftNow)
                     if (wide && switcherLayouts.size > 1) {
                         Spacer(Modifier.width(8.dp))
                         LayoutSwitcher(switcherLayouts, layout, liftNow) { setView(view.copy(layout = it)); columnsPick = null }

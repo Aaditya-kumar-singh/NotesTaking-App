@@ -486,7 +486,7 @@ internal fun ListRow(b: ExplorerBody, e: BrowseEntry, wide: Boolean) {
     Row(
         Modifier
             .fillMaxWidth()
-            .height(if (compact) 48.dp else 56.dp)
+            .heightIn(min = if (compact) 48.dp else 56.dp)
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
             .background(if (selected) palette.selectionBackground.toComposeColor() else Color.Transparent)
             .registered(b, e)
