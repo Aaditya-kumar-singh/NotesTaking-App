@@ -10,6 +10,7 @@
 - Kept the existing irreversible-action **confirmation dialogs**, translated labels, click handlers, error handling and storage calls intact.
 - Updated the paged **+ Page** menu with a readable Material title and divider. **All tools** now places its menu rows directly inside the existing shared DropdownMenu (rather than one large nested Column), allowing Material 3's own scrolling and sizing; tool choices, pen/eraser settings, undo/redo and extras remain wired to their original callbacks.
 - Added a subtle 1dp palette-driven border on the **canvas-facing edge** of docked toolbars. Top, bottom, left and right docks follow their position. Floating toolbars preserve their previous shadow, clip and outline.
+- Added a shared-toolbar accessibility pass: active drawing-tool buttons now expose their selected state, while ink swatches announce a localized color label with a hexadecimal value and selection state. The existing click and drag callbacks remain untouched.
 
 ## Source-only checks
 
@@ -22,7 +23,7 @@
 
 1. Open a ready PR into `main` and run GitHub **Android CI** on the current batch head: Kotlin unit tests, lint, ARM64 debug APK (or manually select full ABIs for native changes). Do not claim this batch is Android tested before CI reports success.
 2. On a test Android tablet and phone, inspect Paper & Ink menus in light, dark, OLED, dynamic and custom theme modes. Check content contrast, constrained popup height, nested menus, overflow placement and dismissal behavior.
-3. Validate both toolbar orientations (top/bottom/left/right), floating mode, compact and comfortable sizes, keyboard navigation, accessibility and enlarged font scales. The divider must remain adjacent to the canvas, not user paper or PDF content.
+3. Validate both toolbar orientations (top/bottom/left/right), floating mode, compact and comfortable sizes, keyboard navigation, accessibility and enlarged font scales. With TalkBack, confirm selected tools and named ink swatches are announced accurately; test that the color drag gesture remains unchanged. The divider must remain adjacent to the canvas, not user paper or PDF content.
 4. On expendable test files, verify Trash → Restore, Empty Trash cancel/confirm, permanent delete cancel/confirm, file explorer delete cancel/confirm, and markup note delete/cancel. Avoid testing destructive operations on real notes.
 5. Capture real-device screenshots for BR-3 and BR-4; source-level assertions are not visual or integration testing.
 

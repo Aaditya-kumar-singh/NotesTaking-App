@@ -39,7 +39,7 @@
 | UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens | REVIEW | 48dp hit, contrast, screen reader, keyboard, system bars | BR-5 |
+| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt | PARTIAL SOURCE FIX: selected drawing-tool state and ink color hex/selected state exposed to screen readers in shared toolbar controls | Check TalkBack selection announcement, 48dp targets, contrast, keyboard and system bars on phone/tablet | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
