@@ -577,11 +577,19 @@ private fun EditorScreen(
 
     // A user Helix code theme (.toml), parsed + stored by the editor.
     val importCodeThemeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }
-                .getOrNull()
-                ?.let { editor.importCodeTheme(it, displayNameOf(resolver, uri)) }
-                ?: run { editor.message = resources.getString(R.string.err_read_file) }
+        if (uri != null) scope.launch {
+            val name = displayNameOf(resolver, uri)
+            val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    resolver.openInputStream(uri)?.use {
+                        com.notestaking.app.platform.BoundedBytes.read(
+                            it, com.notestaking.app.platform.BoundedBytes.MAX_CODE_THEME_BYTES,
+                        )
+                    }
+                }.getOrNull()
+            }
+            if (bytes != null) editor.importCodeTheme(bytes, name)
+            else editor.message = resources.getString(R.string.err_read_file)
         }
     }
 
@@ -598,11 +606,19 @@ private fun EditorScreen(
 
     // A user font (.ttf/.otf), stored + registered by the editor.
     val importFontLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }
-                .getOrNull()
-                ?.let { editor.importFont(it, displayNameOf(resolver, uri)) }
-                ?: run { editor.message = resources.getString(R.string.err_read_file) }
+        if (uri != null) scope.launch {
+            val name = displayNameOf(resolver, uri)
+            val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    resolver.openInputStream(uri)?.use {
+                        com.notestaking.app.platform.BoundedBytes.read(
+                            it, com.notestaking.app.platform.BoundedBytes.MAX_FONT_BYTES,
+                        )
+                    }
+                }.getOrNull()
+            }
+            if (bytes != null) editor.importFont(bytes, name)
+            else editor.message = resources.getString(R.string.err_read_file)
         }
     }
 

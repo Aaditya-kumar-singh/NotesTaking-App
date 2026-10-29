@@ -140,6 +140,9 @@ object FontCatalog {
      * Returns the new face, or a human-readable problem.
      */
     fun importFont(context: Context, bytes: ByteArray, sourceName: String?): Result<FontFace> {
+        if (bytes.size > BoundedBytes.MAX_FONT_BYTES) {
+            return Result.failure(IllegalArgumentException("Font file exceeds 16 MiB"))
+        }
         val dir = customDir ?: return Result.failure(IllegalStateException(context.getString(R.string.font_err_unavailable)))
         val fallback = sourceName?.substringBeforeLast('.')?.trim().orEmpty()
         val name = sanitizeFamily(parseFamilyName(bytes) ?: fallback)
