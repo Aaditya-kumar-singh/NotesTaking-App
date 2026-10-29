@@ -881,6 +881,7 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
                         .coerceAtMost(if (maxOn) maxPct else Preferences.ZOOM_LIMIT_MAX_PCT)
                     emit()
                 },
+                maxValue = if (maxOn) maxPct else Preferences.ZOOM_LIMIT_MAX_PCT,
             )
             ZoomLimitRow(
                 stringResource(R.string.caption_max_zoom), maxOn, maxPct,
@@ -894,6 +895,7 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
                         .coerceAtLeast(if (minOn) minPct else Preferences.ZOOM_LIMIT_MIN_PCT)
                     emit()
                 },
+                minValue = if (minOn) minPct else Preferences.ZOOM_LIMIT_MIN_PCT,
             )
         }
     }
@@ -901,7 +903,12 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
 
 /** One zoom-limit row: label, a percent spinfield (stepping by 10, greyed while off), a toggle. */
 @Composable
-private fun ZoomLimitRow(label: String, enabled: Boolean, value: Int, onToggle: (Boolean) -> Unit, onValue: (Int) -> Unit) {
+private fun ZoomLimitRow(
+    label: String, enabled: Boolean, value: Int,
+    onToggle: (Boolean) -> Unit, onValue: (Int) -> Unit,
+    minValue: Int = Preferences.ZOOM_LIMIT_MIN_PCT,
+    maxValue: Int = Preferences.ZOOM_LIMIT_MAX_PCT,
+) {
     val palette = LocalPalette.current
     val color = (if (enabled) palette.text else palette.textDim).toComposeColor()
     // Two compact rows keep the 48dp controls and four-digit zoom values readable in a 280dp popup.
@@ -911,11 +918,11 @@ private fun ZoomLimitRow(label: String, enabled: Boolean, value: Int, onToggle: 
             Switch(checked = enabled, onCheckedChange = onToggle, modifier = Modifier.semantics { contentDescription = label })
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onValue(value - 10) }, enabled = enabled && value > Preferences.ZOOM_LIMIT_MIN_PCT, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = { onValue(value - 10) }, enabled = enabled && value > minValue, modifier = Modifier.size(48.dp)) {
                 Icon(NotesTakingIcons.minus, stringResource(R.string.decrease_setting, label), tint = color, modifier = Modifier.size(20.dp))
             }
             Text("$value%", color = color, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.width(80.dp))
-            IconButton(onClick = { onValue(value + 10) }, enabled = enabled && value < Preferences.ZOOM_LIMIT_MAX_PCT, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = { onValue(value + 10) }, enabled = enabled && value < maxValue, modifier = Modifier.size(48.dp)) {
                 Icon(NotesTakingIcons.plus, stringResource(R.string.increase_setting, label), tint = color, modifier = Modifier.size(20.dp))
             }
         }

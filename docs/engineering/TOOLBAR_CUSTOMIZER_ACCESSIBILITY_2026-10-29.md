@@ -9,7 +9,7 @@
 The Settings > Toolbar customizer previously exposed visibility chips through low-level touch gestures only. TalkBack could read each chip's text but had no reliable checkbox state or action to toggle visibility. Chips were also shorter than the recommended 48dp touch target, and the section-delete button used a 26dp target.
 
 - Each toolbar item now announces its existing tool label with **checkbox role** and **on/off state**, plus an accessibility action that invokes the same saved `onToggle` callback as a tap.
-- Chip bodies, section delete controls, section grip headers, and Add Section are at least **48dp high**; delete is **48x48dp**. The independent floating chip and section drag previews follow the same geometry.
+- Chip bodies, section delete controls, section grip headers, and Add Section are at least **48dp high**; delete is **48x48dp**. A section card is now at least **104dp wide inside its padding**, leaving space for both the delete control and a usable drag strip even when its body is empty. The independent floating chip and section drag previews follow the same geometry.
 - Existing touch tap, long-press drag, drop-target bookkeeping, toolbar layout save, and the single-section deletion guard are unchanged.
 - These customizer changes do **not** alter the in-editor toolbar buttons, saved note data, toolbar file format, or drawing engine.
 

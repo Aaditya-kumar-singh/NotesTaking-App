@@ -257,7 +257,8 @@ private fun SectionCardScaffold(
     Layout(contents = listOf(body, header), modifier = modifier) { measurables, constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val bodyPlaceable = measurables[0].first().measure(loose)
-        val width = bodyPlaceable.width.coerceIn(constraints.minWidth, constraints.maxWidth)
+        // Keep room for both the 48dp delete control and a usable section drag strip.
+        val width = maxOf(bodyPlaceable.width, 104.dp.roundToPx()).coerceIn(constraints.minWidth, constraints.maxWidth)
         val headerPlaceable = measurables[1].first().measure(loose.copy(minWidth = width, maxWidth = width))
         layout(width, headerPlaceable.height + bodyPlaceable.height) {
             headerPlaceable.place(0, 0)

@@ -6,7 +6,7 @@
 ## Change
 
 - PDF contrast, invert, brightness and sepia steppers now use `IconButton` with 48x48dp hit targets, localized *Decrease/Increase [setting]* labels, and disabled states at their supported minimum/maximum.
-- Minimum and maximum zoom-limit steppers use the same labeled, 48dp buttons and disable when their limit is switched off or at its global boundary. Existing `onValue` callbacks and cross-limit clamping remain unchanged.
+- Minimum and maximum zoom-limit steppers use the same labeled, 48dp buttons. Buttons disable when their limit is off, at the global boundary, **or at the other enabled zoom limit**, avoiding a button that looks active but changes nothing. Existing `onValue` callbacks and cross-limit clamping remain unchanged.
 - The 280dp zoom popup presents each label/switch above its 48dp steppers and up-to-1600% value. This prevents the former single row from overflowing a narrow popup.
 - The min/max zoom switches announce the associated setting label.
 - Icons use the existing NotesTakingIcons minus/plus glyphs. New accessibility descriptions are provided for English and Simplified Chinese.
