@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -62,6 +63,7 @@ import com.notestaking.app.core.text.TableDefaults
 import com.notestaking.app.core.text.TableFrag
 import com.notestaking.app.core.text.TableSnapshot
 import com.notestaking.app.core.text.TableStyle
+import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
 import kotlin.math.abs
@@ -115,19 +117,24 @@ fun TableDialog(editor: Editor, table: FlowTable?, onDismiss: () -> Unit) {
                 TablePreview(if (table == null) rows else 4, if (table == null) cols else 3, style, editor.tableRuleColor())
                 Spacer(Modifier.size(10.dp))
                 if (table == null) {
-                    Stepper(stringResource(R.string.table_rows), "$rows", { update(r = rows - 1) }, { update(r = rows + 1) })
-                    Stepper(stringResource(R.string.table_columns), "$cols", { update(c = cols - 1) }, { update(c = cols + 1) })
+                    Stepper(stringResource(R.string.table_rows), "$rows",
+                        { update(r = rows - 1) }, { update(r = rows + 1) },
+                        canDecrease = rows > 1, canIncrease = rows < TableDefaults.MAX_ROWS)
+                    Stepper(stringResource(R.string.table_columns), "$cols",
+                        { update(c = cols - 1) }, { update(c = cols + 1) },
+                        canDecrease = cols > 1, canIncrease = cols < TableDefaults.MAX_COLS)
                 }
                 Stepper(stringResource(R.string.table_padding), stringResource(R.string.table_pt_value, "%.0f".format(style.paddingPt)), {
                     update(s = style.copy(paddingPt = style.paddingPt - 1.0))
                 }, {
                     update(s = style.copy(paddingPt = style.paddingPt + 1.0))
-                })
+                }, canDecrease = style.paddingPt > 0.0, canIncrease = style.paddingPt < TableStyle.MAX_PADDING_PT)
                 Stepper(stringResource(R.string.table_lines), stringResource(R.string.table_pt_value, "%.2f".format(style.lineWidthPt)), {
                     update(s = style.copy(lineWidthPt = style.lineWidthPt - LINE_STEP))
                 }, {
                     update(s = style.copy(lineWidthPt = style.lineWidthPt + LINE_STEP))
-                })
+                }, canDecrease = style.lineWidthPt > TableStyle.MIN_LINE_PT,
+                   canIncrease = style.lineWidthPt < TableStyle.MAX_LINE_PT)
                 ColorRow(stringResource(R.string.table_line_colour), style.lineColor, editor.tableRuleColor(), editor) {
                     update(s = style.copy(lineColor = it))
                 }
@@ -224,22 +231,24 @@ private fun TablePreview(rows: Int, cols: Int, style: TableStyle, autoRule: com.
 }
 
 @Composable
-private fun Stepper(label: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit) {
+private fun Stepper(
+    label: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit,
+    canDecrease: Boolean, canIncrease: Boolean,
+) {
     val palette = LocalPalette.current
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = palette.textDim.toComposeColor(), fontSize = 13.sp, modifier = Modifier.width(96.dp))
-        Box(Modifier.size(34.dp).clickable(onClick = onMinus), contentAlignment = Alignment.Center) {
-            Text("−", color = palette.text.toComposeColor(), fontSize = 18.sp)
-        }
-        Text(
-            value,
-            color = palette.text.toComposeColor(),
-            fontSize = 14.sp,
-            modifier = Modifier.width(72.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        Box(Modifier.size(34.dp).clickable(onClick = onPlus), contentAlignment = Alignment.Center) {
-            Text("+", color = palette.text.toComposeColor(), fontSize = 18.sp)
+    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text(label, color = palette.textDim.toComposeColor(), fontSize = 13.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onMinus, enabled = canDecrease, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.minus, stringResource(R.string.decrease_setting, label),
+                    tint = (if (canDecrease) palette.text else palette.disabled).toComposeColor(), modifier = Modifier.size(20.dp))
+            }
+            Text(value, color = palette.text.toComposeColor(), fontSize = 14.sp,
+                modifier = Modifier.width(92.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(onClick = onPlus, enabled = canIncrease, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.plus, stringResource(R.string.increase_setting, label),
+                    tint = (if (canIncrease) palette.text else palette.disabled).toComposeColor(), modifier = Modifier.size(20.dp))
+            }
         }
     }
 }
