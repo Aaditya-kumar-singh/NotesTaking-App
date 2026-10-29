@@ -11,6 +11,11 @@ internal object PenContact {
     fun finishesGesture(penActive: Boolean, ownsGesture: Boolean, activeId: Int, liftedId: Int): Boolean =
         penActive && ownsGesture && activeId == liftedId
 
+    fun canStartWhileFingersDown(toolTypes: IntArray, downIndex: Int, fingerType: Int, stylusType: Int, eraserType: Int): Boolean =
+        toolTypes.size > 1 && downIndex in toolTypes.indices &&
+            isPen(toolTypes[downIndex], stylusType, eraserType) &&
+            toolTypes.indices.all { it == downIndex || toolTypes[it] == fingerType }
+
     fun canToggleDebug(toolTypes: IntArray, fingerType: Int): Boolean =
         toolTypes.size == 4 && toolTypes.all { it == fingerType }
 }

@@ -319,9 +319,16 @@ class InfiniteInteraction(
     // Android took back a finger of this touch, so the rest of it is ignored.
     private var touchTakenBack = false
 
-    fun onTouch(e: MotionEvent): Boolean {
-        if (touchTakenBack && e.actionMasked != MotionEvent.ACTION_DOWN) return true
-        when (e.actionMasked) {
+    private val penRouter = com.notestaking.app.canvas.PenContactRouter()
+
+    fun onTouch(original: MotionEvent): Boolean {
+        val e = penRouter.route(original) {
+            if (!touchTakenBack) takeBackTouch()
+            touchTakenBack = false
+        } ?: return true
+        try {
+            if (touchTakenBack && e.actionMasked != MotionEvent.ACTION_DOWN) return true
+            when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchTakenBack = false
                 tapCandidate = true
@@ -355,7 +362,16 @@ class InfiniteInteraction(
             }
             MotionEvent.ACTION_CANCEL -> takeBackTouch()
         }
-        return true
+            return true
+        } finally {
+            if (e !== original) {
+                // A pen-up while a palm remains must not resume the old finger gesture.
+                if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) {
+                    touchTakenBack = true
+                }
+                e.recycle()
+            }
+        }
     }
 
     private fun movingView(): Boolean = mode == CanvasPointerMode.PAN || mode == CanvasPointerMode.PINCH

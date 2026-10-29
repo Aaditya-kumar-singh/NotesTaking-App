@@ -24,6 +24,27 @@ class PenContactTest {
         assertFalse(PenContact.finishesGesture(true, false, activeId = 7, liftedId = 7))
     }
 
+    @Test fun penCanBeginWhilePalmRemainsButNotFromAnotherPen() {
+        assertTrue(PenContact.canStartWhileFingersDown(
+            intArrayOf(finger, stylus), 1, finger, stylus, eraser,
+        ))
+        assertTrue(PenContact.canStartWhileFingersDown(
+            intArrayOf(finger, finger, eraser), 2, finger, stylus, eraser,
+        ))
+        assertFalse(PenContact.canStartWhileFingersDown(
+            intArrayOf(stylus, finger), 1, finger, stylus, eraser,
+        ))
+        assertFalse(PenContact.canStartWhileFingersDown(
+            intArrayOf(finger, finger), 1, finger, stylus, eraser,
+        ))
+        assertFalse(PenContact.canStartWhileFingersDown(
+            intArrayOf(finger, stylus, eraser), 2, finger, stylus, eraser,
+        ))
+        assertFalse(PenContact.canStartWhileFingersDown(
+            intArrayOf(finger, stylus), 7, finger, stylus, eraser,
+        ))
+    }
+
     @Test fun debugGestureRejectsMixedPalmPenAndExtraPointers() {
         assertTrue(PenContact.canToggleDebug(intArrayOf(finger, finger, finger, finger), finger))
         assertFalse(PenContact.canToggleDebug(intArrayOf(stylus, finger, finger, finger), finger))
