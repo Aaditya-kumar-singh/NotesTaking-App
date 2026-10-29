@@ -4473,7 +4473,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun createPdfNoteFile(treeUri: String, parentDocId: String, rawName: String, pdfFile: java.io.File): String? {
         val source = com.notestaking.app.platform.PdfSource.open(pdfFile)
         lastImportError = source.openError
-        if (source.pageCount == 0) {
+        if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(source.pageCount)) {
             source.close()
             return null
         }
@@ -4536,13 +4536,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Streams [input] to a private temp file for a pending import; returns it, or null. The caller
      *  owns the file (it's handed to [requestImport]). Copies in small buffers so a large pick never
      *  loads into RAM. IO — call off the main thread. */
-    private fun stageImport(input: InputStream): java.io.File? {
-        val f = runCatching { java.io.File.createTempFile("import", ".tmp", pdfDir) }.getOrNull() ?: return null
-        return runCatching {
-            java.io.FileOutputStream(f).use { copyStream(input, it) { importCancelled.get() } } // closes input
-            f
-        }.getOrElse { f.delete(); null } // failed or cancelled mid-copy: drop the partial temp
-    }
+    private fun stageImport(input: InputStream): java.io.File? =
+        com.notestaking.app.platform.PdfImportSafety.stage(input, pdfDir, isCancelled = { importCancelled.get() })
 
     /** Copies [input] to [out] in small buffers, polling [isCancelled] so a long copy can abort
      *  (throwing [DocumentCodec.WriteCancelled], which [createNoteFile] turns into a discarded file). */
@@ -6861,7 +6856,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             appContext.contentResolver.openInputStream(android.net.Uri.parse(uri))?.let { stageImport(it) }
         }.getOrNull() ?: return null
         val extra = com.notestaking.app.platform.PdfSource.open(staged)
-        val sizes = extra.allPageSizePoints()?.takeIf { it.isNotEmpty() }
+        val sizes = if (com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(extra.pageCount))
+            extra.allPageSizePoints()?.takeIf { it.isNotEmpty() }
+        else null
         lastImportError = extra.openError
         extra.close()
         if (sizes == null) {

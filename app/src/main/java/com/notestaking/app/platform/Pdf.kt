@@ -67,7 +67,7 @@ object PdfImporter {
         for (i in 0 until sizes.size / 2) {
             val wPts = sizes[2 * i]
             val hPts = sizes[2 * i + 1]
-            if (wPts < 1f || hPts < 1f) {
+            if (!PdfImportSafety.validPagePoints(wPts, hPts)) {
                 // A page that doesn't load (0x0), or one too small to see, takes the previous page's size
                 val (w, h) = (out.lastOrNull() ?: before)?.let { it.width to it.height }
                     ?: PageSize.A4.pixels(com.notestaking.app.core.model.Orientation.PORTRAIT, dpi)
