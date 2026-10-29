@@ -35,14 +35,18 @@ class History(private val limit: Int = DEFAULT_LIMIT) {
     }
 
     fun undo() {
-        val command = undoStack.removeLastOrNull() ?: return
+        val command = undoStack.lastOrNull() ?: return
+        // Keep the command reachable if the model operation throws. A failed
+        // operation might have changed part of the model; do not also lose history.
         command.undo()
+        undoStack.removeLast()
         redoStack.addLast(command)
     }
 
     fun redo() {
-        val command = redoStack.removeLastOrNull() ?: return
+        val command = redoStack.lastOrNull() ?: return
         command.redo()
+        redoStack.removeLast()
         undoStack.addLast(command)
     }
 
