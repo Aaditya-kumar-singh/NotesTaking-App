@@ -4,6 +4,7 @@ import com.notestaking.app.core.model.Orientation
 import com.notestaking.app.core.model.PageSize
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.tools.Tool
+import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.ToolbarLayout
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -91,6 +92,25 @@ class SettingsTest {
         val wild = Settings(tools = mapOf(Tool.MARKUP to markup)).toJson()
         wild.getJSONObject("tools").getJSONObject("markup").put("markup_intensity", 7.0)
         assertEquals(1.0, Settings.fromJson(wild).configFor(Tool.MARKUP).markupIntensity, 1e-9)
+    }
+
+    @Test fun areaEraserIsDefaultButSavedStrokePreferenceSurvivesUpgrade() {
+        assertEquals(EraseMode.AREA, Settings().configFor(Tool.ERASER).eraseMode)
+        assertEquals(EraseMode.AREA, Settings.fromJson(JSONObject()).configFor(Tool.ERASER).eraseMode)
+
+        // Prior versions wrote an explicit erase_mode, even for default STROKE.
+        // Never overwrite it when users upgrade or change eraser modes themselves.
+        val old = Settings(
+            tools = mapOf(Tool.ERASER to Settings().configFor(Tool.ERASER).copy(eraseMode = EraseMode.STROKE)),
+        ).toJson()
+        assertEquals("stroke", old.getJSONObject("tools").getJSONObject("eraser").getString("erase_mode"))
+        val restored = Settings.fromJson(old)
+        assertEquals(EraseMode.STROKE, restored.configFor(Tool.ERASER).eraseMode)
+        assertEquals(EraseMode.STROKE, Settings.fromJson(restored.toJson()).configFor(Tool.ERASER).eraseMode)
+
+        val updated = restored.copy(tools = restored.tools + (Tool.ERASER to
+            restored.configFor(Tool.ERASER).copy(eraseMode = EraseMode.AREA)))
+        assertEquals(EraseMode.AREA, Settings.fromJson(updated.toJson()).configFor(Tool.ERASER).eraseMode)
     }
 
     @Test fun theEraserTakesTextMarkupsUnlessSwitchedOff() {

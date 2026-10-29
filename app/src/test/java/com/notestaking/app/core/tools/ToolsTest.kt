@@ -35,6 +35,7 @@ class ToolsTest {
         assertEquals(0.90, hi.highlighterAlpha, 1e-9)
         assertEquals(1.0, ToolConversions.intensityToHighlighterAlpha(100.0), 1e-9)
         assertEquals(24.0, ToolDefaults.configFor(Tool.ERASER).baseWidth, 1e-9)
+        assertEquals(EraseMode.AREA, ToolDefaults.configFor(Tool.ERASER).eraseMode)
         assertEquals(2.0, ToolDefaults.configFor(Tool.LASSO).baseWidth, 1e-9)
         // A tool without an entry uses ToolConfig() = (3.0, on, 0.35, 0.0).
         assertEquals(ToolConfig().copy(rgba = ToolDefaults.configFor(Tool.PAN).rgba), ToolDefaults.configFor(Tool.PAN))
