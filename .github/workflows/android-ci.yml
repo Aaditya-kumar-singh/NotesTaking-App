@@ -1,9 +1,13 @@
 name: Android CI
 
 on:
+  # Only integrated main receives automatic post-merge verification.
   push:
-    branches: [master, main, develop, 'feature/**', 'fix/**']
+    branches: [main]
   pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  # Run manually on a selected branch when a feature batch is ready.
   workflow_dispatch:
 
 permissions:
@@ -16,6 +20,8 @@ concurrency:
 jobs:
   source-checks:
     name: Source, resources and attribution
+    # Draft pull requests defer validation until the batch is ready for review.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
