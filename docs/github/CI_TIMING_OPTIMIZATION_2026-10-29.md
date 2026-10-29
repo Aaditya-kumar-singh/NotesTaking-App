@@ -20,7 +20,7 @@ All five runs built three native ABIs. On #48 the ARM64 native build took about 
 
 - The batched CI policy already skips full Android builds on ordinary development-branch pushes and draft PRs; ready PRs and manually requested checks still run.
 - The default Android Gradle configuration remains **ARM64 + ARMv7 + x86-64**. When GitHub Actions passes `-PciArm64Only=true`, only `arm64-v8a` is built and packaged in the development APK.
-- For ready PR checks and default feature-branch manual checks, CI sets `CI_ARM64_ONLY=true` and still runs **all Kotlin unit tests, Android lint, APK construction and both JNI-library checks** for ARM64.
+- For UI-only ready PR checks and default feature-branch manual checks, CI builds ARM64 and still runs **all Kotlin unit tests, Android lint, APK construction and both JNI-library checks**. PRs that touch native sources, Gradle build configuration, CI workflow, or APK verifier automatically switch to full ABI coverage using the PR merge diff.
 - For a `main` branch run or an explicit `full_abis` manual dispatch, CI sets `CI_ARM64_ONLY=false`, builds the original three ABIs and verifies all six library paths. The separate signed-release workflow stays unchanged and full ABI.
 - Debug artifact names distinguish `arm64` and `all-abis` so a development APK is not mistaken for a universal release.
 
@@ -34,9 +34,9 @@ The configured **basic** Gradle cache restores Gradle User Home (dependencies, l
 
 ## Safety and next validation
 
-1. This optimization is not a substitute for architecture-specific tests. If C/C++, JNI, NDK, CMake, Gradle ABI packaging, or native code changes, require a **manual full-three-ABI GitHub run before merging**. The `full_abis` manual input is reliably available when the changed workflow exists on the default branch.
-2. After the optimization is available on GitHub, manually dispatch **Android CI** from the feature branch and compare its current commit SHA, native task names/durations, `verify_apk.py` results, test XML, lint, and uploaded APK artifact to the baseline. For native-change PRs, repeat with `full_abis=true`.
-3. A regular PR build remains one-ABI; post-merge `main` and signed releases retain complete native coverage. If branch protections depend on a particular job name, leave `JDK 17 / tests / lint / debug APK` unchanged.
+1. Native/toolchain changes on a ready PR automatically select a **full-three-ABI** GitHub check. The workflow computes changed native/build paths against the PR merge commit's first parent; if that comparison fails, the job fails instead of silently falling back to ARM64. The `full_abis` manual input is additionally available when the changed workflow exists on the default branch.
+2. After the optimization is available on GitHub, manually dispatch **Android CI** from the feature branch and compare its current commit SHA, native task names/durations, `verify_apk.py` results, test XML, lint, and uploaded APK artifact to the baseline. For native-change PRs, confirm the automatic full-ABI selection in the CI logs.
+3. UI-only PRs use one ABI; native/build PRs, post-merge `main` and signed releases retain complete native coverage. If branch protections depend on a particular job name, leave `JDK 17 / tests / lint / debug APK` unchanged.
 4. The first build after changing `app/build.gradle.kts` may have a colder **basic** Gradle cache. Do not treat that one run alone as a reliable speed benchmark.
 5. This patch does not enable native output caching or change pinned tool versions, Kotlin code, file formats, note storage, user data or signed release build configuration.
 

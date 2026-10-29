@@ -52,13 +52,37 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
-      # PRs/feature dispatch build ARM64 only; main and explicit full-ABI dispatch build all three.
+      # Default to ARM64 on PRs; Select native ABI coverage overrides this for native/build changes.
       CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && !inputs.full_abis }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 2
+
+      - name: Select native ABI coverage
+        id: abi_mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          arm64_only="$CI_ARM64_ONLY"
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # PR checkout is the merge commit; its first parent is the target branch.
+            changed=$(git diff --name-only HEAD^1 HEAD -- \
+              app/src/main/cpp/ app/src/main/jniLibs/ \
+              app/build.gradle.kts build.gradle.kts settings.gradle.kts \
+              gradle.properties gradle/ \
+              .github/workflows/android-ci.yml \
+              .github/workflows/android-release.yml \
+              tools/ci/verify_apk.py)
+            if [[ -n "$changed" ]]; then
+              arm64_only=false
+              printf 'Native/build changes require all ABIs:\n%s\n' "$changed"
+            fi
+          fi
+          echo "CI_ARM64_ONLY=$arm64_only" >> "$GITHUB_ENV"
+          echo "arm64_only=$arm64_only" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java 17
         uses: actions/setup-java@v6
@@ -107,7 +131,7 @@ jobs:
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: NotesTakingApp-debug-${{ env.CI_ARM64_ONLY == 'true' && 'arm64' || 'all-abis' }}-${{ github.run_number }}
+          name: NotesTakingApp-debug-${{ steps.abi_mode.outputs.arm64_only == 'true' && 'arm64' || 'all-abis' }}-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
