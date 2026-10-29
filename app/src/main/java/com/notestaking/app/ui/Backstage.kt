@@ -1370,7 +1370,7 @@ private fun ExplorerSection(
         source == null -> EmptyState(stringResource(R.string.loading))
         layout == ExplorerLayout.COLUMNS -> null
         pinned.isNotEmpty() -> null
-        source.isEmpty() -> EmptyState(
+        source.isEmpty() && kindFilter == null -> EmptyState(
             if (layout == ExplorerLayout.TIMELINE) stringResource(R.string.nothing_here_yet) else stringResource(R.string.folder_empty),
             EmptyArt.PAGES, offersCreate = true,
         )

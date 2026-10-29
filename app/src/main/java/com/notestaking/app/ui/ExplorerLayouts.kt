@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -196,7 +197,7 @@ private fun ColumnHead(
     val active = key != null && b.view.sortKey == key
     val tint = (if (active) palette.accent else palette.textDim).toComposeColor()
     Row(
-        modifier.then(if (key != null && onSort != null) Modifier.clickable { onSort(key) } else Modifier),
+        modifier.heightIn(min = 48.dp).then(if (key != null && onSort != null) Modifier.clickable { onSort(key) } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (align == TextAlign.End) Arrangement.End else Arrangement.Start,
     ) {
