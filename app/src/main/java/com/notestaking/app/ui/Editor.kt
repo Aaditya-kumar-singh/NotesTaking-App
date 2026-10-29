@@ -2075,7 +2075,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 ?: run { message = appContext.getString(R.string.err_clipboard_no_image) }
             return
         }
-        runCatching { appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
+        runCatching { appContext.contentResolver.openInputStream(uri)?.use { com.notestaking.app.platform.BoundedBytes.read(it) } }
             .getOrNull()
             ?.let { insertImageAt(it, content) }
             ?: run { message = appContext.getString(R.string.err_clipboard_no_image) }
@@ -2442,6 +2442,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Insert an image, centred on [atContent] (or on the current page when null). */
     fun insertImageAt(bytes: ByteArray, atContent: com.notestaking.app.core.geometry.Pt?) {
+        if (bytes.size > com.notestaking.app.platform.BoundedBytes.MAX_IMAGE_BYTES) {
+            message = appContext.getString(R.string.err_read_image)
+            return
+        }
         val file = runCatching {
             java.io.File.createTempFile("img", null, imageDir).apply { writeBytes(bytes) }
         }.getOrNull()
@@ -2555,6 +2559,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Save an encoded image into the on-disk sticker library (validated by a probe decode). */
     fun addSticker(bytes: ByteArray) {
+        if (bytes.size > com.notestaking.app.platform.BoundedBytes.MAX_IMAGE_BYTES) {
+            message = appContext.getString(R.string.err_read_image)
+            return
+        }
         val file = runCatching {
             java.io.File.createTempFile("stamp-${System.currentTimeMillis()}-", null, stickerDir)
                 .apply { writeBytes(bytes) }
@@ -2575,7 +2583,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Insert a sticker as a fresh copy, so the note never references the library file itself. */
     fun insertSticker(file: java.io.File) {
-        val bytes = runCatching { file.takeIf { it.isFile }?.readBytes() }.getOrNull()
+        val bytes = runCatching { file.takeIf { it.isFile }?.let { com.notestaking.app.platform.BoundedBytes.readFile(it) } }.getOrNull()
         if (bytes == null) {
             message = appContext.getString(R.string.err_read_sticker)
             refreshStickers()
@@ -2592,7 +2600,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 ?: run { message = appContext.getString(R.string.err_clipboard_no_image) }
             return
         }
-        runCatching { appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
+        runCatching { appContext.contentResolver.openInputStream(uri)?.use { com.notestaking.app.platform.BoundedBytes.read(it) } }
             .getOrNull()
             ?.let { insertImage(it) }
             ?: run { message = appContext.getString(R.string.err_clipboard_no_image) }

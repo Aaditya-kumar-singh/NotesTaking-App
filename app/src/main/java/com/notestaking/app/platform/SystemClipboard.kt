@@ -29,7 +29,7 @@ object SystemClipboard {
         val text = cm.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString() ?: return null
         val t = text.trimStart('\uFEFF').trimStart()
         val looksSvg = t.startsWith("<svg") || ((t.startsWith("<?xml") || t.startsWith("<!")) && t.contains("<svg"))
-        return if (looksSvg) text.toByteArray() else null
+        return if (looksSvg) BoundedBytes.utf8WithinLimit(text) else null
     }
 
     /** Whether there is anything here worth offering a paste for. */
@@ -50,7 +50,7 @@ object SystemClipboard {
     /** The clipboard's image as bytes, reading the uri or falling back to copied SVG source. */
     fun imageBytes(context: Context): ByteArray? {
         imageUri(context)?.let { uri ->
-            runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
+            runCatching { context.contentResolver.openInputStream(uri)?.use { BoundedBytes.read(it) } }
                 .getOrNull()
                 ?.let { return it }
         }
