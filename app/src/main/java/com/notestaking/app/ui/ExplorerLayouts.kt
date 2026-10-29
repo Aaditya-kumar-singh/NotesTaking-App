@@ -331,7 +331,7 @@ internal fun ColumnsBody(
                                     Row(
                                         Modifier
                                             .fillMaxWidth()
-                                            .height(44.dp)
+                                            .height(48.dp)
                                             .clip(shape)
                                             .background(
                                                 when {
@@ -340,6 +340,7 @@ internal fun ColumnsBody(
                                                     else -> Color.Transparent
                                                 },
                                             )
+                                            .explorerTileAccessibility(b, e, shape)
                                             .combinedClickable(
                                                 interactionSource = remember { MutableInteractionSource() },
                                                 indication = null,

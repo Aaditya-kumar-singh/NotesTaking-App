@@ -43,6 +43,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -54,6 +56,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -249,11 +254,11 @@ internal fun ThumbBadges(b: ExplorerBody, e: BrowseEntry, inset: Dp = 8.dp) {
 }
 
 @Composable
-private fun EntryMenuButton(b: ExplorerBody, e: BrowseEntry, tint: Color, size: Dp = 32.dp) {
+private fun EntryMenuButton(b: ExplorerBody, e: BrowseEntry, tint: Color, size: Dp = 48.dp) {
     var open by remember { mutableStateOf(false) }
     Box {
         Tooltip(stringResource(R.string.more)) {
-            IconButton(onClick = { open = true }, modifier = Modifier.size(width = size, height = 36.dp)) {
+            IconButton(onClick = { open = true }, modifier = Modifier.size(width = size, height = 48.dp)) {
                 Icon(NotesTakingIcons.more, stringResource(R.string.more_for, b.label(e)), tint = tint, modifier = Modifier.size(17.dp))
             }
         }
@@ -290,6 +295,22 @@ private fun Modifier.registered(b: ExplorerBody, e: BrowseEntry): Modifier {
     return this.onPlaced { b.host.onPlaced(e, it) }
 }
 
+/** Selection state and keyboard focus shared by grid, list, gallery, timeline and folder entries. */
+@Composable
+internal fun Modifier.explorerTileAccessibility(b: ExplorerBody, e: BrowseEntry, shape: Shape, selectAction: Boolean = false): Modifier {
+    var focused by remember(e.documentUri) { mutableStateOf(false) }
+    val selecting = b.host.selecting()
+    val selectedNow = b.host.isSelected(e)
+    val selectLabel = if (selectAction) stringResource(R.string.select_item) else ""
+    return this
+        .onFocusChanged { focused = it.isFocused }
+        .then(if (focused) Modifier.border(2.dp, LocalPalette.current.accent.toComposeColor(), shape) else Modifier)
+        .then(if (selecting || selectAction) Modifier.semantics {
+            if (selecting) selected = selectedNow
+            if (selectAction && !selectedNow) onLongClick(label = selectLabel) { b.host.onLongClick(e); true }
+        } else Modifier)
+}
+
 /** A file in the grid: the outlined thumbnail with its badges, and under it, outside the outline, the name, date and ⋮. */
 @Composable
 internal fun GridFileTile(b: ExplorerBody, e: BrowseEntry) {
@@ -302,6 +323,7 @@ internal fun GridFileTile(b: ExplorerBody, e: BrowseEntry) {
     Column(
         Modifier
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
+            .explorerTileAccessibility(b, e, MaterialTheme.shapes.medium, selectAction = true)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { b.host.onClick(e) }
             .registered(b, e),
     ) {
@@ -367,6 +389,7 @@ internal fun FolderChipTile(b: ExplorerBody, e: BrowseEntry, height: Dp = 60.dp)
             .background(if (active) palette.selectionBackground.toComposeColor() else Color.Transparent)
             .then(if (!active && code != null) Modifier.colorHatch(code) else Modifier)
             .border(1.dp, if (active) accent else (code ?: palette.border.toComposeColor()), shape)
+            .explorerTileAccessibility(b, e, shape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -387,8 +410,13 @@ internal fun FolderChipTile(b: ExplorerBody, e: BrowseEntry, height: Dp = 60.dp)
         if (b.host.isPinned(e)) Icon(NotesTakingIcons.pin, stringResource(R.string.pinned_to_sidebar), tint = if (active) onAccent else palette.textDim.toComposeColor(), modifier = Modifier.size(14.dp))
         // Kept in select mode so the chip never changes width; there it only ends the selection.
         if (selecting) {
-            IconButton(onClick = { b.host.onClick(e) }, modifier = Modifier.size(width = 32.dp, height = 40.dp)) {
-                Icon(NotesTakingIcons.more, null, tint = if (active) onAccent else palette.textDim.toComposeColor(), modifier = Modifier.size(17.dp))
+            IconButton(onClick = { b.host.onClick(e) }, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    if (b.host.isSelected(e)) NotesTakingIcons.check else NotesTakingIcons.select,
+                    stringResource(if (b.host.isSelected(e)) R.string.deselect_item else R.string.select_item),
+                    tint = if (active) onAccent else palette.textDim.toComposeColor(),
+                    modifier = Modifier.size(20.dp),
+                )
             }
         } else {
             EntryMenuButton(b, e, palette.textDim.toComposeColor())
@@ -410,6 +438,7 @@ internal fun FolderCardTile(b: ExplorerBody, e: BrowseEntry) {
         Modifier
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
             .registered(b, e)
+            .explorerTileAccessibility(b, e, shape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -457,10 +486,11 @@ internal fun ListRow(b: ExplorerBody, e: BrowseEntry, wide: Boolean) {
     Row(
         Modifier
             .fillMaxWidth()
-            .height(if (compact) 40.dp else 56.dp)
+            .height(if (compact) 48.dp else 56.dp)
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
             .background(if (selected) palette.selectionBackground.toComposeColor() else Color.Transparent)
             .registered(b, e)
+            .explorerTileAccessibility(b, e, MaterialTheme.shapes.small, selectAction = !e.isDir)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -506,7 +536,7 @@ internal fun ListRow(b: ExplorerBody, e: BrowseEntry, wide: Boolean) {
             )
             Text(b.metaOverride?.invoke(e) ?: b.whenText(e, withTime = true), color = dim, fontSize = 13.sp, maxLines = 1, modifier = Modifier.width(LIST_WHEN_W).padding(start = 28.dp))
         }
-        if (!selecting) EntryMenuButton(b, e, dim, size = 40.dp) else Spacer(Modifier.width(40.dp))
+        if (!selecting) EntryMenuButton(b, e, dim) else Spacer(Modifier.width(48.dp))
     }
 }
 
@@ -531,6 +561,7 @@ internal fun GalleryItem(b: ExplorerBody, e: BrowseEntry, shelf: Dp) {
         Modifier
             .fillMaxWidth()
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
+            .explorerTileAccessibility(b, e, MaterialTheme.shapes.medium, selectAction = true)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { b.host.onClick(e) }
             .registered(b, e),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -582,6 +613,7 @@ internal fun TimelineCard(b: ExplorerBody, e: BrowseEntry, side: Dp) {
         Modifier
             .width(side)
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
+            .explorerTileAccessibility(b, e, MaterialTheme.shapes.medium, selectAction = true)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { b.host.onClick(e) }
             .registered(b, e),
         verticalArrangement = Arrangement.spacedBy(7.dp),
@@ -621,12 +653,13 @@ internal fun GalleryFolderChip(b: ExplorerBody, e: BrowseEntry) {
     val shape = MaterialTheme.shapes.small
     Row(
         Modifier
-            .height(44.dp)
+            .height(48.dp)
             .registered(b, e)
             .clip(shape)
             .background(if (active) palette.selectionBackground.toComposeColor() else Color.Transparent)
             .then(if (!active && code != null) Modifier.colorHatch(code) else Modifier)
             .border(1.dp, if (active) palette.accent.toComposeColor() else (code ?: palette.border.toComposeColor()), shape)
+            .explorerTileAccessibility(b, e, shape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -691,7 +724,7 @@ internal fun HomeShelves(
                 pins.forEach { pin ->
                     val shape = MaterialTheme.shapes.small
                     Row(
-                        Modifier.height(44.dp).clip(shape).border(1.dp, palette.border.toComposeColor(), shape)
+                        Modifier.height(48.dp).clip(shape).border(1.dp, palette.border.toComposeColor(), shape)
                             .clickable { onOpenPin(pin) }.padding(start = 12.dp, end = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -715,15 +748,21 @@ internal fun HomeShelves(
 private fun RecentCard(b: ExplorerBody, r: RecentEntry, onOpen: (BrowseEntry) -> Unit) {
     val palette = LocalPalette.current
     val e = r.entry
+    val selecting = b.host.selecting()
+    val selected = b.host.isSelected(e)
     val shape = MaterialTheme.shapes.medium
     val code = b.colorOf(e)?.let { codeTint(it, palette) }
     Column(
-        Modifier.width(168.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onOpen(e) },
+        Modifier.width(168.dp)
+            .explorerTileAccessibility(b, e, shape, selectAction = true)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onOpen(e) },
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Box(Modifier.size(168.dp).clip(shape).border(1.dp, code ?: palette.border.toComposeColor(), shape)) {
+        Box(Modifier.size(168.dp).clip(shape).border(if (selected) 2.dp else 1.dp, if (selected) palette.accent.toComposeColor() else (code ?: palette.border.toComposeColor()), shape)) {
             EntryThumb(b.editor, e, ThumbShape.TOP, Modifier.fillMaxSize())
+            if (selected) Box(Modifier.fillMaxSize().background(palette.selectionBackground.withAlpha(77).toComposeColor()))
             ThumbBadges(b, e, 6.dp)
+            if (selecting) CheckRing(selected, Modifier.align(Alignment.TopStart).padding(6.dp))
         }
         Spacer(Modifier.height(4.dp))
         Text(b.label(e), color = palette.text.toComposeColor(), fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -752,6 +791,7 @@ internal fun PinnedCard(b: ExplorerBody, e: BrowseEntry, whole: Boolean) {
         Modifier
             .width(width)
             .alpha(if (b.host.isCut(e)) 0.4f else 1f)
+            .explorerTileAccessibility(b, e, MaterialTheme.shapes.medium, selectAction = true)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { b.host.onClick(e) }
             .registered(b, e),
         verticalArrangement = Arrangement.spacedBy(3.dp),

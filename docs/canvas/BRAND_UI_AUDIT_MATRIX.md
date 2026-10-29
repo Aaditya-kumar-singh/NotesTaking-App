@@ -27,7 +27,7 @@
 | UI-17 | Feedback snackbar and toast | ui/Editor.kt, MainActivity.kt, NewNoteScreen.kt, AboutPane.kt | EXISTING: snackbar and one isolated Toast | Unified lightweight status/Undo/Retry | BR-3 |
 | UI-18 | PDF import/export progress | MainActivity.kt:1642+, 1714+, 1749+, 1792+ | EXISTING: progress modal classes | Honest progress/cancel/error states, visual consistency | BR-3 |
 | UI-19 | Home + sidebar | ui/Backstage.kt | EXISTING: navigation/create/folders | Stronger hierarchy and spacing, same routes | BR-4 |
-| UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, Backstage.kt | EXISTING | Shared hover/selection/thumbnail/metadata states | BR-4 |
+| UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, ExplorerLayouts.kt, Backstage.kt | PARTIAL SOURCE FIX: visible keyboard focus outline across tile layouts, selected-state semantics, accessibility selection action on file cards, and 48dp compact rows/overflow targets | Validate TalkBack announcements, keyboard activation/focus, visual focus ring, drag/drop and compact list density on Android phone/tablet | BR-4 |
 | UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | PARTIAL SOURCE FIX: empty folder prioritizes New Note; no-result search, colour, kind and Recent views now offer contextual recovery actions while loading stays unchanged | Validate search focus/Back, colour/kind reset, Recent Home, 320dp/tablet widths, 200% font scale and TalkBack on Android | BR-4 |
 | UI-22 | New note screen | ui/NewNoteScreen.kt | EXISTING | Clear creation steps and template cards | BR-4 |
 | UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt | EXISTING | Quiet chrome/paper separation, page navigation, tools | BR-4 |
@@ -39,7 +39,7 @@
 | UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt | PARTIAL SOURCE FIX: selected drawing-tool state and ink color hex/selected state exposed to screen readers in shared toolbar controls | Check TalkBack selection announcement, 48dp targets, contrast, keyboard and system bars on phone/tablet | BR-5 |
+| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt, ExplorerTiles.kt, ExplorerLayouts.kt | PARTIAL SOURCE FIX: toolbar selected state and color labels; explorer focus visibility, selection semantics and minimum 48dp compact-row/menu targets | Check TalkBack selection action and announcements, focus order, 200% font scaling, contrast, keyboard and system bars on devices | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
