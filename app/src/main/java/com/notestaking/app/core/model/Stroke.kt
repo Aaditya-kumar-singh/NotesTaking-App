@@ -650,94 +650,109 @@ class Stroke(
             .also { cachedRawBounds = it }
     }
 
-    /** Cheap sample test after a bounding-box reject (spec 02 §5.1). */
+    /** Test every raw segment, including long two-point lines with no middle samples. */
     override fun intersectsCircle(cx: Double, cy: Double, radius: Double): Boolean {
         val s = pts
-        if (s.n == 0) return false
-        // Reject against the *raw* sample box (the smoothed geometry lags inward).
-        if (rawBounds().distanceTo(Pt(cx, cy)) > radius) return false
-        // A straight stroke carries only its two endpoints, so a mid-line tap falls between
-        // samples; test the segments they span (point-to-line) instead of the sample points.
-        if (straight) {
-            val c = Pt(cx, cy)
-            if (s.n == 1) return c.distanceTo(Pt(s.ox + s.xa[0], s.oy + s.ya[0])) <= radius
-            for (i in 1 until s.n) {
-                val a = Pt(s.ox + s.xa[i - 1], s.oy + s.ya[i - 1])
-                val b = Pt(s.ox + s.xa[i], s.oy + s.ya[i])
-                if (Geometry.distancePointToSegment(c, a, b) <= radius) return true
-            }
-            return false
-        }
-        // Compare in offset space so the eraser sweep does no per-sample origin arithmetic.
-        val lx = cx - s.ox
-        val ly = cy - s.oy
-        val r2 = radius * radius
-        for (i in 0 until s.n) {
-            val dx = s.xa[i] - lx
-            val dy = s.ya[i] - ly
-            if (dx * dx + dy * dy <= r2) return true
+        if (s.n == 0 || radius <= 0.0) return false
+        val reach = radius + config.baseWidth.coerceAtLeast(0.0) * 0.5
+        if (rawBounds().distanceTo(Pt(cx, cy)) > reach) return false
+        val center = Pt(cx, cy)
+        if (s.n == 1) return center.distanceTo(s.sample(0).pos) < reach
+        for (i in 1 until s.n) {
+            if (Geometry.distancePointToSegment(center, s.sample(i - 1).pos, s.sample(i).pos) < reach) return true
         }
         return false
     }
 
     /**
-     * AREA-erase: the surviving fragments after an eraser circle (page-local [cx], [cy], [radius])
-     * passes over this stroke. A sample is erased when within [radius] of the centre — the same
-     * point test as [intersectsCircle], so a stroke this splits is exactly one [intersectsCircle]
-     * reports as hit. Surviving samples are partitioned into maximal contiguous runs; each run
-     * becomes a new stroke sharing this stroke's tool/config/speedScale.
-     *  - `null`      — no sample erased (keep the original untouched)
-     *  - empty list  — every sample erased (remove the whole stroke)
-     *  - one stroke  — an end was trimmed, or a hole left a single run
-     *  - two or more — a mid-stroke hole split it
+     * Clip each raw polyline segment against the circular area eraser. The old point-only
+     * splitter removed whole sparse/straight lines or left large gaps between samples.
+     * Interpolate position, pressure and recorded time at cut boundaries so fragments
+     * render and export with their original stroke style. The nib half-width expands the
+     * cut radius to avoid leaving ink caps protruding back into the erased footprint.
+     *
+     * null = untouched, empty = fully erased, otherwise the ordered surviving pieces.
      */
     fun erasedBy(cx: Double, cy: Double, radius: Double): List<Stroke>? {
         val s = pts
-        if (s.n == 0) return null
-        if (rawBounds().distanceTo(Pt(cx, cy)) > radius) return null
-        // A straight stroke is just two endpoints — it has no mid-line samples to split on, so any
-        // contact erases the whole segment (consistent with how the eraser hit-tests it).
-        if (straight) return if (intersectsCircle(cx, cy, radius)) emptyList() else null
-        val lx = cx - s.ox
-        val ly = cy - s.oy
-        val r2 = radius * radius
-        var anyErased = false
-        var runStart = -1
-        val fragments = mutableListOf<Stroke>()
-        for (i in 0 until s.n) {
-            val dx = s.xa[i] - lx
-            val dy = s.ya[i] - ly
-            if (dx * dx + dy * dy <= r2) {
-                anyErased = true
-                if (runStart >= 0) {
-                    fragments.add(fragment(s, runStart, i))
-                    runStart = -1
-                }
-            } else if (runStart < 0) {
-                runStart = i
+        if (s.n == 0 || radius <= 0.0) return null
+        val reach = radius + config.baseWidth.coerceAtLeast(0.0) * 0.5
+        if (rawBounds().distanceTo(Pt(cx, cy)) > reach) return null
+        val r2 = reach * reach
+        fun inside(p: Sample): Boolean {
+            val dx = p.x - cx
+            val dy = p.y - cy
+            return dx * dx + dy * dy < r2
+        }
+        if (s.n == 1) return if (inside(s.sample(0))) emptyList() else null
+
+        val surviving = ArrayList<Stroke>()
+        val run = ArrayList<Sample>()
+        var cut = false
+        fun finishRun() {
+            if (run.isNotEmpty()) {
+                val piece = Stroke(tool, config, run.toList(), speedScale, straight, smoothScale)
+                piece.group = group
+                piece.sync = sync
+                piece.locked = locked
+                surviving.add(piece)
+                run.clear()
             }
         }
-        if (runStart >= 0) fragments.add(fragment(s, runStart, s.n))
-        return if (anyErased) fragments else null
+        fun append(p: Sample) {
+            val last = run.lastOrNull()
+            if (last == null || kotlin.math.hypot(last.x - p.x, last.y - p.y) > 1e-7) run.add(p)
+        }
+        fun between(a: Sample, b: Sample, t: Double): Sample =
+            Sample(
+                a.x + (b.x - a.x) * t,
+                a.y + (b.y - a.y) * t,
+                a.pressure + (b.pressure - a.pressure) * t,
+                a.t + (b.t - a.t) * t,
+            )
+
+        for (i in 1 until s.n) {
+            val a = s.sample(i - 1)
+            val b = s.sample(i)
+            val dx = b.x - a.x
+            val dy = b.y - a.y
+            val aa = dx * dx + dy * dy
+            val boundaries = ArrayList<Double>(4)
+            boundaries.add(0.0)
+            if (aa > 1e-16) {
+                val ox = a.x - cx
+                val oy = a.y - cy
+                val bb = 2.0 * (ox * dx + oy * dy)
+                val cc = ox * ox + oy * oy - r2
+                val discriminant = bb * bb - 4.0 * aa * cc
+                if (discriminant > 0.0) {
+                    val sqrt = kotlin.math.sqrt(discriminant)
+                    val enter = (-bb - sqrt) / (2.0 * aa)
+                    val exit = (-bb + sqrt) / (2.0 * aa)
+                    if (enter > 0.0 && enter < 1.0) boundaries.add(enter)
+                    if (exit > 0.0 && exit < 1.0) boundaries.add(exit)
+                }
+            }
+            boundaries.add(1.0)
+            boundaries.sort()
+            for (j in 1 until boundaries.size) {
+                val from = boundaries[j - 1]
+                val to = boundaries[j]
+                if (to - from <= 1e-12) continue
+                if (inside(between(a, b, (from + to) * 0.5))) {
+                    cut = true
+                    finishRun()
+                } else {
+                    append(between(a, b, from))
+                    append(between(a, b, to))
+                }
+            }
+        }
+        if (!cut) return null
+        finishRun()
+        return surviving
     }
 
-    /** A new stroke from [src]'s samples `[from, to)`, copied so it shares no backing storage. */
-    private fun fragment(src: Samples, from: Int, to: Int): Stroke {
-        val m = to - from
-        val s = Stroke(tool, config, emptyList(), speedScale, straight, smoothScale)
-        // Re-origin on the fragment's own first sample; the offsets stay small either way, but this
-        // keeps a fragment indistinguishable from a stroke drawn where it sits.
-        s.pts = Samples(
-            src.ox + src.xa[from],
-            src.oy + src.ya[from],
-            FloatArray(m) { src.xa[from + it] - src.xa[from] },
-            FloatArray(m) { src.ya[from + it] - src.ya[from] },
-            src.pa.copyOfRange(from, to),
-            src.ta?.copyOfRange(from, to),
-            m,
-        )
-        return s
-    }
 
     companion object {
         const val KIND = "stroke"

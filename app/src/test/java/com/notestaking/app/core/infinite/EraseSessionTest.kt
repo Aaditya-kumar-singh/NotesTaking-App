@@ -103,6 +103,27 @@ class EraseSessionTest {
         assertEquals(sky, box.fillRgba)
     }
 
+    @Test fun straightTwoPointInkSurvivesAreaEraserAndUndoRestoresOriginal() {
+        val original = Stroke(
+            Tool.PEN, ToolDefaults.configFor(Tool.PEN),
+            listOf(Sample(0.0, 0.0, 1.0), Sample(100.0, 0.0, 1.0)),
+            straight = true,
+        )
+        val doc = docOf(original)
+        val session = EraseSession(doc)
+        assertNotNull(session.erase(50.0, 0.0, 5.0, area = true))
+        val pieces = doc.items.filterIsInstance<Stroke>()
+        assertEquals(2, pieces.size)
+        assertTrue(pieces.first().samples.last().x < 50.0)
+        assertTrue(pieces.last().samples.first().x > 50.0)
+        val edit = session.buildCommand()!!
+        edit.undo()
+        assertEquals(1, doc.itemCount)
+        assertSame(original, doc.items.single())
+        edit.redo()
+        assertEquals(2, doc.itemCount)
+    }
+
     // --- whole-stroke mode ---
 
     @Test fun wholeStrokeModeRemovesWhatItTouches() {

@@ -376,6 +376,7 @@ class InteractionController(
     /** Filled shapes whose fill alone this erase took, with the fill each had. */
     private val eraseUnfilled = mutableListOf<RefillShapes.Entry>()
     private var eraserCursor: Pt? = null // viewport pixels
+    private var previousErasePoint: Pt? = null // last active drag position
     /** Tool armed just before the eraser was selected, for the "switch back after erasing" option. */
     private var toolBeforeEraser: Tool? = null
     /** Tool armed just before the select tool, for the "switch back after a selection action" option. */
@@ -715,7 +716,7 @@ class InteractionController(
 
     private fun extendHoverAction(vx: Double, vy: Double) {
         when (hoverActionTool) {
-            Tool.ERASER -> eraseAt(vx, vy)
+            Tool.ERASER -> eraseAlong(vx, vy)
             Tool.PAN -> extendPan(vx, vy)
             else -> Unit
         }
@@ -963,7 +964,7 @@ class InteractionController(
             PointerMode.RULER_MOVE -> { ruler.center = Pt(vx, vy) + rulerGrabOffset; requestRender() }
             PointerMode.RULER_TRANSFORM -> updateRulerTransform(e)
             PointerMode.RULER_ROTATE -> updateRulerRotate(e)
-            PointerMode.ERASE -> eraseAt(vx, vy)
+            PointerMode.ERASE -> extendErase(e, idx)
             PointerMode.BAND -> extendBand(content)
             PointerMode.LASSO_DRAW -> extendLasso(content)
             PointerMode.SHOT -> extendScreenshot(content)
@@ -1509,7 +1510,25 @@ class InteractionController(
         eraseMarkups.clear()
         eraseUnfilled.clear()
         mode = PointerMode.ERASE
-        eraseAt(vx, vy)
+        previousErasePoint = null
+        eraseAlong(vx, vy)
+    }
+
+    /** Include historical stylus positions, then bridge each gap at the current zoom. */
+    private fun extendErase(e: MotionEvent, idx: Int) {
+        if (e.findPointerIndex(drawingPointerId) < 0) return
+        for (h in 0 until e.historySize) {
+            eraseAlong(e.getHistoricalX(idx, h).toDouble(), e.getHistoricalY(idx, h).toDouble())
+        }
+        eraseAlong(e.getX(idx).toDouble(), e.getY(idx).toDouble())
+    }
+
+    private fun eraseAlong(vx: Double, vy: Double) {
+        val next = Pt(vx, vy)
+        com.notestaking.app.core.geometry.EraserSweep.visit(
+            previousErasePoint, next, eraserRadius() * state.zoom,
+        ) { eraseAt(it.x, it.y) }
+        previousErasePoint = next
     }
 
     private fun eraseAt(vx: Double, vy: Double) {
@@ -1651,6 +1670,7 @@ class InteractionController(
         eraseMarkups.clear()
         eraseUnfilled.clear()
         eraserCursor = null
+        previousErasePoint = null
         mode = PointerMode.IDLE
         requestRender()
     }
