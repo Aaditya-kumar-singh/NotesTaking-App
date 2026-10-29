@@ -646,7 +646,9 @@ class InteractionController(
                 handleMove(e)
             }
             MotionEvent.ACTION_POINTER_UP ->
-                if (movingView() && isCancelledLift(e)) {
+                if (finishActivePenContact(e)) {
+                    Unit
+                } else if (movingView() && isCancelledLift(e)) {
                     touchTakenBack = true
                     takeBackTouch()
                 } else {
@@ -765,7 +767,7 @@ class InteractionController(
         val vy = e.getY(0).toDouble()
         val content = state.viewportToContent(Pt(vx, vy))
         drawingPointerId = e.getPointerId(0)
-        drawingIsStylus = toolType == MotionEvent.TOOL_TYPE_STYLUS
+        drawingIsStylus = PenContact.isPen(toolType, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)
 
         // Resolve which tool this pointer drives:
         //  - the stylus eraser end, or the held side button, force the eraser/side-button tool;
@@ -986,6 +988,18 @@ class InteractionController(
             PointerMode.PDF_TEXT -> pdfText?.dragTo(Pt(vx, vy))
             else -> Unit
         }
+    }
+
+    /** A pen can lift before a resting palm. Commit with the pen's own pointer still present. */
+    private fun finishActivePenContact(e: MotionEvent): Boolean {
+        val ownsGesture = mode == PointerMode.DRAW || mode == PointerMode.ERASE || mode == PointerMode.TAPE
+        if (!PenContact.finishesGesture(drawingIsStylus, ownsGesture, drawingPointerId, e.getPointerId(e.actionIndex))) {
+            return false
+        }
+        handleUp(e)
+        tapCandidate = false
+        touchTakenBack = true // ignore leftover palm events until the next real ACTION_DOWN
+        return true
     }
 
     private fun handlePointerUp(e: MotionEvent) {

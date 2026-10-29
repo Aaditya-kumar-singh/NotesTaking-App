@@ -144,6 +144,7 @@ class CanvasView @JvmOverloads constructor(
     private var gestureDownMs = 0L
     private var gestureMaxPointers = 0
     private var fourFingerActive = false
+    private var fourFingerClean = false
     private var fourCx = 0f
     private var fourCy = 0f
     private var fourMoved = false
@@ -283,11 +284,15 @@ class CanvasView @JvmOverloads constructor(
                 gestureDownMs = e.eventTime
                 gestureMaxPointers = 1
                 fourFingerActive = false
+                fourFingerClean = e.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER
                 fourMoved = false
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 gestureMaxPointers = maxOf(gestureMaxPointers, e.pointerCount)
-                if (!fourFingerActive && e.pointerCount >= 4) {
+                if (e.getToolType(e.actionIndex) != MotionEvent.TOOL_TYPE_FINGER) fourFingerClean = false
+                if (!fourFingerActive && fourFingerClean &&
+                    PenContact.canToggleDebug(IntArray(e.pointerCount) { e.getToolType(it) }, MotionEvent.TOOL_TYPE_FINGER)
+                ) {
                     fourFingerActive = true
                     val (cx, cy) = centroid(e)
                     fourCx = cx; fourCy = cy
