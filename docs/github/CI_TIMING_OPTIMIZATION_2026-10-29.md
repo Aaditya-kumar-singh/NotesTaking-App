@@ -26,6 +26,14 @@ All five runs built three native ABIs. On #48 the ARM64 native build took about 
 
 **Estimate, not a measured result:** 3–6 minutes less native compilation in typical PR/checkpoint runs based on the historical logs. Overall runtime also depends on Kotlin compilation, dependency restoration, lint, test execution, network and runner load. Actual before/after comparison requires a new GitHub Actions run on the optimized feature head.
 
+## CodeQL Java/Kotlin extraction: avoid a second native APK build
+
+The separate CodeQL workflow was also running `:app:assembleDebug`, rebuilding all three vendored PDFium/JNI architectures just to extract Java/Kotlin. In the [previous successful CodeQL run](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/40838034469), the traced Gradle `assembleDebug` phase took about **10m55s** and included `buildCMakeDebug` for ARM64, ARMv7 and x86-64.
+
+The CodeQL build step is now changed to `:app:compileDebugKotlin :app:compileDebugJavaWithJavac` in one Gradle invocation. The CodeQL `java-kotlin` language, manual compilation mode, `security-extended` queries, analysis/upload step, triggers and permissions are **unchanged**. Android CI still executes native builds, tests, lint and APK checks. The pinned SDK/NDK/CMake installation is retained because Gradle may still need native toolchain metadata at configuration time.
+
+**Status:** Source-only YAML/configuration checks passed. The first GitHub CodeQL run with the new command must still verify successful extraction and uploaded results. It is **not yet a measured speed improvement**. If compilation-only loses Kotlin/Java coverage, restore the working `assembleDebug` command and investigate with GitHub logs; do not report an empty analysis as success.
+
 ## Cache assessment
 
 The #48 job restored an existing Gradle cache but reported `Cache was read-only`. Its logs explicitly explain that `gradle/actions/setup-gradle@v6` defaults to saving cache changes only on the GitHub **default branch**. The repository currently reports `master` as default while active development is on `main`.

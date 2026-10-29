@@ -60,11 +60,13 @@ jobs:
           build-mode: manual
           queries: security-extended
 
-      - name: Build Kotlin sources for CodeQL extraction
+      - name: Compile Java/Kotlin sources for CodeQL extraction
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace --max-workers=2 :app:assembleDebug
+          # CodeQL targets JVM sources; Android CI already validates native libraries and APKs.
+          ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            :app:compileDebugKotlin :app:compileDebugJavaWithJavac
 
       - name: Upload CodeQL findings to GitHub code scanning
         uses: github/codeql-action/analyze@v4
