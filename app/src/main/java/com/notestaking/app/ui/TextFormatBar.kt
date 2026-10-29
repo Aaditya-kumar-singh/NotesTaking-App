@@ -62,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
+import com.notestaking.app.canvas.InteractionController
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.pal.FontFace
 import com.notestaking.app.core.text.ListKind
@@ -459,8 +460,9 @@ private fun SizeStepper(size: Double, onDelta: (Double) -> Unit) {
     val palette = LocalPalette.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Tooltip(stringResource(R.string.smaller)) {
-            Box(Modifier.size(36.dp).clip(CircleShape).clickable { onDelta(-1.0) }, contentAlignment = Alignment.Center) {
-                Icon(NotesTakingIcons.minus, stringResource(R.string.smaller), tint = palette.textDim.toComposeColor(), modifier = Modifier.size(16.dp))
+            IconButton(onClick = { onDelta(-1.0) }, enabled = size > InteractionController.TEXT_MIN_PT, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.minus, stringResource(R.string.smaller),
+                    tint = (if (size > InteractionController.TEXT_MIN_PT) palette.text else palette.textDim).toComposeColor(), modifier = Modifier.size(18.dp))
             }
         }
         Text(
@@ -468,11 +470,12 @@ private fun SizeStepper(size: Double, onDelta: (Double) -> Unit) {
             color = palette.text.toComposeColor(),
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(26.dp),
+            modifier = Modifier.width(36.dp),
         )
         Tooltip(stringResource(R.string.larger)) {
-            Box(Modifier.size(36.dp).clip(CircleShape).clickable { onDelta(1.0) }, contentAlignment = Alignment.Center) {
-                Icon(NotesTakingIcons.plus, stringResource(R.string.larger), tint = palette.textDim.toComposeColor(), modifier = Modifier.size(16.dp))
+            IconButton(onClick = { onDelta(1.0) }, enabled = size < InteractionController.TEXT_MAX_PT, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.plus, stringResource(R.string.larger),
+                    tint = (if (size < InteractionController.TEXT_MAX_PT) palette.text else palette.textDim).toComposeColor(), modifier = Modifier.size(18.dp))
             }
         }
     }
