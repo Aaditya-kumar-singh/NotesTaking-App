@@ -8501,8 +8501,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         adoptTemplate {
             val image = java.io.File.createTempFile("img", null, appContext.cacheDir)
             try {
-                appContext.contentResolver.openInputStream(uri)?.use { src -> java.io.FileOutputStream(image).use { src.copyTo(it) } }
-                    ?: throw com.notestaking.app.format.TemplateFormatException(appContext.getString(R.string.err_read_file))
+                appContext.contentResolver.openInputStream(uri)?.use { src ->
+                    java.io.FileOutputStream(image).use { output ->
+                        com.notestaking.app.platform.BoundedCopy.copy(
+                            src, output, com.notestaking.app.platform.BoundedBytes.MAX_IMAGE_BYTES.toLong(),
+                        )
+                    }
+                } ?: throw com.notestaking.app.format.TemplateFormatException(appContext.getString(R.string.err_read_file))
                 val pkg = TemplateLibrary.packageFromImage(image, kind, name)
                 try {
                     TemplateLibrary.import(pkg, name)
