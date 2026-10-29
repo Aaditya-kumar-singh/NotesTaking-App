@@ -132,8 +132,7 @@ class PdfSource private constructor(
         filter: PdfPageFilter = PdfPageFilter.NONE,
         markups: List<TextMarkup> = emptyList(),
     ): AndroidRasterSurface? {
-        val w = widthPx.coerceIn(1, MAX_DIM)
-        val h = heightPx.coerceIn(1, MAX_DIM)
+        val (w, h) = PdfRasterBudget.pageSize(widthPx, heightPx)
         return render(index, w, h, 0, 0, w, h, filter, markups)
     }
 
@@ -158,10 +157,10 @@ class PdfSource private constructor(
         val fullW = (wPts * pxPerPt).roundToInt()
         val fullH = (hPts * pxPerPt).roundToInt()
         if (fullW <= 0 || fullH <= 0) return null
-        return render(
-            index, fullW, fullH, regionLeftPx, regionTopPx,
-            regionWpx.coerceIn(1, MAX_DIM), regionHpx.coerceIn(1, MAX_DIM), filter, markups,
-        )
+        val w = regionWpx.coerceIn(1, PdfRasterBudget.MAX_DIM)
+        val h = regionHpx.coerceIn(1, PdfRasterBudget.MAX_DIM)
+        if (!PdfRasterBudget.allowsRegion(w, h)) return null
+        return render(index, fullW, fullH, regionLeftPx, regionTopPx, w, h, filter, markups)
     }
 
     /** Renders the [w] × [h] region at ([left], [top]) of a [fullW] × [fullH] raster of page [index]. */
@@ -172,22 +171,39 @@ class PdfSource private constructor(
         if (closed) return null
         // Read before the render, which then finds the page already loaded.
         val images = if (filter.stampImages) imageRectsFor(index) else null
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        if (!pdf.render(index, bmp, fullW, fullH, left, top, priority())) {
-            bmp.recycle()
-            return null
-        }
-        if (markups.isNotEmpty()) paintMarkups(bmp, markups, index, fullW, fullH, left, top)
-        val m = filter.pageMatrix ?: return AndroidRasterSurface(bmp)
+        if (!PdfRasterBudget.allowsRegion(w, h)) return null
+        var raw: Bitmap? = null
+        var adjusted: Bitmap? = null
+        try {
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            raw = bmp
+            if (!pdf.render(index, bmp, fullW, fullH, left, top, priority())) return null
+            if (markups.isNotEmpty()) paintMarkups(bmp, markups, index, fullW, fullH, left, top)
+            val m = filter.pageMatrix
+            if (m == null) {
+                val surface = AndroidRasterSurface(bmp)
+                raw = null // ownership transfers to the returned raster surface
+                return surface
+            }
 
-        val filtered = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        Canvas(filtered).drawBitmap(bmp, 0f, 0f, matrixPaint(m))
-        val size = pageSizePoints(index)
-        if (images != null && images.isNotEmpty() && size != null && size.first > 0f && size.second > 0f) {
-            stampOriginalImages(filtered, bmp, images, fullW / size.first, fullH / size.second, left, top)
+            val filtered = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            adjusted = filtered
+            Canvas(filtered).drawBitmap(bmp, 0f, 0f, matrixPaint(m))
+            val size = pageSizePoints(index)
+            if (images != null && images.isNotEmpty() && size != null && size.first > 0f && size.second > 0f) {
+                stampOriginalImages(filtered, bmp, images, fullW / size.first, fullH / size.second, left, top)
+            }
+            val surface = AndroidRasterSurface(filtered)
+            adjusted = null // ownership transfers to the returned raster surface
+            return surface
+        } catch (_: OutOfMemoryError) {
+            return null // fail the render request rather than crash while under memory pressure
+        } catch (_: RuntimeException) {
+            return null // malformed native page data must not leak either bitmap
+        } finally {
+            raw?.recycle()
+            adjusted?.recycle()
         }
-        bmp.recycle()
-        return AndroidRasterSurface(filtered)
     }
 
     /** Draws [markups] onto [bmp], the ([left], [top]) corner of page [index] rendered [fullW] × [fullH]. */
@@ -348,7 +364,6 @@ class PdfSource private constructor(
     }
 
     companion object {
-        private const val MAX_DIM = 4096
 
         /** Bookmarks read at most, so a pathological outline can't flood the Contents tab. */
         private const val MAX_OUTLINE = 2000
