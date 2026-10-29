@@ -1,7 +1,7 @@
 # NotesTaking App — Visual Identity, Full Theme, Alerts, Popups & Motion Plan
 
 **Created:** 2026-10-28
-**Status:** Master design plan. First-pass launcher/loader artwork, colors and shared popup styling are implemented on `feature/modern-paper-ink-foundation` (see `docs/engineering/BRAND_FOUNDATION_2026-10-29.md`). BR-3 popup/destructive actions and BR-4 canvas-menu/toolbar visual fixes are also partially implemented (see `docs/engineering/BRAND_DIALOG_CANVAS_BATCH_2026-10-29.md`); full BR-2 through BR-5 completion and device QA are still pending.
+**Status:** Master design plan. First-pass launcher/loader artwork, colors and shared popup styling are implemented on `feature/modern-paper-ink-foundation` (see `docs/engineering/BRAND_FOUNDATION_2026-10-29.md`). BR-3 popup/destructive actions and BR-4 canvas-menu/toolbar/settings visual fixes are also partially implemented (see `docs/engineering/BRAND_DIALOG_CANVAS_BATCH_2026-10-29.md`); full BR-2 through BR-5 completion and device QA are still pending.
 **Workspace:** C:\Users\WHITE-SNAKE\Desktop\xnotes-android
 **Related:** MASTER_CANVAS_UPGRADE_PLAN.md, SAMSUNG_NOTES_STYLE_ERASER_PLAN.md, FEATURE_BACKLOG.md, BRAND_UI_AUDIT_MATRIX.md, CANVAS_DISCOVERABILITY_AND_WORKSPACE_PLAN.md, CANVAS_FEATURE_VISIBILITY_MATRIX.md
 **App:** Native Kotlin 2.2.21 / Jetpack Compose / Material 3, minSdk 26, targetSdk 36

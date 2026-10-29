@@ -314,6 +314,9 @@
     <string name="show_sidebar">显示侧边栏</string>
     <string name="preferences">偏好设置</string>
     <string name="reset_to_defaults">恢复默认设置</string>
+    <string name="pref_reset_confirm_title">恢复应用默认设置？</string>
+    <string name="pref_reset_confirm_body">这会将外观、输入及其他应用偏好恢复为默认值。已保存的笔记和 PDF 文件不会被删除。</string>
+    <string name="pref_theme_preview">主题预览</string>
     <string name="pref_general">常规</string>
     <string name="pref_ui_theme">界面主题</string>
     <string name="theme_system">跟随系统</string>

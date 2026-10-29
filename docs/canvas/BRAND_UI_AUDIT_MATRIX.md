@@ -36,7 +36,7 @@
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |
 | UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | EXISTING | Source text legibility, accessible options, focus | BR-4 |
 | UI-28 | Audio/recording player | ui/AudioChip.kt, platform/RecordingService.kt | EXISTING | Consistent progress/state and contrast; notification safe | BR-4 |
-| UI-29 | Settings personalizations | ui/PreferencesPane.kt | EXISTING: material, colors and corners | Brand preset preview and reorganized grouping | BR-4 |
+| UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
 | UI-32 | Accessibility/focus/IME | All UI screens | REVIEW | 48dp hit, contrast, screen reader, keyboard, system bars | BR-5 |

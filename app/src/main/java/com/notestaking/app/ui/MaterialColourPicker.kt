@@ -151,6 +151,40 @@ internal fun MaterialColourPicker(prefs: Preferences, update: (Preferences) -> U
     }
 }
 
+/** Non-interactive preview of the applied UI palette, including system and OLED modes. */
+@Composable
+internal fun MaterialThemePreview() {
+    val palette = LocalPalette.current
+    val frame = MaterialTheme.shapes.medium
+    Column(
+        Modifier.widthIn(max = 520.dp).fillMaxWidth()
+            .clip(frame)
+            .background(palette.bg.toComposeColor())
+            .border(1.dp, palette.border.toComposeColor(), frame)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(stringResource(R.string.pref_theme_preview),
+            color = palette.textDim.toComposeColor(), style = MaterialTheme.typography.labelMedium)
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .background(palette.panel.toComposeColor())
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(32.dp).clip(MaterialTheme.shapes.small).background(palette.accent.toComposeColor()))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.app_name),
+                    color = palette.text.toComposeColor(), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.new_note),
+                    color = palette.textDim.toComposeColor(), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
 @Composable
 private fun SingleColourChoice(preset: ColourPreset, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val palette = LocalPalette.current

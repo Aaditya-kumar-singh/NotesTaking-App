@@ -137,6 +137,23 @@ fun PreferencesPane(
     }
     var namingColor by remember { mutableStateOf<Rgba?>(null) }
     namingColor?.let { c -> ColorNameDialog(editor, c) { namingColor = null } }
+    var confirmReset by remember { mutableStateOf(false) }
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text(stringResource(R.string.pref_reset_confirm_title)) },
+            text = { Text(stringResource(R.string.pref_reset_confirm_body)) },
+            confirmButton = {
+                DestructiveTextButton(onClick = {
+                    confirmReset = false
+                    update(Preferences())
+                }) { Text(stringResource(R.string.reset_to_defaults)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
     // Follow out-of-pane preference changes too (the .scm import round-trips a picker).
     LaunchedEffect(editor.prefsVersion) { prefs = editor.preferences }
 
@@ -212,7 +229,7 @@ fun PreferencesPane(
             }
             Text(stringResource(R.string.preferences), color = palette.text.toComposeColor(), fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = { update(Preferences()) }) { Text(stringResource(R.string.reset_to_defaults), fontSize = 13.sp) }
+            DestructiveTextButton(onClick = { confirmReset = true }) { Text(stringResource(R.string.reset_to_defaults), fontSize = 13.sp) }
         }
         Spacer(Modifier.height(12.dp))
         Column(
@@ -248,6 +265,7 @@ fun PreferencesPane(
             } else if (Build.VERSION.SDK_INT < 31) {
                 Text(stringResource(R.string.material_system_fallback), color = palette.textDim.toComposeColor(), fontSize = 12.sp)
             }
+            MaterialThemePreview()
             FieldLabel(stringResource(R.string.pref_corners))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for ((style, label) in listOf(CornerStyle.SHARP to R.string.corners_sharp, CornerStyle.ROUNDED to R.string.corners_rounded, CornerStyle.SOFT to R.string.corners_soft)) {
