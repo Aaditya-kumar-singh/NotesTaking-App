@@ -9,6 +9,7 @@
 - Replaced legacy launcher PNGs at mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi, including round and foreground resources. Both adaptive launcher XML variants now use the vector foreground.
 - Regenerated the 24 existing loading animation frames with progressive ink drawing. Preserved the old `AnimationDrawable` 24-frame contract and 67 ms/frame timing; loader background now comes from the same color token as the system splash.
 - Android 12+ system splash uses the same mark instead of a transparent placeholder.
+- The About screen and navigation headers display the same `ic_brand_mark` Android vector with a consistent background; this removes the About screen's runtime launcher bitmap conversion, and retains its existing version/credits content.
 - Aligned the Android resource accent, launch/window surface and the **new default Material dual-color preset** with ink blue `#526DDF`, paper-toned neutral `#E5DED0` and navy `#17243B`.
 - Shared `DropdownMenu` and `AlertDialog` now use the lifted palette panel surface and the existing rounded Material shape roles. Existing callbacks and all destructive-action semantics are unchanged.
 - Preserved the original Morning preset (brown/blue) and added a separate selectable Paper & Ink preset. Added a settings regression case that loads historic brown/blue theme seed values and verifies serialization round-tripping.

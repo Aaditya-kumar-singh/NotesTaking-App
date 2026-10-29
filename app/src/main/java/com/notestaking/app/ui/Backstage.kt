@@ -453,6 +453,8 @@ private fun BackstageSidebar(modifier: Modifier, nav: SidebarNav, onCollapse: ()
             Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            BrandMark(32.dp)
+            Spacer(Modifier.width(10.dp))
             Text("NotesTaking App", color = palette.text.toComposeColor(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(Modifier.weight(1f))
             Tooltip(stringResource(R.string.collapse_sidebar)) {
@@ -904,6 +906,8 @@ private fun ExplorerSection(
                         }
                     }
                     Spacer(Modifier.width(4.dp))
+                    BrandMark(32.dp)
+                    Spacer(Modifier.width(10.dp))
                     Text("NotesTaking App", color = palette.text.toComposeColor(), fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
             }

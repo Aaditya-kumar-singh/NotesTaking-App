@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|
 | UI-01 | App launcher icon + round | res/mipmap-anydpi-v26/*.xml; res/mipmap-*/ic_launcher*.png | EXISTING: adaptive foreground/background/mono | New original approved icon + regenerate all densities | BR-1 |
 | UI-02 | System splash and loader | res/values-v31/themes.xml; drawable/splash_blank.xml; drawable/notestaking_loader.xml; drawable-nodpi frames | EXISTING: system splash blank + 24-frame custom loader | Cohesive brand entry and cold-start flash/performance QA | BR-1 |
-| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | EXISTING: text logo/name | Align with launcher identity; attribution preserved | BR-1 |
+| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | UPDATED IN SOURCE: shared vector mark in About and navigation headers, original MIT credits retained | Verify tablet/phone screenshot, small-size legibility and TalkBack | BR-1 |
 | UI-04 | Material palette generator | ui/theme/Palette.kt; MaterialColors.kt | EXISTING: tonal material scheme | Approved seed, semantic roles, contrast matrix | BR-2 |
 | UI-05 | Appearance modes / wallpapers | ui/theme/DynamicColors.kt; settings/Preferences.kt | EXISTING: System, Light, Dark, OLED, dynamic support | Keep user choice, curated brand preset, no change to actual paper | BR-2 |
 | UI-06 | Material typography | ui/theme/NotesTakingTheme.kt | EXISTING: color + shapes only in Theme wrapper | Explicit typography scale using bundled licensed fonts | BR-2 |

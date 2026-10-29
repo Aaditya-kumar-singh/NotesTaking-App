@@ -6,7 +6,9 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,20 +21,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import com.notestaking.app.R
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
@@ -44,9 +49,6 @@ import com.notestaking.app.ui.theme.toComposeColor
 fun AboutPane() {
     val palette = LocalPalette.current
     val ctx = LocalContext.current
-    val appIcon = remember {
-        runCatching { ctx.packageManager.getApplicationIcon(ctx.packageName).toBitmap(144, 144).asImageBitmap() }.getOrNull()
-    }
     val version = remember {
         runCatching {
             val pi = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
@@ -62,10 +64,8 @@ fun AboutPane() {
             Modifier.widthIn(max = 420.dp).fillMaxWidth().padding(top = 24.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (appIcon != null) {
-                Image(appIcon, "NotesTaking App", modifier = Modifier.size(72.dp))
-                Spacer(Modifier.height(16.dp))
-            }
+            BrandMark(88.dp)
+            Spacer(Modifier.height(16.dp))
             Text("NotesTaking App", color = palette.text.toComposeColor(), fontWeight = FontWeight.Bold, fontSize = 24.sp)
             Spacer(Modifier.height(6.dp))
             Text(stringResource(R.string.app_tagline),
@@ -98,6 +98,19 @@ fun AboutPane() {
         }
     }
 }
+/** Display the shared launcher mark in About and navigation without bitmap decoding. */
+@Composable
+internal fun BrandMark(size: Dp) {
+    Box(
+        Modifier.size(size)
+            .clip(MaterialTheme.shapes.medium)
+            .background(colorResource(R.color.ic_launcher_background)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(painterResource(R.drawable.ic_brand_mark), contentDescription = null, modifier = Modifier.fillMaxSize())
+    }
+}
+
 private fun copyVersion(ctx: Context, version: String) {
     runCatching {
         val clip = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
