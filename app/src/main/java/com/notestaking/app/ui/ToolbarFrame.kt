@@ -28,7 +28,9 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -139,9 +141,19 @@ internal fun ToolbarFrame(
     val glide = remember { ToolGlide() }
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.extraLarge
+    val divider = palette.border.toComposeColor()
     // Docked, the strip fills its edge; floating, a pill only as long as its tools, up to that edge.
     val surface = if (!look.floating) {
-        Modifier.background(palette.panel.toComposeColor())
+        Modifier.background(palette.panel.toComposeColor()).drawBehind {
+            val stroke = 1.dp.toPx()
+            if (bar.vertical) {
+                val x = if (look.position == ToolbarPosition.LEFT) size.width - stroke / 2 else stroke / 2
+                drawLine(divider, Offset(x, 0f), Offset(x, size.height), strokeWidth = stroke)
+            } else {
+                val y = if (look.position == ToolbarPosition.TOP) size.height - stroke / 2 else stroke / 2
+                drawLine(divider, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+            }
+        }
     } else {
         Modifier
             .shadow(6.dp, shape)

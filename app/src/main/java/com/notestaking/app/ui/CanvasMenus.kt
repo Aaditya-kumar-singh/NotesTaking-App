@@ -936,7 +936,7 @@ fun MarkupNoteDialog(editor: Editor) {
         dismissButton = {
             Row {
                 if (target.markup.note != null) {
-                    TextButton(onClick = { editor.saveMarkupNote("") }) { Text(stringResource(R.string.delete)) }
+                    DestructiveTextButton(onClick = { editor.saveMarkupNote("") }) { Text(stringResource(R.string.delete)) }
                 }
                 TextButton(onClick = { editor.dismissMarkupNote() }) { Text(stringResource(R.string.cancel)) }
             }

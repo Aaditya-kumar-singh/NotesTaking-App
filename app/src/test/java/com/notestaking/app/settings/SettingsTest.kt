@@ -383,11 +383,23 @@ class SettingsTest {
         val defaults = Preferences.fromJson(JSONObject())
         assertEquals(MaterialColourMode.SYSTEM, defaults.materialMode)
         assertEquals(Rgba(244, 67, 54), defaults.materialSingleSeed)
-        assertEquals(Rgba(154, 124, 66), defaults.materialDualSeed)
-        assertEquals(Rgba(61, 117, 230), defaults.materialSurfaceSeed)
+        assertEquals(Rgba(82, 109, 223), defaults.materialDualSeed)
+        assertEquals(Rgba(229, 222, 208), defaults.materialSurfaceSeed)
         for (key in listOf("material_mode", "material_seed", "material_single_seed", "material_dual_seed", "material_surface_seed")) {
             assertFalse(defaults.toJson().has(key))
         }
+    }
+
+    @Test fun previouslySavedThemeColoursRemainUnchangedAfterBrandRefresh() {
+        val old = JSONObject()
+            .put("material_mode", "dual")
+            .put("material_seed", "#9a7c42")
+            .put("material_dual_tone", true)
+            .put("material_surface_seed", "#3d75e6")
+        val loaded = Preferences.fromJson(old)
+        assertEquals(Rgba(154, 124, 66), loaded.materialDualSeed)
+        assertEquals(Rgba(61, 117, 230), loaded.materialSurfaceSeed)
+        assertEquals(loaded, Preferences.fromJson(loaded.toJson()))
     }
 
     @Test fun legacySingleToneMigratesOnlyItsOwnAccent() {

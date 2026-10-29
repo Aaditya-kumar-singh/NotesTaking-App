@@ -119,7 +119,7 @@ internal fun TrashPane(editor: Editor, sidebarOpen: Boolean, onShowSidebar: () -
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    val tint = if (enabled) palette.accent.toComposeColor() else palette.textDim.toComposeColor().copy(alpha = 0.5f)
+                    val tint = if (enabled) palette.danger.toComposeColor() else palette.textDim.toComposeColor().copy(alpha = 0.5f)
                     Icon(NotesTakingIcons.trash, null, tint = tint, modifier = Modifier.size(18.dp))
                     Text(stringResource(R.string.empty_trash), color = if (enabled) palette.text.toComposeColor() else tint, fontSize = 14.sp, maxLines = 1)
                 }
@@ -202,7 +202,7 @@ internal fun TrashPane(editor: Editor, sidebarOpen: Boolean, onShowSidebar: () -
             title = { Text(stringResource(R.string.empty_trash_confirm)) },
             text = { Text(stringResource(R.string.empty_trash_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                DestructiveTextButton(onClick = {
                     confirmEmpty = false
                     busy = true
                     scope.launch {
@@ -222,7 +222,7 @@ internal fun TrashPane(editor: Editor, sidebarOpen: Boolean, onShowSidebar: () -
             title = { Text(stringResource(R.string.delete_permanently_confirm)) },
             text = { Text(stringResource(R.string.delete_permanently_body, label(item))) },
             confirmButton = {
-                TextButton(onClick = {
+                DestructiveTextButton(onClick = {
                     confirmDelete = null
                     scope.launch {
                         withContext(Dispatchers.IO) { editor.deleteTrash(root, item) }
@@ -311,7 +311,7 @@ private fun TrashRow(
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.restore)) }, onClick = { menu = false; onRestore() })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.delete_permanently)) }, onClick = { menu = false; onDelete() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.delete_permanently), color = palette.danger.toComposeColor()) }, onClick = { menu = false; onDelete() })
                 }
             }
         }

@@ -1,6 +1,6 @@
 # NotesTaking App — Brand/UI Screen and Component Audit Matrix
 
-**Created:** 2026-10-28. **Document state:** Planning audit based on code only; no device screenshot validation yet.
+**Created:** 2026-10-28. **Document state:** Planning audit with partial BR-1 / BR-3 / BR-4 source changes on `feature/modern-paper-ink-foundation`; no device screenshot validation yet. See `docs/engineering/BRAND_DIALOG_CANVAS_BATCH_2026-10-29.md`.
 **Companion:** VISUAL_BRANDING_THEME_AND_INTERACTIONS_PLAN.md
 **Tag meanings:** EXISTING = source evidence; REVIEW = visually unverified/needs QA; UPGRADE = proposed consistency work.
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|
 | UI-01 | App launcher icon + round | res/mipmap-anydpi-v26/*.xml; res/mipmap-*/ic_launcher*.png | EXISTING: adaptive foreground/background/mono | New original approved icon + regenerate all densities | BR-1 |
 | UI-02 | System splash and loader | res/values-v31/themes.xml; drawable/splash_blank.xml; drawable/notestaking_loader.xml; drawable-nodpi frames | EXISTING: system splash blank + 24-frame custom loader | Cohesive brand entry and cold-start flash/performance QA | BR-1 |
-| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | EXISTING: text logo/name | Align with launcher identity; attribution preserved | BR-1 |
+| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | UPDATED IN SOURCE: shared vector mark in About and navigation headers, original MIT credits retained | Verify tablet/phone screenshot, small-size legibility and TalkBack | BR-1 |
 | UI-04 | Material palette generator | ui/theme/Palette.kt; MaterialColors.kt | EXISTING: tonal material scheme | Approved seed, semantic roles, contrast matrix | BR-2 |
 | UI-05 | Appearance modes / wallpapers | ui/theme/DynamicColors.kt; settings/Preferences.kt | EXISTING: System, Light, Dark, OLED, dynamic support | Keep user choice, curated brand preset, no change to actual paper | BR-2 |
 | UI-06 | Material typography | ui/theme/NotesTakingTheme.kt | EXISTING: color + shapes only in Theme wrapper | Explicit typography scale using bundled licensed fonts | BR-2 |
@@ -36,10 +36,10 @@
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |
 | UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | EXISTING | Source text legibility, accessible options, focus | BR-4 |
 | UI-28 | Audio/recording player | ui/AudioChip.kt, platform/RecordingService.kt | EXISTING | Consistent progress/state and contrast; notification safe | BR-4 |
-| UI-29 | Settings personalizations | ui/PreferencesPane.kt | EXISTING: material, colors and corners | Brand preset preview and reorganized grouping | BR-4 |
+| UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens | REVIEW | 48dp hit, contrast, screen reader, keyboard, system bars | BR-5 |
+| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt | PARTIAL SOURCE FIX: selected drawing-tool state and ink color hex/selected state exposed to screen readers in shared toolbar controls | Check TalkBack selection announcement, 48dp targets, contrast, keyboard and system bars on phone/tablet | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
@@ -69,4 +69,4 @@
 - BR-4: screens use shared components, stylus/scroll/nav unchanged.
 - BR-5: Android CI + real-device side-by-side screenshot QA, accessibility and release icon resources.
 
-All tasks are PLANNED and need code changes, builds, tests and device verification before they are called complete.
+Some first-pass brand assets, popup styles and canvas chrome are implemented in source. The remaining redesign and all final visual/device acceptance gates are pending; no UI item is considered fully verified until Android CI and hardware review pass.

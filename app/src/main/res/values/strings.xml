@@ -368,6 +368,9 @@
     <string name="show_sidebar">Show sidebar</string>
     <string name="preferences">Preferences</string>
     <string name="reset_to_defaults">Reset to defaults</string>
+    <string name="pref_reset_confirm_title">Reset app preferences?</string>
+    <string name="pref_reset_confirm_body">This restores your appearance, input, and other app preferences to defaults. Saved notes and PDFs will not be deleted.</string>
+    <string name="pref_theme_preview">Theme preview</string>
     <string name="pref_general">General</string>
     <string name="pref_ui_theme">UI theme</string>
     <string name="theme_system">System</string>
@@ -1127,6 +1130,7 @@
     <string name="material_custom">Custom</string>
     <string name="material_indigo">Indigo</string>
     <string name="material_amber">Amber</string>
+    <string name="material_paper_ink">Paper &amp; Ink</string>
     <string name="material_morning">Morning</string>
     <string name="material_evening">Evening</string>
     <string name="material_sea">Sea</string>

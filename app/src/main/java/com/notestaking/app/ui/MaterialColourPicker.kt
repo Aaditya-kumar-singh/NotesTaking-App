@@ -67,9 +67,11 @@ private val singleTonePresets = listOf(
     ColourPreset(R.string.material_amber, rgb(0xffc107)),
 )
 
-// Base2Tone D3 accents and B3 surface seeds; attribution and revision in assets/licenses/base2tone.txt.
+// Preserve the original Base2Tone presets alongside the new Paper & Ink brand preset.
+// Base2Tone attribution and revision are in assets/licenses/base2tone.txt.
 private val dualTonePresets = listOf(
-    ColourPreset(R.string.material_morning, Preferences.DEFAULT_MATERIAL_DUAL, Preferences.DEFAULT_MATERIAL_SURFACE),
+    ColourPreset(R.string.material_paper_ink, Preferences.DEFAULT_MATERIAL_DUAL, Preferences.DEFAULT_MATERIAL_SURFACE),
+    ColourPreset(R.string.material_morning, rgb(0x9a7c42), rgb(0x3d75e6)),
     ColourPreset(R.string.material_evening, rgb(0xffa142), rgb(0x9a86fd)),
     ColourPreset(R.string.material_sea, rgb(0x0db57d), rgb(0x57718e)),
     ColourPreset(R.string.material_forest, rgb(0xb1c44f), rgb(0x687d68)),
@@ -145,6 +147,40 @@ internal fun MaterialColourPicker(prefs: Preferences, update: (Preferences) -> U
         }
         if (dual && !tinted) {
             Text(stringResource(R.string.material_untinted_surfaces), color = palette.textDim.toComposeColor(), fontSize = 12.sp)
+        }
+    }
+}
+
+/** Non-interactive preview of the applied UI palette, including system and OLED modes. */
+@Composable
+internal fun MaterialThemePreview() {
+    val palette = LocalPalette.current
+    val frame = MaterialTheme.shapes.medium
+    Column(
+        Modifier.widthIn(max = 520.dp).fillMaxWidth()
+            .clip(frame)
+            .background(palette.bg.toComposeColor())
+            .border(1.dp, palette.border.toComposeColor(), frame)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(stringResource(R.string.pref_theme_preview),
+            color = palette.textDim.toComposeColor(), style = MaterialTheme.typography.labelMedium)
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .background(palette.panel.toComposeColor())
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(32.dp).clip(MaterialTheme.shapes.small).background(palette.accent.toComposeColor()))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.app_name),
+                    color = palette.text.toComposeColor(), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.new_note),
+                    color = palette.textDim.toComposeColor(), style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

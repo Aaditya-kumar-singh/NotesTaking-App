@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <title>NotesTaking App — unfolding paper and ink trail</title>
+  <path d="M33,24 H63 L79,40 V79 Q79,84 74,84 H33 Q29,84 29,80 V28 Q29,24 33,24 Z" fill="#F8F7F3"/>
+  <path d="M63,24 V40 H79 Z" fill="#D1DBF0"/>
+  <path d="M39,47 H64 M39,55 H57" fill="none" stroke="#BAC5D8" stroke-width="2.7" stroke-linecap="round"/>
+  <path d="M39,71 C44,62 50,78 57,70 C63,62 67,60 72,63" fill="none" stroke="#526DDF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
