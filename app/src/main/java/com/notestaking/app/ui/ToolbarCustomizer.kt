@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +40,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
@@ -218,7 +225,7 @@ private fun SectionCard(
                 SectionDragStrip(
                     // Explicit height: the card is measured with an unbounded max height, so
                     // fillMaxHeight would collapse the grab strip to 0px and nothing could be pressed.
-                    modifier = Modifier.weight(1f).height(34.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
                     onBounds = onGrabBounds,
                     onDragStart = onGrabDragStart,
                     onDrag = onGrabDrag,
@@ -226,7 +233,7 @@ private fun SectionCard(
                     onCancel = onGrabCancel,
                 )
                 Tooltip(stringResource(R.string.delete_section)) {
-                    IconButton(onClick = onDelete, enabled = canDelete, modifier = Modifier.size(26.dp)) {
+                    IconButton(onClick = onDelete, enabled = canDelete, modifier = Modifier.size(48.dp)) {
                         Icon(
                             NotesTakingIcons.close, stringResource(R.string.delete_section),
                             tint = (if (canDelete) palette.textDim else palette.border).toComposeColor(),
@@ -312,6 +319,11 @@ private fun ChipCell(
         modifier = Modifier
             .alpha(if (dragging) 0.15f else 1f)
             .onGloballyPositioned { onBounds(it.boundsInRoot()) }
+            .semantics(mergeDescendants = true) {
+                role = Role.Checkbox
+                toggleableState = if (visible) ToggleableState.On else ToggleableState.Off
+                onClick { tap(); true }
+            }
             .pointerInput(item) { detectTapGestures(onTap = { tap() }) }
             .pointerInput(item) {
                 detectDragGesturesAfterLongPress(
@@ -331,6 +343,7 @@ private fun ChipFace(item: ToolbarItem, visible: Boolean, modifier: Modifier = M
     val palette = LocalPalette.current
     Row(
         modifier
+            .heightIn(min = 48.dp)
             .alpha(if (!visible) 0.4f else 1f)
             .clip(MaterialTheme.shapes.small)
             .background(palette.surface.toComposeColor())
@@ -351,6 +364,7 @@ fun ToolbarDragGhost(item: ToolbarItem) {
     Row(
         Modifier
             .alpha(0.9f)
+            .heightIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
             .background(palette.surface.toComposeColor())
             .border(1.dp, palette.accent.toComposeColor(), MaterialTheme.shapes.small)
@@ -383,7 +397,7 @@ fun SectionCardGhost(section: ToolbarSection, widthPx: Float) {
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Spacer(Modifier.weight(1f))
-            Box(Modifier.size(26.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                 Icon(NotesTakingIcons.close, null, tint = palette.textDim.toComposeColor(), modifier = Modifier.size(14.dp))
             }
         }
@@ -408,6 +422,7 @@ private fun AddSectionChip(onClick: () -> Unit) {
     val palette = LocalPalette.current
     Row(
         Modifier
+            .heightIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
             .border(1.dp, palette.accent.toComposeColor(), MaterialTheme.shapes.small)
             .clickable(onClick = onClick)
