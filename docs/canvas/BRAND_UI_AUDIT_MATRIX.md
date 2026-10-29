@@ -21,7 +21,7 @@
 | UI-11 | Trash/delete dialogs | ui/TrashPane.kt, Backstage.kt | EXISTING | Permanent/trash distinction, Undo where correct, warning color | BR-3 |
 | UI-12 | Folder picker/merge | ui/FolderPicker.kt, MergeDialog.kt | EXISTING | Adaptive dialog/sheet, keyboard/touch/accessibility | BR-3 |
 | UI-13 | PDF page-size and page actions | ui/PageSizeControls.kt, SidePanel.kt | EXISTING | Consistent control hierarchy and confirmation | BR-3/4 |
-| UI-14 | Tool settings popovers | ui/Popups.kt, Toolbar.kt, InfiniteToolbar.kt | EXISTING: anchored popups | Shared compact labels, sliders, preview, boundaries | BR-3/4 |
+| UI-14 | Tool settings popovers | ui/Popups.kt, Toolbar.kt, InfiniteToolbar.kt, ShapePopup.kt | PARTIAL SOURCE FIX: shape-side/sides count steppers now use labeled 48dp controls while preserving 30dp visible chips and numeric bounds | Verify count limits, keyboard focus, TalkBack labels and compact popups on Android | BR-3/4 |
 | UI-15 | Color picker | ui/ColorPicker.kt | EXISTING | Swatch focus/contrast/cursor/hex states | BR-3 |
 | UI-16 | Tooltip/help | ui/Tooltip.kt | EXISTING | Consistent delay, placement, shortcut text, reduce-motion | BR-3 |
 | UI-17 | Feedback snackbar and toast | ui/Editor.kt, MainActivity.kt, NewNoteScreen.kt, AboutPane.kt | EXISTING: snackbar and one isolated Toast | Unified lightweight status/Undo/Retry | BR-3 |
@@ -34,12 +34,12 @@
 | UI-24 | Infinite canvas controls | ui/InfiniteEditor.kt, InfiniteToolbar.kt | EXISTING | Match note editor token hierarchy without GL changes | BR-4 |
 | UI-25 | Eraser picker and preview | ui/Popups.kt:919+, controllers | EXISTING: Stroke/Area/size slider | See CV-061–070, live radius and better preset controls | BR-4 |
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |
-| UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | EXISTING | Source text legibility, accessible options, focus | BR-4 |
+| UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | PARTIAL SOURCE FIX: selection-style shape-count controls have labeled 48dp +/- hit targets, bounded actions and a centered compact layout | Validate selection editing, existing undo, 200% text and TalkBack in Android popups | BR-4 |
 | UI-28 | Audio/recording player | ui/AudioChip.kt, platform/RecordingService.kt | EXISTING | Consistent progress/state and contrast; notification safe | BR-4 |
 | UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt | UPDATED IN SOURCE: Paper & Ink preset, live applied-palette preview and guarded reset confirmation | Validate system/light/dark/OLED/custom previews, dialog cancellation and persistence on Android | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt | PARTIAL SOURCE FIX: selected drawing-tool state and ink color hex/selected state exposed to screen readers in shared toolbar controls | Check TalkBack selection announcement, 48dp targets, contrast, keyboard and system bars on phone/tablet | BR-5 |
+| UI-32 | Accessibility/focus/IME | All UI screens; ui/Toolbar.kt, ShapePopup.kt, CanvasMenus.kt | PARTIAL SOURCE FIX: selected drawing-tool and ink state exposed to readers; shape and selection-count buttons now have 48dp touch targets and icon labels | Check TalkBack count actions, 200% text, keyboard focus, contrast and touch boundaries on phone/tablet | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
