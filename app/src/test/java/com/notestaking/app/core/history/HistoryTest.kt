@@ -360,6 +360,96 @@ class HistoryTest {
         assertEquals(listOf(added[0], added[1]), page.items)
     }
 
+    @Test fun failedUndoKeepsCommandOnUndoStackUntilRetrySucceeds() {
+        val history = History()
+        var value = 1
+        var failNext = true
+        val command = object : Command {
+            override fun undo() {
+                if (failNext) {
+                    failNext = false
+                    throw IllegalStateException("simulated undo failure")
+                }
+                value = 0
+            }
+            override fun redo() { value = 1 }
+        }
+        history.push(command)
+        org.junit.Assert.assertThrows(IllegalStateException::class.java) { history.undo() }
+        assertTrue(history.canUndo)
+        assertFalse(history.canRedo)
+        assertSame(command, history.nextUndo)
+        assertEquals(1, value)
+
+        history.undo()
+        assertEquals(0, value)
+        assertFalse(history.canUndo)
+        assertSame(command, history.nextRedo)
+        history.redo()
+        assertEquals(1, value)
+        assertSame(command, history.nextUndo)
+    }
+
+    @Test fun failedRedoKeepsCommandOnRedoStackUntilRetrySucceeds() {
+        val history = History()
+        var value = 1
+        var failNextRedo = true
+        val command = object : Command {
+            override fun undo() { value = 0 }
+            override fun redo() {
+                if (failNextRedo) {
+                    failNextRedo = false
+                    throw IllegalStateException("simulated redo failure")
+                }
+                value = 1
+            }
+        }
+        history.push(command)
+        history.undo()
+        org.junit.Assert.assertThrows(IllegalStateException::class.java) { history.redo() }
+        assertFalse(history.canUndo)
+        assertTrue(history.canRedo)
+        assertSame(command, history.nextRedo)
+        assertEquals(0, value)
+
+        history.redo()
+        assertEquals(1, value)
+        assertSame(command, history.nextUndo)
+        assertFalse(history.canRedo)
+    }
+
+    @Test fun failedUndoDoesNotLoseOtherHistoryOrExistingRedoBranch() {
+        val history = History()
+        val first = object : Command {
+            override fun undo() = Unit
+            override fun redo() = Unit
+        }
+        var shouldFail = true
+        val second = object : Command {
+            override fun undo() {
+                if (shouldFail) throw IllegalArgumentException("blocked")
+            }
+            override fun redo() = Unit
+        }
+        val third = object : Command {
+            override fun undo() = Unit
+            override fun redo() = Unit
+        }
+        history.push(first)
+        history.push(second)
+        history.push(third)
+        history.undo() // third is on redo stack
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) { history.undo() }
+        assertSame(second, history.nextUndo)
+        assertSame(third, history.nextRedo)
+        shouldFail = false
+        history.undo()
+        assertSame(first, history.nextUndo)
+        assertSame(second, history.nextRedo)
+        history.redo()
+        assertSame(second, history.nextUndo)
+    }
+
     @Test fun peeksReportTheNextCommandWithoutApplyingIt() {
         val page = Page(100.0, 100.0)
         val h = History()
