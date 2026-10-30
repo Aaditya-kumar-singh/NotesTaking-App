@@ -136,6 +136,25 @@ class SafeDocumentTreeTest {
         }
     }
 
+    @Test fun createRenameAndCopyRejectSymlinkDestinations() = withTree { tree, root, outside ->
+        val outsideFile = File(outside, "private.xnote").apply { writeText("private") }
+        val link = File(root, "linked.xnote")
+        val supported = runCatching {
+            Files.createSymbolicLink(link.toPath(), outsideFile.toPath())
+        }.isSuccess
+        if (supported) {
+            rejected { tree.create("root", "linked.xnote", false) }
+            File(root, "original.xnote").writeText("original")
+            rejected { tree.rename("root/original.xnote", "linked.xnote") }
+            assertEquals("original", File(root, "original.xnote").readText())
+            assertEquals("private", outsideFile.readText())
+            val dest = File(root, "destination").apply { mkdir() }
+            Files.createSymbolicLink(File(dest, "original.xnote").toPath(), outsideFile.toPath())
+            rejected { tree.copy("root/original.xnote", "root/destination") }
+            assertEquals("private", outsideFile.readText())
+        }
+    }
+
     @Test fun symbolicLinksAreRejectedWhenSupported() = withTree { tree, root, outside ->
         File(outside, "secret").writeText("secret")
         val link = File(root, "link")
