@@ -11,20 +11,24 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -38,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -767,8 +773,9 @@ private fun FilterSpinRow(label: String, value: Int, min: Int, max: Int, onChang
     val palette = LocalPalette.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = palette.textDim.toComposeColor(), fontSize = 13.sp, modifier = Modifier.width(84.dp))
-        Box(Modifier.size(34.dp).clickable { onChange((value - 5).coerceIn(min, max)) }, contentAlignment = Alignment.Center) {
-            Text("−", color = palette.text.toComposeColor(), fontSize = 18.sp)
+        IconButton(onClick = { onChange((value - 5).coerceIn(min, max)) }, enabled = value > min, modifier = Modifier.size(48.dp)) {
+            Icon(NotesTakingIcons.minus, stringResource(R.string.decrease_setting, label),
+                tint = (if (value > min) palette.text else palette.disabled).toComposeColor(), modifier = Modifier.size(20.dp))
         }
         Text(
             "$value%",
@@ -777,8 +784,9 @@ private fun FilterSpinRow(label: String, value: Int, min: Int, max: Int, onChang
             textAlign = TextAlign.Center,
             modifier = Modifier.width(46.dp),
         )
-        Box(Modifier.size(34.dp).clickable { onChange((value + 5).coerceIn(min, max)) }, contentAlignment = Alignment.Center) {
-            Text("+", color = palette.text.toComposeColor(), fontSize = 18.sp)
+        IconButton(onClick = { onChange((value + 5).coerceIn(min, max)) }, enabled = value < max, modifier = Modifier.size(48.dp)) {
+            Icon(NotesTakingIcons.plus, stringResource(R.string.increase_setting, label),
+                tint = (if (value < max) palette.text else palette.disabled).toComposeColor(), modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -873,6 +881,7 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
                         .coerceAtMost(if (maxOn) maxPct else Preferences.ZOOM_LIMIT_MAX_PCT)
                     emit()
                 },
+                maxValue = if (maxOn) maxPct else Preferences.ZOOM_LIMIT_MAX_PCT,
             )
             ZoomLimitRow(
                 stringResource(R.string.caption_max_zoom), maxOn, maxPct,
@@ -886,6 +895,7 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
                         .coerceAtLeast(if (minOn) minPct else Preferences.ZOOM_LIMIT_MIN_PCT)
                     emit()
                 },
+                minValue = if (minOn) minPct else Preferences.ZOOM_LIMIT_MIN_PCT,
             )
         }
     }
@@ -893,26 +903,29 @@ fun ZoomMenuPopup(editor: Editor, onDismiss: () -> Unit) {
 
 /** One zoom-limit row: label, a percent spinfield (stepping by 10, greyed while off), a toggle. */
 @Composable
-private fun ZoomLimitRow(label: String, enabled: Boolean, value: Int, onToggle: (Boolean) -> Unit, onValue: (Int) -> Unit) {
+private fun ZoomLimitRow(
+    label: String, enabled: Boolean, value: Int,
+    onToggle: (Boolean) -> Unit, onValue: (Int) -> Unit,
+    minValue: Int = Preferences.ZOOM_LIMIT_MIN_PCT,
+    maxValue: Int = Preferences.ZOOM_LIMIT_MAX_PCT,
+) {
     val palette = LocalPalette.current
     val color = (if (enabled) palette.text else palette.textDim).toComposeColor()
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = color, fontSize = 12.sp, modifier = Modifier.width(76.dp))
-        Box(Modifier.size(34.dp).clickable(enabled = enabled) { onValue(value - 10) }, contentAlignment = Alignment.Center) {
-            Text("−", color = color, fontSize = 18.sp)
+    // Two compact rows keep the 48dp controls and four-digit zoom values readable in a 280dp popup.
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = color, fontSize = 12.sp, modifier = Modifier.weight(1f))
+            Switch(checked = enabled, onCheckedChange = onToggle, modifier = Modifier.semantics { contentDescription = label })
         }
-        Text(
-            "$value%",
-            color = color,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(52.dp),
-        )
-        Box(Modifier.size(34.dp).clickable(enabled = enabled) { onValue(value + 10) }, contentAlignment = Alignment.Center) {
-            Text("+", color = color, fontSize = 18.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { onValue(value - 10) }, enabled = enabled && value > minValue, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.minus, stringResource(R.string.decrease_setting, label), tint = color, modifier = Modifier.size(20.dp))
+            }
+            Text("$value%", color = color, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.width(80.dp))
+            IconButton(onClick = { onValue(value + 10) }, enabled = enabled && value < maxValue, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.plus, stringResource(R.string.increase_setting, label), tint = color, modifier = Modifier.size(20.dp))
+            }
         }
-        Spacer(Modifier.weight(1f))
-        Switch(checked = enabled, onCheckedChange = onToggle)
     }
 }
 
@@ -1180,7 +1193,8 @@ internal fun DropdownMenu(
         modifier = modifier,
         offset = LocalMenuOffset.current,
         properties = properties,
-        containerColor = palette.menuBg.toComposeColor(),
+        containerColor = palette.panel.toComposeColor(),
+        shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, palette.border.toComposeColor()),
     ) {
         // A menu or tip opened from inside this one hangs off its own row, not beside the rail.
@@ -1202,8 +1216,8 @@ internal fun AlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    shape: Shape = MaterialTheme.shapes.large,
-    containerColor: Color = LocalPalette.current.menuBg.toComposeColor(),
+    shape: Shape = MaterialTheme.shapes.extraLarge,
+    containerColor: Color = LocalPalette.current.panel.toComposeColor(),
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -1214,6 +1228,21 @@ internal fun AlertDialog(
         text = text,
         shape = shape,
         containerColor = containerColor,
+    )
+}
+
+/** Keep irreversible actions visibly distinct from ordinary dialog decisions. */
+@Composable
+internal fun DestructiveTextButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(contentColor = LocalPalette.current.danger.toComposeColor()),
+        content = content,
     )
 }
 

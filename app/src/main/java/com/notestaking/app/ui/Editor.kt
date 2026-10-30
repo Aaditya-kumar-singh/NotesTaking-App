@@ -6345,6 +6345,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     // --- tools & colour ---
 
+    /** One-tap PDF finger ink, without changing the default palm-safe stylus behaviour. */
+    fun toggleFingerDrawing() {
+        val enabled = !settings.prefs.fingerDraws
+        applyPreferences(settings.prefs.copy(fingerDraws = enabled))
+        if (enabled && tool == Tool.PAN) selectTool(Tool.PEN)
+    }
+
     fun selectTool(t: Tool) {
         // The markup tool marks a PDF's text: a note without one gets Pan, and the next with one gets it back.
         markupResting = t == Tool.MARKUP && !hasPdf
@@ -8301,6 +8308,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Adopt a Helix theme file for code colours; reports via [message]. */
     fun importCodeTheme(bytes: ByteArray, sourceName: String? = null) {
+        if (bytes.size > com.notestaking.app.platform.BoundedBytes.MAX_CODE_THEME_BYTES) {
+            message = appContext.getString(R.string.err_helix_theme)
+            return
+        }
         val parsed = com.notestaking.app.format.HelixTheme.parse(String(bytes, Charsets.UTF_8))
         if (parsed == null) {
             message = appContext.getString(R.string.err_helix_theme)
@@ -8363,14 +8374,24 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         var root: org.json.JSONObject? = null
         val fonts = ArrayList<Pair<String, ByteArray>>()
         var theme: ByteArray? = null
+        var totalBytes = 0L
+        var entries = 0
         java.util.zip.ZipInputStream(input).use { zis ->
             while (true) {
                 val entry = zis.nextEntry ?: break
+                if (++entries > 64) return@runCatching null
                 val name = entry.name
                 val wanted = name == "settings.json" || name == "code-theme.toml" ||
                     (name.startsWith("fonts/") && name.count { it == '/' } == 1 && name.length > 6)
                 if (!wanted || entry.isDirectory) continue
-                val bytes = readAtMost(zis, SETTINGS_ENTRY_MAX) ?: return@runCatching null
+                val limit = when {
+                    name == "code-theme.toml" -> com.notestaking.app.platform.BoundedBytes.MAX_CODE_THEME_BYTES.toLong()
+                    name.startsWith("fonts/") -> com.notestaking.app.platform.BoundedBytes.MAX_FONT_BYTES.toLong()
+                    else -> SETTINGS_ENTRY_MAX
+                }
+                val bytes = readAtMost(zis, limit) ?: return@runCatching null
+                totalBytes += bytes.size
+                if (totalBytes > 64L * 1024 * 1024) return@runCatching null
                 when {
                     name == "settings.json" -> root = org.json.JSONObject(bytes.toString(Charsets.UTF_8))
                     name == "code-theme.toml" -> theme = bytes
@@ -8501,8 +8522,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         adoptTemplate {
             val image = java.io.File.createTempFile("img", null, appContext.cacheDir)
             try {
-                appContext.contentResolver.openInputStream(uri)?.use { src -> java.io.FileOutputStream(image).use { src.copyTo(it) } }
-                    ?: throw com.notestaking.app.format.TemplateFormatException(appContext.getString(R.string.err_read_file))
+                appContext.contentResolver.openInputStream(uri)?.use { src ->
+                    java.io.FileOutputStream(image).use { output ->
+                        com.notestaking.app.platform.BoundedCopy.copy(
+                            src, output, com.notestaking.app.platform.BoundedBytes.MAX_IMAGE_BYTES.toLong(),
+                        )
+                    }
+                } ?: throw com.notestaking.app.format.TemplateFormatException(appContext.getString(R.string.err_read_file))
                 val pkg = TemplateLibrary.packageFromImage(image, kind, name)
                 try {
                     TemplateLibrary.import(pkg, name)

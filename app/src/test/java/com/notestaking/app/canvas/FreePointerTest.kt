@@ -1,6 +1,7 @@
 package com.notestaking.app.canvas
 
 import com.notestaking.app.core.tools.Tool
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,7 +11,7 @@ class FreePointerTest {
 
     /** What a finger drives under [armed]: it pans when the tool leaves it to, unless it draws. */
     private fun finger(armed: Tool, fingerDraws: Boolean): Tool =
-        if (!fingerDraws && armed.fingerPansWhenOff) Tool.PAN else armed
+        FreePointer.fingerTool(armed, fingerDraws)
 
     @Test
     fun panFreesBothFingerAndStylus() {
@@ -25,6 +26,15 @@ class FreePointerTest {
             assertFalse("$armed, finger draw on", FreePointer.isFree(armed, finger(armed, fingerDraws = true), isFinger = true))
             assertFalse("$armed, stylus", FreePointer.isFree(armed, armed, isFinger = false))
         }
+    }
+
+    @Test
+    fun penDrawingAndNavigationModesUseTheRealFingerRoutingPolicy() {
+        assertEquals(Tool.PAN, finger(Tool.PEN, fingerDraws = false))
+        assertEquals(Tool.PEN, finger(Tool.PEN, fingerDraws = true))
+        assertEquals(Tool.HIGHLIGHTER, finger(Tool.HIGHLIGHTER, fingerDraws = true))
+        assertEquals(Tool.PAN, finger(Tool.PAN, fingerDraws = true))
+        assertEquals(Tool.TEXT, finger(Tool.TEXT, fingerDraws = false))
     }
 
     @Test

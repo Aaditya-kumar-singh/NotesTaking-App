@@ -3,16 +3,18 @@ package com.notestaking.app.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
@@ -51,6 +53,7 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
     var viewOpen by remember { mutableStateOf(false) }
     var stylesOpen by remember { mutableStateOf(false) }
     PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
+    if (editor.hasPdf) PinnedFingerDrawing(editor)
     PinnedPageInsertion(editor)
     CanvasAllTools(
         host = editor,
@@ -130,6 +133,18 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
     if (waypointsOpen) Box { CanvasWaypointsPopup(editor) { waypointsOpen = false } }
 }
 
+/** PDF-only shortcut: a disabled finger draws no ink, while two fingers always navigate. */
+@Composable
+private fun PinnedFingerDrawing(editor: Editor) {
+    val revision = editor.prefsVersion
+    val enabled = remember(revision) { editor.preferences.fingerDraws }
+    ToolbarIcon(
+        NotesTakingIcons.edit,
+        stringResource(R.string.pref_finger_draws),
+        active = enabled,
+    ) { editor.toggleFingerDrawing() }
+}
+
 @Composable
 private fun PinnedEraser(
     host: ToolPopupHost,
@@ -162,7 +177,13 @@ private fun PinnedPageInsertion(editor: Editor) {
             stringResource(R.string.add_page),
             active = open,
         ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(224.dp)) {
+            Text(
+                stringResource(R.string.add_page),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+            HorizontalDivider()
             QuickActionRow(stringResource(R.string.canvas_page_after)) {
                 open = false
                 editor.addPage()
@@ -201,34 +222,33 @@ private fun CanvasAllTools(
             stringResource(R.string.canvas_all_tools),
             active = open,
         ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            Column(androidx.compose.ui.Modifier.width(248.dp)) {
-                Text(
-                    stringResource(R.string.canvas_all_tools),
-                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                    modifier = androidx.compose.ui.Modifier.width(248.dp),
-                )
-                tools.forEach { tool ->
-                    QuickActionRow(stringResource(tool.labelRes)) {
-                        open = false
-                        select(tool)
-                    }
-                }
-                HorizontalDivider()
-                QuickActionRow(stringResource(R.string.canvas_eraser_settings)) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(248.dp)) {
+            Text(
+                stringResource(R.string.canvas_all_tools),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+            HorizontalDivider()
+            tools.forEach { tool ->
+                QuickActionRow(stringResource(tool.labelRes)) {
                     open = false
-                    select(Tool.ERASER)
-                    eraserOpen = true
+                    select(tool)
                 }
-                QuickActionRow(stringResource(R.string.canvas_pen_settings)) {
-                    open = false
-                    select(penForConfig)
-                    penOpen = true
-                }
-                QuickActionRow(stringResource(R.string.undo), enabled = canUndo) { open = false; undo() }
-                QuickActionRow(stringResource(R.string.redo), enabled = canRedo) { open = false; redo() }
-                extras { open = false }
             }
+            HorizontalDivider()
+            QuickActionRow(stringResource(R.string.canvas_eraser_settings)) {
+                open = false
+                select(Tool.ERASER)
+                eraserOpen = true
+            }
+            QuickActionRow(stringResource(R.string.canvas_pen_settings)) {
+                open = false
+                select(penForConfig)
+                penOpen = true
+            }
+            QuickActionRow(stringResource(R.string.undo), enabled = canUndo) { open = false; undo() }
+            QuickActionRow(stringResource(R.string.redo), enabled = canRedo) { open = false; redo() }
+            extras { open = false }
         }
         if (eraserOpen) EraserConfigPopup(host) { eraserOpen = false }
         if (penOpen) ToolConfigPopup(host, penForConfig) { penOpen = false }

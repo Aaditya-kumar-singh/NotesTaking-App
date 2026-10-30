@@ -74,6 +74,38 @@ class BoundedZipInputStreamTest {
         }
     }
 
+    @Test fun rejectsDuplicateEntryNames() {
+        // ZipOutputStream rejects duplicates itself; construct a ZIP with two separately
+        // encoded entries by changing the second entry's name in the local and central records.
+        val bytes = archive("a.txt" to byteArrayOf(1), "b.txt" to byteArrayOf(2))
+        val original = "b.txt".toByteArray()
+        val replacement = "a.txt".toByteArray()
+        var replacements = 0
+        for (i in 0..bytes.size - original.size) {
+            if (original.indices.all { bytes[i + it] == original[it] }) {
+                replacement.copyInto(bytes, i)
+                replacements++
+            }
+        }
+        assertEquals(2, replacements)
+        assertThrows(IOException::class.java) {
+            BoundedZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+                while (zip.nextEntry != null) zip.closeEntry()
+            }
+        }
+    }
+
+    @Test fun rejectsOversizedManifestEvenWhenHighlyCompressed() {
+        val bytes = compressedLarge("manifest.json", 65)
+        assertThrows(IOException::class.java) {
+            BoundedZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+                zip.nextEntry
+                val chunk = ByteArray(64 * 1024)
+                while (zip.read(chunk) != -1) Unit
+            }
+        }
+    }
+
     @Test fun rejectsTooManySmallEntries() {
         val bytes = ByteArrayOutputStream().also { out ->
             ZipOutputStream(out).use { zip ->

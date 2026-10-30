@@ -1,6 +1,6 @@
 # NotesTaking App — Brand/UI Screen and Component Audit Matrix
 
-**Created:** 2026-10-28. **Document state:** Planning audit based on code only; no device screenshot validation yet.
+**Created:** 2026-10-28. **Document state:** Planning audit with partial BR-1 / BR-3 / BR-4 source changes on `feature/modern-paper-ink-foundation`; no device screenshot validation yet. See `docs/engineering/BRAND_DIALOG_CANVAS_BATCH_2026-10-29.md`.
 **Companion:** VISUAL_BRANDING_THEME_AND_INTERACTIONS_PLAN.md
 **Tag meanings:** EXISTING = source evidence; REVIEW = visually unverified/needs QA; UPGRADE = proposed consistency work.
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|
 | UI-01 | App launcher icon + round | res/mipmap-anydpi-v26/*.xml; res/mipmap-*/ic_launcher*.png | EXISTING: adaptive foreground/background/mono | New original approved icon + regenerate all densities | BR-1 |
 | UI-02 | System splash and loader | res/values-v31/themes.xml; drawable/splash_blank.xml; drawable/notestaking_loader.xml; drawable-nodpi frames | EXISTING: system splash blank + 24-frame custom loader | Cohesive brand entry and cold-start flash/performance QA | BR-1 |
-| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | EXISTING: text logo/name | Align with launcher identity; attribution preserved | BR-1 |
+| UI-03 | Brand wordmark/About | ui/AboutPane.kt; res/values/strings.xml | UPDATED IN SOURCE: shared vector mark in About and navigation headers, original MIT credits retained | Verify tablet/phone screenshot, small-size legibility and TalkBack | BR-1 |
 | UI-04 | Material palette generator | ui/theme/Palette.kt; MaterialColors.kt | EXISTING: tonal material scheme | Approved seed, semantic roles, contrast matrix | BR-2 |
 | UI-05 | Appearance modes / wallpapers | ui/theme/DynamicColors.kt; settings/Preferences.kt | EXISTING: System, Light, Dark, OLED, dynamic support | Keep user choice, curated brand preset, no change to actual paper | BR-2 |
 | UI-06 | Material typography | ui/theme/NotesTakingTheme.kt | EXISTING: color + shapes only in Theme wrapper | Explicit typography scale using bundled licensed fonts | BR-2 |
@@ -21,25 +21,25 @@
 | UI-11 | Trash/delete dialogs | ui/TrashPane.kt, Backstage.kt | EXISTING | Permanent/trash distinction, Undo where correct, warning color | BR-3 |
 | UI-12 | Folder picker/merge | ui/FolderPicker.kt, MergeDialog.kt | EXISTING | Adaptive dialog/sheet, keyboard/touch/accessibility | BR-3 |
 | UI-13 | PDF page-size and page actions | ui/PageSizeControls.kt, SidePanel.kt | EXISTING | Consistent control hierarchy and confirmation | BR-3/4 |
-| UI-14 | Tool settings popovers | ui/Popups.kt, Toolbar.kt, InfiniteToolbar.kt | EXISTING: anchored popups | Shared compact labels, sliders, preview, boundaries | BR-3/4 |
+| UI-14 | Tool settings popovers | ui/Popups.kt, Toolbar.kt, InfiniteToolbar.kt, ShapePopup.kt | PARTIAL SOURCE FIX: shape-side/sides count steppers now use labeled 48dp controls while preserving 30dp visible chips and numeric bounds | Verify count limits, keyboard focus, TalkBack labels and compact popups on Android | BR-3/4 |
 | UI-15 | Color picker | ui/ColorPicker.kt | EXISTING | Swatch focus/contrast/cursor/hex states | BR-3 |
 | UI-16 | Tooltip/help | ui/Tooltip.kt | EXISTING | Consistent delay, placement, shortcut text, reduce-motion | BR-3 |
 | UI-17 | Feedback snackbar and toast | ui/Editor.kt, MainActivity.kt, NewNoteScreen.kt, AboutPane.kt | EXISTING: snackbar and one isolated Toast | Unified lightweight status/Undo/Retry | BR-3 |
 | UI-18 | PDF import/export progress | MainActivity.kt:1642+, 1714+, 1749+, 1792+ | EXISTING: progress modal classes | Honest progress/cancel/error states, visual consistency | BR-3 |
-| UI-19 | Home + sidebar | ui/Backstage.kt | EXISTING: navigation/create/folders | Stronger hierarchy and spacing, same routes | BR-4 |
-| UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, Backstage.kt | EXISTING | Shared hover/selection/thumbnail/metadata states | BR-4 |
-| UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | REVIEW | BrandEmptyState with one key action, no huge illustrations | BR-4 |
+| UI-19 | Home + sidebar | ui/Backstage.kt | PARTIAL SOURCE FIX: initial folder choice now uses the existing scrollable/wrapping empty-state layout so two actions can stack on compact screens | Verify 280/320dp, tablet split-screen, 1.3x/2x text and folder/storage actions on hardware | BR-4 |
+| UI-20 | File explorer cards/tiles | ui/ExplorerTiles.kt, ExplorerLayouts.kt, Backstage.kt | PARTIAL SOURCE FIX: keyboard focus and selection access; grid/gallery count measured from real pane width; adaptive list metadata, columns preview and minimum row heights | Validate rail/drawer/split-screen, 1.3x/2x font, TalkBack, keyboard navigation, drag/drop and layout-switcher on device | BR-4 |
+| UI-21 | Empty state | ui/Backstage.kt, NewNoteScreen.kt, search | PARTIAL SOURCE FIX: New Note prioritized; contextual recovery for empty results; initial storage choice reuses scrollable wrapping EmptyPane | Validate search focus/Back, storage choice in small/landscape windows, 2x font and TalkBack | BR-4 |
 | UI-22 | New note screen | ui/NewNoteScreen.kt | EXISTING | Clear creation steps and template cards | BR-4 |
-| UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt | EXISTING | Quiet chrome/paper separation, page navigation, tools | BR-4 |
+| UI-23 | PDF and note editor | ui/Editor.kt, Toolbar.kt, SidePanel.kt, TextStyleBar.kt, TextFormatBar.kt | PARTIAL SOURCE FIX: 48dp font-size and Done controls, 6–96 pt disabled boundaries; floating bar now clamps to the measured pane and scrolls when too wide | Verify right-edge anchoring, horizontal scrolling/Done, text editing/Undo, keyboard, TalkBack and 200% font scale on phone/tablet | BR-4 |
 | UI-24 | Infinite canvas controls | ui/InfiniteEditor.kt, InfiniteToolbar.kt | EXISTING | Match note editor token hierarchy without GL changes | BR-4 |
 | UI-25 | Eraser picker and preview | ui/Popups.kt:919+, controllers | EXISTING: Stroke/Area/size slider | See CV-061–070, live radius and better preset controls | BR-4 |
 | UI-26 | Pen favorites/palette | ui/Toolbar.kt, Popups.kt, PreferencesPane.kt | EXISTING: pens and swatches | User-preserved new favorite chips and sizes | BR-4 |
-| UI-27 | PDF text selection and menus | ui/CanvasMenus.kt, SearchTab.kt | EXISTING | Source text legibility, accessible options, focus | BR-4 |
+| UI-27 | PDF text selection and search | ui/CanvasMenus.kt, SearchTab.kt | PARTIAL SOURCE FIX: selection-count controls and Search tab now have 48dp touch targets, including Clear Search, case/whole-word toggles, match navigation and result rows; current hit exposes selected state | Validate search field focus, case and whole-word states, keyboard shortcuts, result navigation and TalkBack/200% text on Android | BR-4 |
 | UI-28 | Audio/recording player | ui/AudioChip.kt, platform/RecordingService.kt | EXISTING | Consistent progress/state and contrast; notification safe | BR-4 |
-| UI-29 | Settings personalizations | ui/PreferencesPane.kt | EXISTING: material, colors and corners | Brand preset preview and reorganized grouping | BR-4 |
+| UI-29 | Settings personalizations | ui/PreferencesPane.kt; ui/MaterialColourPicker.kt; ui/ToolbarCustomizer.kt | UPDATED IN SOURCE: theme preview and reset confirmation; toolbar customizer chips now expose accessible visibility states with 48dp targets | Verify theme persistence, draggable sections, chip toggles and delete on phone/tablet with TalkBack | BR-4 |
 | UI-30 | Motion/interaction | ui/Toolbar.kt, Tooltip.kt, Backstage.kt, SidePanel.kt | EXISTING: Compose animations | Token durations, reduce-motion, no inking pipeline cost | BR-5 |
 | UI-31 | App notification small icon | res/drawable/ic_notification_mic.xml | EXISTING | Preserve system monochrome legibility; separate from app icon | BR-5 |
-| UI-32 | Accessibility/focus/IME | All UI screens | REVIEW | 48dp hit, contrast, screen reader, keyboard, system bars | BR-5 |
+| UI-32 | Accessibility/focus/IME | ui/Toolbar.kt, ExplorerTiles.kt, ExplorerLayouts.kt, ToolbarCustomizer.kt, Popups.kt, TableUi.kt, ShapePopup.kt, CanvasMenus.kt, TextStyleBar.kt, TextFormatBar.kt, SearchTab.kt | PARTIAL SOURCE FIX: tool/ink and explorer selection semantics, customizer checkbox state, labeled 48dp PDF/zoom/table/shape/text-size/search targets, selected search result and pane-clamped floating toolbar | Verify TalkBack selection and disabled states, shape editing and Undo, narrow toolbar navigation, Search Aa/W/clear, 200% font, keyboard, contrast and tablet split-screen | BR-5 |
 | UI-33 | License/source notice | ui/AboutPane.kt, LICENSE, NOTICE | EXISTING | Do not remove original project attribution | ALL |
 
 ## 2. Design deliverables / review pack
@@ -69,4 +69,4 @@
 - BR-4: screens use shared components, stylus/scroll/nav unchanged.
 - BR-5: Android CI + real-device side-by-side screenshot QA, accessibility and release icon resources.
 
-All tasks are PLANNED and need code changes, builds, tests and device verification before they are called complete.
+Some first-pass brand assets, popup styles and canvas chrome are implemented in source. The remaining redesign and all final visual/device acceptance gates are pending; no UI item is considered fully verified until Android CI and hardware review pass.

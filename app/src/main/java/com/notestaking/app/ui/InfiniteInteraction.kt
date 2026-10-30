@@ -319,9 +319,16 @@ class InfiniteInteraction(
     // Android took back a finger of this touch, so the rest of it is ignored.
     private var touchTakenBack = false
 
-    fun onTouch(e: MotionEvent): Boolean {
-        if (touchTakenBack && e.actionMasked != MotionEvent.ACTION_DOWN) return true
-        when (e.actionMasked) {
+    private val penRouter = com.notestaking.app.canvas.PenContactRouter()
+
+    fun onTouch(original: MotionEvent): Boolean {
+        val e = penRouter.route(original) {
+            if (!touchTakenBack) takeBackTouch()
+            touchTakenBack = false
+        } ?: return true
+        try {
+            if (touchTakenBack && e.actionMasked != MotionEvent.ACTION_DOWN) return true
+            when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchTakenBack = false
                 tapCandidate = true
@@ -341,7 +348,9 @@ class InfiniteInteraction(
                 handleMove(e)
             }
             MotionEvent.ACTION_POINTER_UP ->
-                if (movingView() && InteractionController.isCancelledLift(e)) {
+                if (finishActivePenContact(e)) {
+                    Unit
+                } else if (movingView() && InteractionController.isCancelledLift(e)) {
                     touchTakenBack = true
                     takeBackTouch()
                 } else {
@@ -353,7 +362,16 @@ class InfiniteInteraction(
             }
             MotionEvent.ACTION_CANCEL -> takeBackTouch()
         }
-        return true
+            return true
+        } finally {
+            if (e !== original) {
+                // A pen-up while a palm remains must not resume the old finger gesture.
+                if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) {
+                    touchTakenBack = true
+                }
+                e.recycle()
+            }
+        }
     }
 
     private fun movingView(): Boolean = mode == CanvasPointerMode.PAN || mode == CanvasPointerMode.PINCH
@@ -479,7 +497,9 @@ class InfiniteInteraction(
             onCommitText()
         }
         drawingPointerId = e.getPointerId(0)
-        drawingIsStylus = e.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS
+        drawingIsStylus = com.notestaking.app.canvas.PenContact.isPen(
+            e.getToolType(0), MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER,
+        )
         val vx = e.getX(0).toDouble()
         val vy = e.getY(0).toDouble()
 
@@ -669,6 +689,20 @@ class InfiniteInteraction(
             CanvasPointerMode.POLYGON -> showPolygonDraft(viewport.viewportToContent(Pt(e.getX(0).toDouble(), e.getY(0).toDouble())))
             CanvasPointerMode.IDLE -> Unit
         }
+    }
+
+    /** Commit the pen on its own pointer-up; a resting finger must not finish or extend its ink. */
+    private fun finishActivePenContact(e: MotionEvent): Boolean {
+        val ownsGesture = mode == CanvasPointerMode.DRAW || mode == CanvasPointerMode.ERASE ||
+            mode == CanvasPointerMode.TAPE
+        if (!com.notestaking.app.canvas.PenContact.finishesGesture(
+                drawingIsStylus, ownsGesture, drawingPointerId, e.getPointerId(e.actionIndex),
+            )
+        ) return false
+        handleUp(e)
+        tapCandidate = false
+        touchTakenBack = true
+        return true
     }
 
     private fun handlePointerUp(e: MotionEvent) {

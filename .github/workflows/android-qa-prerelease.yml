@@ -1,0 +1,122 @@
+name: Publish Verified Universal Android Test Prerelease
+
+on:
+  push:
+    tags:
+      - 'v0.1.0-beta.2'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Verify existing APK and publish test prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify identical app source and successful original CI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: b36c1f941abe8f55331f8086aef6e26f4b0e6e90
+          VERIFIED_RUN: '40918820050'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'v0.1.0-beta.2'
+          test "$(git rev-parse 'HEAD^{commit}')" = "$GITHUB_SHA"
+          python3 tools/ci/check_project.py
+          python3 tools/ci/check_backup_privacy.py
+          git cat-file -e "$VERIFIED_SHA^{commit}"
+          # The signed-off APK is valid only for these exact application sources.
+          while IFS= read -r changed; do
+            case "$changed" in
+              .github/workflows/android-qa-prerelease.yml|docs/engineering/UNIVERSAL_TEST_RELEASE_2026-10-29.md) ;;
+              *) echo "Unverified source change: $changed" >&2; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$VERIFIED_SHA" "$GITHUB_SHA")
+          run_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN" --jq '.head_sha')"
+          run_conclusion="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN" --jq '.conclusion')"
+          test "$run_sha" = "$VERIFIED_SHA"
+          test "$run_conclusion" = 'success'
+
+      - name: Download verified all-ABI APK from GitHub Actions
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 40918820050 --repo "$GITHUB_REPOSITORY" \
+            --name 'NotesTakingApp-debug-all-abis-66' --dir release-input
+          test -s release-input/app-debug.apk
+
+      - name: Verify archive and native ABI contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          apk = 'release-input/app-debug.apk'
+          with ZipFile(apk) as archive:
+              assert archive.testzip() is None, 'Corrupt APK archive'
+              files = set(archive.namelist())
+              assert 'classes.dex' in files, 'Missing app classes.dex'
+              assert 'AndroidManifest.xml' in files, 'Missing manifest'
+              expected = {'arm64-v8a', 'armeabi-v7a', 'x86_64'}
+              actual = {name.split('/')[1] for name in files
+                        if name.startswith('lib/') and name.endswith('.so')}
+              assert actual == expected, f'Unexpected ABIs: {actual}'
+              for abi in expected:
+                  for library in ('libnotestakingpdf.so', 'libnotestakingts.so'):
+                      assert f'lib/{abi}/{library}' in files, f'Missing {abi}/{library}'
+          print('Verified all 3 ABIs, both native libraries, DEX, manifest and ZIP CRC')
+          PY
+          mkdir -p dist
+          cp release-input/app-debug.apk dist/NotesTakingApp-Universal-v0.1.0-beta.2-debug.apk
+          (cd dist && sha256sum NotesTakingApp-Universal-v0.1.0-beta.2-debug.apk > NotesTakingApp-Universal-v0.1.0-beta.2-debug.apk.sha256)
+
+      - name: Write accurate testing-release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## NotesTaking App — Universal Android Test Beta 2
+
+          **Testing APK, not a production release.**
+
+          Verified source: `b36c1f941abe8f55331f8086aef6e26f4b0e6e90`.
+          Verified CI: https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/40918820050
+
+          - Android 8.0+ (API 26), supports ARM64, 32-bit ARM and x86_64.
+          - Debug application ID: `com.notestaking.app.debug`.
+          - New NotesTaking launcher icon, Paper & Ink UI, Home/Explorer, Settings and editor improvements.
+          - PDF annotation, canvas quick access, shape/text/search controls and precise area eraser.
+          - Stylus/palm tracking improvements and safer session, PDF, font/theme and template imports.
+          - The APK is an existing tested GitHub CI artifact, not an independently rebuilt binary.
+
+          Download the `.apk` under **Assets** on this release page, not the source-code ZIP.
+          Android may ask permission to install unknown apps. Back up existing notes before
+          changing an installed debug app: a different signing key can block an update.
+          If installation fails, provide your device model, Android version and error text.
+
+          Real stylus/hardware testing is still pending. OCR, editable DOCX and cloud sync
+          are not implemented. Preserve MIT/XNotes and third-party attribution in LICENSE/NOTICE.
+          EOF
+
+      - name: Publish public testing prerelease with direct APK asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            dist/NotesTakingApp-Universal-v0.1.0-beta.2-debug.apk \
+            dist/NotesTakingApp-Universal-v0.1.0-beta.2-debug.apk.sha256 \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease \
+            --title 'NotesTaking App v0.1.0 Beta 2 — Universal Android Test' \
+            --notes-file release-notes.md

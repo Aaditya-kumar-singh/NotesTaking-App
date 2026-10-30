@@ -66,6 +66,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -518,7 +521,9 @@ internal fun ToolbarIcon(
     val press by animateFloatAsState(if (pressed) 0.85f else 1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium), label = "toolPress")
     Tooltip(contentDescription, hint = hint, shortcut = shortcut) {
         Box(
-            Modifier.size(bar.button).clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
+            Modifier.size(bar.button)
+                .then(if (glideKey != null) Modifier.semantics { selected = active } else Modifier)
+                .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -556,6 +561,8 @@ internal fun Swatch(
     onClick: () -> Unit,
 ) {
     val bar = LocalBar.current
+    val colourLabel = stringResource(R.string.colour)
+    val accessibleLabel = if (ink != null) "$colourLabel ${Rgba.toHex(ink)}" else colourLabel
     Box(
         modifier = Modifier
             .then(if (bar.vertical) Modifier.padding(vertical = 3.dp) else Modifier.padding(horizontal = 3.dp))
@@ -566,7 +573,8 @@ internal fun Swatch(
             .padding(4.dp)
             .clip(CircleShape)
             .background(color)
-            .clickable(onClick = onClick),
+            .semantics { contentDescription = accessibleLabel; selected = active }
+            .clickable(role = Role.Button, onClick = onClick),
     )
 }
 

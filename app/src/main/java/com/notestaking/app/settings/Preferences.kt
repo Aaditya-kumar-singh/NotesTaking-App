@@ -200,10 +200,10 @@ data class Preferences(
         .put("pdf_heading_bookmarks", pdfHeadingBookmarks)
 
     companion object {
-        val DEFAULT_ACCENT = Rgba(0, 230, 118, 255)
+        val DEFAULT_ACCENT = Rgba(82, 109, 223, 255)
         val DEFAULT_MATERIAL_SINGLE = Rgba(244, 67, 54, 255)
-        val DEFAULT_MATERIAL_DUAL = Rgba(154, 124, 66, 255)
-        val DEFAULT_MATERIAL_SURFACE = Rgba(61, 117, 230, 255)
+        val DEFAULT_MATERIAL_DUAL = Rgba(82, 109, 223, 255)
+        val DEFAULT_MATERIAL_SURFACE = Rgba(229, 222, 208, 255)
 
         /** [trashDays] for keeping deleted items until Trash is emptied by hand. */
         const val TRASH_FOREVER = -1

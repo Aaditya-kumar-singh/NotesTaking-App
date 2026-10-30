@@ -1,0 +1,101 @@
+name: Publish Verified Master Universal Test APK
+
+on:
+  workflow_run:
+    workflows: [Android CI]
+    branches: [master]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-verified-master-apk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish CI-tested master APK
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+      RELEASE_TAG: v0.1.0-beta.3
+
+    steps:
+      - name: Verify master commit and successful GitHub CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          master_sha="$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')"
+          test "$VERIFIED_SHA" = "$master_sha" || { echo "::error::Master moved; refusing to publish an outdated APK"; exit 1; }
+          conclusion="$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.conclusion')"
+          test "$conclusion" = "success"
+          echo "Verified successful Android CI on master: $VERIFIED_SHA"
+
+      - name: Download the verified all-ABI APK from that exact CI run
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.expired == false and (.name | startswith("NotesTakingApp-debug-all-abis-"))) | .name' | head -n 1)"
+          test -n "$artifact" || { echo "::error::No all-ABI debug APK from this run"; exit 1; }
+          mkdir -p release-input
+          gh run download "$RUN_ID" --repo "$REPO" --name "$artifact" --dir release-input
+          test -s release-input/app-debug.apk
+
+      - name: Verify APK archive and supported native architectures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          p = 'release-input/app-debug.apk'
+          with ZipFile(p) as z:
+              assert z.testzip() is None, 'Corrupt APK ZIP'
+              names = set(z.namelist())
+              assert {'AndroidManifest.xml', 'classes.dex'} <= names
+              expected = {'arm64-v8a', 'armeabi-v7a', 'x86_64'}
+              actual = {s.split('/')[1] for s in names if s.startswith('lib/') and s.endswith('.so')}
+              assert actual == expected, f'Native architectures missing: {expected - actual}'
+              for abi in expected:
+                  for lib in ('libnotestakingts.so', 'libnotestakingpdf.so'):
+                      assert f'lib/{abi}/{lib}' in names, f'Missing {lib} for {abi}'
+          print('Validated Android manifest, DEX, native libraries for all three ABIs and ZIP CRC')
+          PY
+          mkdir -p dist
+          cp release-input/app-debug.apk "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk"
+          (cd dist && sha256sum "NotesTakingApp-Universal-$RELEASE_TAG-debug.apk" > "NotesTakingApp-Universal-$RELEASE_TAG-debug.apk.sha256")
+
+      - name: Publish GitHub testing prerelease with direct APK asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')"
+          test "$VERIFIED_SHA" = "$current" || { echo "::error::Master moved before publishing"; exit 1; }
+          if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; leave it unchanged"
+            exit 0
+          fi
+          cat > release-notes.md <<'NOTES'
+          ## NotesTaking App — Universal Android Test Beta 3
+
+          This APK was built from the verified **master** branch and passed GitHub Android CI (Kotlin unit tests, lint, debug APK build and APK checks).
+
+          - Android 8.0+ (API 26), ARM64, 32-bit ARM and x86_64 native libraries.
+          - Includes latest PDF finger handwriting, area eraser rendering, and security/reliability updates.
+          - **Debug/test APK**, not a production-signed release. App ID: `com.notestaking.app.debug`.
+          - Back up notes before replacing a previously installed debug APK: GitHub runners may use different debug signing keys, so an in-place update may fail.
+          - Physical device and stylus testing is still required. Unsupported CPUs, Android versions below 8.0 and vendor-specific input behavior are not guaranteed.
+          - Preserve third-party attribution and licenses.
+          NOTES
+          gh release create "$RELEASE_TAG" \
+            "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk" \
+            "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk.sha256" \
+            --repo "$REPO" --target "$VERIFIED_SHA" --prerelease \
+            --title "NotesTaking App $RELEASE_TAG — Universal Android Test" \
+            --notes-file release-notes.md

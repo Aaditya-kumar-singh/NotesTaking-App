@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "30 2 * * 1"
   workflow_dispatch:
+  # Validate workflow changes before merging; do not scan every UI-only PR twice.
+  pull_request:
+    branches: [main]
+    paths: [".github/workflows/codeql.yml"]
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     branches: [master, main]
     paths:
@@ -24,6 +29,7 @@ concurrency:
 jobs:
   analyze:
     name: Java/Kotlin security analysis
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -60,11 +66,13 @@ jobs:
           build-mode: manual
           queries: security-extended
 
-      - name: Build Kotlin sources for CodeQL extraction
+      - name: Compile Java/Kotlin sources for CodeQL extraction
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace --max-workers=2 :app:assembleDebug
+          # CodeQL targets JVM sources; Android CI already validates native libraries and APKs.
+          ./gradlew --no-daemon --stacktrace --max-workers=2 \
+            :app:compileDebugKotlin :app:compileDebugJavaWithJavac
 
       - name: Upload CodeQL findings to GitHub code scanning
         uses: github/codeql-action/analyze@v4

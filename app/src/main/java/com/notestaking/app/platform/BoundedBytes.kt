@@ -12,6 +12,8 @@ import java.io.InputStream
 internal object BoundedBytes {
     const val MAX_IMAGE_BYTES = 32 * 1024 * 1024
     const val MAX_SVG_BYTES = 2 * 1024 * 1024
+    const val MAX_CODE_THEME_BYTES = 1 * 1024 * 1024
+    const val MAX_FONT_BYTES = 16 * 1024 * 1024
 
     @Throws(IOException::class)
     fun read(input: InputStream, maxBytes: Int = MAX_IMAGE_BYTES): ByteArray {
@@ -19,10 +21,15 @@ internal object BoundedBytes {
         val out = ByteArrayOutputStream(minOf(maxBytes, 64 * 1024))
         val buffer = ByteArray(64 * 1024)
         var total = 0
+        var emptyReads = 0
         while (true) {
             val n = input.read(buffer)
             if (n < 0) return out.toByteArray()
-            if (n == 0) continue
+            if (n == 0) {
+                if (++emptyReads > 16) throw IOException("Import stream stalled")
+                continue
+            }
+            emptyReads = 0
             if (n > maxBytes - total) throw IOException("Imported item exceeds size limit")
             total += n
             out.write(buffer, 0, n)
@@ -31,7 +38,7 @@ internal object BoundedBytes {
 
     @Throws(IOException::class)
     fun readFile(file: File, maxBytes: Int = MAX_IMAGE_BYTES): ByteArray {
-        if (!file.isFile || file.length() > maxBytes) throw IOException("Image exceeds size limit")
+        if (!file.isFile || file.length() > maxBytes) throw IOException("File exceeds size limit")
         return file.inputStream().use { read(it, maxBytes) }
     }
 

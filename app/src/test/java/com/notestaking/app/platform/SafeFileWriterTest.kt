@@ -62,6 +62,23 @@ class SafeFileWriterTest {
         }
     }
 
+    @Test fun failedOverwriteCanBeRetriedWithoutLosingLastGoodNote() {
+        val dir = directory()
+        try {
+            val target = File(dir, "document.xnote").apply { writeText("last-good-note") }
+            assertFalse(SafeFileWriter.write(target) { output ->
+                output.write("incomplete-note".toByteArray())
+                throw java.io.IOException("simulated storage failure")
+            })
+            assertEquals("last-good-note", target.readText())
+            assertTrue(SafeFileWriter.write(target) { it.write("recovered-note".toByteArray()) })
+            assertEquals("recovered-note", target.readText())
+            assertEquals(listOf("document.xnote"), dir.listFiles()!!.map { it.name })
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun firstWriteFailureLeavesNoIncompleteDestination() {
         val dir = directory()
         try {

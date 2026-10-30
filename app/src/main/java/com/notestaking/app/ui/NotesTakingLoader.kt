@@ -9,16 +9,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.notestaking.app.R
 
 /**
- * Fullscreen launch animation: the exported frame-by-frame glitch loader
+ * Fullscreen launch animation: the frame-by-frame ink trail loader
  * ([R.drawable.notestaking_loader] — a 24-frame ~1.6s [AnimationDrawable]) centred on a
- * deep navy stage that matches the new notebook artwork, so
+ * deep navy stage that matches the launcher artwork, so
  * there's no edge seam. Shown while the session restores, then faded out.
  */
 @Composable
@@ -28,7 +28,7 @@ fun NotesTakingLoader(modifier: Modifier = Modifier) {
     val shortEdge = minOf(cfg.screenWidthDp, cfg.screenHeightDp)
     val side = minOf(shortEdge * 0.55f, 288f).dp
     Box(
-        modifier.fillMaxSize().background(Color(0xFF07142A)),
+        modifier.fillMaxSize().background(colorResource(R.color.loader_bg)),
         contentAlignment = Alignment.Center,
     ) {
         AndroidView(
