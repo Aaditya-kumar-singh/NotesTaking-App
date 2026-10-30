@@ -1652,7 +1652,20 @@ class InteractionController(
                 f.sync = item.sync // pieces were written when the whole was
                 f.group = item.group
             }
-            val b = frags.fold(item.paintBounds()) { acc, f -> acc.union(f.paintBounds()) }
+            // Ordinary pen fragments only change around the cut. Clearing the entire
+            // original line's bounds here repeatedly repaints unrelated ink on a PDF.
+            // Keep full bounds for tapered, speed, neon and geometric strokes whose
+            // rendering can change farther from the eraser.
+            val b = if (item is Stroke && item.tool == Tool.PEN && !item.config.neon &&
+                !item.config.taperEnabled && item.config.speedStrength == 0.0 &&
+                item.config.directionStrength == 0.0
+            ) {
+                com.notestaking.app.core.geometry.EraserSweep.penRepairBounds(
+                    cx, cy, radius, item.config.baseWidth, state.zoom,
+                )
+            } else {
+                frags.fold(item.paintBounds()) { acc, f -> acc.union(f.paintBounds()) }
+            }
             dirty = dirty?.union(b) ?: b
             page.items.removeAt(i)
             page.items.addAll(i, frags)

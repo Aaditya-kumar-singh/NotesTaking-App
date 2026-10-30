@@ -10,6 +10,16 @@ import kotlin.math.hypot
 object EraserSweep {
     const val MAX_STEPS = 512
 
+    /**
+     * A normal pen cut only changes ink close to the erased disc. Reserve extra room for
+     * nib caps and stroke smoothing, in both page and screen pixels, without repainting
+     * the bounds of a long stroke and every unrelated line inside them.
+     */
+    fun penRepairBounds(cx: Double, cy: Double, radius: Double, width: Double, zoom: Double): Rect {
+        val reach = radius + maxOf(width * 4.0, 32.0 / zoom.coerceAtLeast(0.01))
+        return Rect(cx - reach, cy - reach, reach * 2.0, reach * 2.0)
+    }
+
     fun visit(previous: Pt?, next: Pt, radiusPx: Double, erase: (Pt) -> Unit) {
         if (previous == null || !radiusPx.isFinite() || radiusPx <= 0.0) {
             erase(next)
