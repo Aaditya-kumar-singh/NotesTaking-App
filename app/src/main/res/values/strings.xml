@@ -1089,6 +1089,10 @@
     <string name="the_top_folder">the top folder</string>
     <string name="restored_item">Restored “%1$s”</string>
     <string name="err_restore_item">Couldn’t restore “%1$s”</string>
+    <string name="deleted_item">Deleted “%1$s” permanently</string>
+    <string name="err_delete_item">Couldn’t delete “%1$s”</string>
+    <string name="trash_emptied">Trash emptied</string>
+    <string name="err_empty_trash">Couldn’t delete everything. Some items may remain.</string>
     <string name="restore_hint">Restoring puts an item back in the folder it came from, or in %1$s if that folder is gone.</string>
     <string name="delete_permanently_body">“%1$s” will be permanently deleted. This can’t be undone.</string>
     <string name="trash_row_sub">%1$s · from %2$s · %3$s</string>

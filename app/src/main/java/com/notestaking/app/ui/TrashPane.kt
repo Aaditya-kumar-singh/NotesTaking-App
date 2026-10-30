@@ -206,9 +206,18 @@ internal fun TrashPane(editor: Editor, sidebarOpen: Boolean, onShowSidebar: () -
                     confirmEmpty = false
                     busy = true
                     scope.launch {
-                        withContext(Dispatchers.IO) { editor.emptyTrash(root) }
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching {
+                                val count = editor.listTrash(root).size
+                                editor.emptyTrash(root) to count
+                            }.getOrNull()
+                        }
                         busy = false
                         refresh++
+                        editor.say(
+                            if (result != null && result.first == result.second) resources.getString(R.string.trash_emptied)
+                            else resources.getString(R.string.err_empty_trash)
+                        )
                     }
                 }) { Text(stringResource(R.string.empty_trash)) }
             },
@@ -224,9 +233,15 @@ internal fun TrashPane(editor: Editor, sidebarOpen: Boolean, onShowSidebar: () -
             confirmButton = {
                 DestructiveTextButton(onClick = {
                     confirmDelete = null
+                    busy = true
                     scope.launch {
-                        withContext(Dispatchers.IO) { editor.deleteTrash(root, item) }
+                        val ok = withContext(Dispatchers.IO) { editor.deleteTrash(root, item) }
+                        busy = false
                         refresh++
+                        editor.say(
+                            if (ok) resources.getString(R.string.deleted_item, label(item))
+                            else resources.getString(R.string.err_delete_item, label(item))
+                        )
                     }
                 }) { Text(stringResource(R.string.delete)) }
             },
