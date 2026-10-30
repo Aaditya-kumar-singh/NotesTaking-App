@@ -802,8 +802,8 @@ class InteractionController(
             // off the selection it still pans.
             toolType == MotionEvent.TOOL_TYPE_FINGER && !fingerDraws && tool.fingerPansWhenOff &&
                 fingerHitsSelection(content) -> Tool.SELECT
-            // A finger otherwise pans instead of drawing/selecting/shaping/erasing (text stays usable by finger).
-            toolType == MotionEvent.TOOL_TYPE_FINGER && !fingerDraws && tool.fingerPansWhenOff -> Tool.PAN
+            // Finger ink is explicit on stylus tablets; in navigation mode it pans instead.
+            toolType == MotionEvent.TOOL_TYPE_FINGER -> FreePointer.fingerTool(tool, fingerDraws)
             else -> tool
         }
         val isFinger = toolType == MotionEvent.TOOL_TYPE_FINGER

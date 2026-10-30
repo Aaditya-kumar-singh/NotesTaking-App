@@ -55,6 +55,7 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
     var pageJumpOpen by remember { mutableStateOf(false) }
     if (editor.hasPdf) PdfModeButton(editor)
     PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
+    if (editor.hasPdf) PinnedFingerDrawing(editor)
     PinnedPageInsertion(editor)
     CanvasAllTools(
         host = editor,
@@ -161,6 +162,18 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
     )
     if (stylesOpen) Box { CanvasStylesPopup(editor) { stylesOpen = false } }
     if (waypointsOpen) Box { CanvasWaypointsPopup(editor) { waypointsOpen = false } }
+}
+
+/** PDF-only shortcut: a disabled finger draws no ink, while two fingers always navigate. */
+@Composable
+private fun PinnedFingerDrawing(editor: Editor) {
+    val revision = editor.prefsVersion
+    val enabled = remember(revision) { editor.preferences.fingerDraws }
+    ToolbarIcon(
+        NotesTakingIcons.edit,
+        stringResource(R.string.pref_finger_draws),
+        active = enabled,
+    ) { editor.toggleFingerDrawing() }
 }
 
 @Composable
