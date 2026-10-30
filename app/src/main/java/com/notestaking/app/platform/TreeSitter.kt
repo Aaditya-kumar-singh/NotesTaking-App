@@ -3,6 +3,7 @@ package com.notestaking.app.platform
 import android.content.Context
 import com.notestaking.app.core.text.CodeHighlighter
 import com.notestaking.app.core.text.HighlightSpan
+import com.notestaking.app.core.text.CodeHighlightLimits
 import java.io.File
 
 /** The thin JNI surface over the vendored tree-sitter (see cpp/ts_jni.c). Stateless calls only. */
@@ -31,9 +32,12 @@ class TreeSitterHighlighter(private val context: Context) : CodeHighlighter {
 
     override fun highlight(text: String, language: String): List<HighlightSpan>? {
         if (!supports(language)) return null
+        if (text.length > CodeHighlightLimits.MAX_INPUT_BYTES) return null
         val data = synchronized(cache) { langData(language) } ?: return null
         val utf8 = text.toByteArray(Charsets.UTF_8)
+        if (!CodeHighlightLimits.acceptsSourceSize(utf8.size)) return null
         val raw = TreeSitterNative.nativeHighlight(language, utf8, data.scm) ?: return null
+        if (!CodeHighlightLimits.acceptsCaptureArrayLength(raw.size)) return null
         val byteToChar = byteToCharIndex(text, utf8.size)
         val out = ArrayList<HighlightSpan>(raw.size / 3)
         var k = 0
@@ -48,7 +52,7 @@ class TreeSitterHighlighter(private val context: Context) : CodeHighlighter {
     }
 
     private fun langData(language: String): LangData? = cache.getOrPut(language) {
-        val scm = runCatching { context.assets.open("scm/$language.scm").use { it.readBytes() } }.getOrNull()
+        val scm = runCatching { context.assets.open("scm/$language.scm").use { BoundedBytes.read(it, CodeHighlightLimits.MAX_INPUT_BYTES) } }.getOrNull()
             ?: return@getOrPut null
         val names = TreeSitterNative.nativeCaptureNames(language, scm) ?: return@getOrPut null
         LangData(scm, names)

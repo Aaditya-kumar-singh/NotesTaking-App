@@ -9,6 +9,10 @@
 #include <string.h>
 #include "tree_sitter/api.h"
 
+// Bounded highlighting: oversized code blocks fall back to plain text.
+#define MAX_HIGHLIGHT_BYTES (1024 * 1024)
+#define MAX_HIGHLIGHT_CAPTURES 65536u
+
 const TSLanguage *tree_sitter_asm(void);
 const TSLanguage *tree_sitter_bash(void);
 const TSLanguage *tree_sitter_c(void);
@@ -182,6 +186,7 @@ static const TSLanguage *lang_for(JNIEnv *env, jstring jlang) {
 static TSQuery *make_query(const TSLanguage *lang, JNIEnv *env, jbyteArray jscm,
                            uint32_t *err_offset, TSQueryError *err_type) {
     jsize len = (*env)->GetArrayLength(env, jscm);
+    if (len <= 0 || len > MAX_HIGHLIGHT_BYTES) return NULL;
     jbyte *scm = (*env)->GetByteArrayElements(env, jscm, NULL);
     if (!scm) return NULL;
     TSQuery *query = ts_query_new(lang, (const char *)scm, (uint32_t)len, err_offset, err_type);
@@ -194,6 +199,8 @@ static TSQuery *make_query(const TSLanguage *lang, JNIEnv *env, jbyteArray jscm,
 JNIEXPORT jintArray JNICALL
 Java_com_notestaking_app_platform_TreeSitterNative_nativeHighlight(
     JNIEnv *env, jclass cls, jstring jlang, jbyteArray jtext, jbyteArray jscm) {
+    jsize text_len = (*env)->GetArrayLength(env, jtext);
+    if (text_len <= 0 || text_len > MAX_HIGHLIGHT_BYTES) return NULL;
     const TSLanguage *lang = lang_for(env, jlang);
     if (!lang) return NULL;
 
@@ -202,7 +209,6 @@ Java_com_notestaking_app_platform_TreeSitterNative_nativeHighlight(
     TSQuery *query = make_query(lang, env, jscm, &err_offset, &err_type);
     if (!query) return NULL;
 
-    jsize text_len = (*env)->GetArrayLength(env, jtext);
     jbyte *text = (*env)->GetByteArrayElements(env, jtext, NULL);
     if (!text) {
         ts_query_delete(query);
@@ -223,6 +229,7 @@ Java_com_notestaking_app_platform_TreeSitterNative_nativeHighlight(
         while (buf && ts_query_cursor_next_match(cursor, &match)) {
             if (!pattern_predicates_pass(query, &match, (const char *)text)) continue;
             for (uint16_t i = 0; i < match.capture_count; i++) {
+                if (n >= MAX_HIGHLIGHT_CAPTURES) { free(buf); buf = NULL; break; }
                 if (n == cap) {
                     cap *= 2;
                     jint *grown = realloc(buf, cap * 3 * sizeof(jint));
@@ -262,6 +269,7 @@ Java_com_notestaking_app_platform_TreeSitterNative_nativeCaptureNames(
     if (!query) return NULL;
 
     uint32_t count = ts_query_capture_count(query);
+    if (count > 4096u) { ts_query_delete(query); return NULL; }
     jclass str = (*env)->FindClass(env, "java/lang/String");
     jobjectArray out = (*env)->NewObjectArray(env, (jsize)count, str, NULL);
     for (uint32_t i = 0; out && i < count; i++) {
