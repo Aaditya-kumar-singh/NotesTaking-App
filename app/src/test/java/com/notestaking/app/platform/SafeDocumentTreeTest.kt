@@ -158,9 +158,8 @@ class SafeDocumentTreeTest {
             Files.createSymbolicLink(link.toPath(), outsideFile.toPath())
         }.isSuccess
         if (supported) {
-            val created = tree.create("root", "linked.xnote", false)
-            assertEquals("root/linked (1).xnote", created)
-            assertTrue(File(root, "linked (1).xnote").isFile)
+            rejected { tree.create("root", "linked.xnote", false) }
+            assertTrue(Files.isSymbolicLink(link.toPath()))
             File(root, "original.xnote").writeText("original")
             rejected { tree.rename("root/original.xnote", "linked.xnote") }
             assertEquals("original", File(root, "original.xnote").readText())

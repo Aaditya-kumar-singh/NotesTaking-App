@@ -54,7 +54,7 @@ jobs:
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
       # QA device-test branches build all supported ABIs; regular feature branches default to ARM64.
-      CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/qa/') && !inputs.full_abis }}
+      CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/qa/') && !inputs.full_abis }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
@@ -72,7 +72,7 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             # PR checkout is the merge commit; its first parent is the target branch.
             compare_base=HEAD^1
-          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" != "refs/heads/main" ]]; then
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" != "refs/heads/main" && "$GITHUB_REF" != "refs/heads/master" ]]; then
             # Compare the entire pushed batch, not only its last commit.
             before="${{ github.event.before }}"
             if [[ "$before" =~ ^[0-9a-f]{40}$ && ! "$before" =~ ^0+$ ]]; then
