@@ -22,6 +22,24 @@ class SecureXmlTest {
         }
     }
 
+    @Test fun rejectsExternalDtdWithoutEntityReference() {
+        val hostile = """<!DOCTYPE note SYSTEM "https://example.invalid/external.dtd">
+            <note>no entity used</note>""".trimIndent()
+        assertThrows(SAXException::class.java) {
+            SecureXml.builder().parse(ByteArrayInputStream(hostile.toByteArray()))
+        }
+    }
+
+    @Test fun rejectsParameterEntityDeclarations() {
+        val hostile = """<!DOCTYPE note [
+            <!ENTITY % payload SYSTEM "file:///etc/passwd">
+            %payload;
+            ]><note>unsafe</note>""".trimIndent()
+        assertThrows(SAXException::class.java) {
+            SecureXml.builder().parse(ByteArrayInputStream(hostile.toByteArray()))
+        }
+    }
+
     @Test fun rejectsInternalEntityExpansion() {
         val hostile = """<!DOCTYPE note [<!ENTITY many "long long long">]>
             <note>&many;</note>""".trimIndent()
