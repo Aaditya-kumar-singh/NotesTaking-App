@@ -170,9 +170,11 @@ jobs:
           fi
           tag="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' | python3 tools/ci/auto_beta.py next-tag)"
           code="$(printf '%s' "$tag" | sed 's/^.*[.]//')"
-          echo "CI_RELEASE_TAG=$tag" >> "$GITHUB_ENV"
-          echo "CI_VERSION_NAME=$(printf '%s' "$tag" | cut -c2-)" >> "$GITHUB_ENV"
-          echo "CI_VERSION_CODE=$code" >> "$GITHUB_ENV"
+          {
+            echo "CI_RELEASE_TAG=$tag"
+            echo "CI_VERSION_NAME=$(printf '%s' "$tag" | cut -c2-)"
+            echo "CI_VERSION_CODE=$code"
+          } >> "$GITHUB_ENV"
           echo "Preparing APK $tag (versionCode=$code) from $GITHUB_SHA"
 
       - name: Run Kotlin unit tests, build APK, and lint

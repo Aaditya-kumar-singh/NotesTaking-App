@@ -132,7 +132,7 @@ jobs:
           - Different GitHub runner debug signing keys may prevent in-place updates. Back up notes before reinstalling.
           - Device testing is still required for stylus, palm rejection, PDF erasing, save/reopen and compatibility.
           NOTES
-          printf '\n- Source commit: `%s`\n- Android CI: https://github.com/%s/actions/runs/%s\n- APK SHA-256: `%s`\n' \
+          printf '\n- Source commit: %s\n- Android CI: https://github.com/%s/actions/runs/%s\n- APK SHA-256: %s\n' \
             "$VERIFIED_SHA" "$REPO" "$ANDROID_RUN_ID" "$RELEASE_SHA256" >> release-notes.md
 
           gh release create "$RELEASE_TAG" "dist/$file" "dist/$file.sha256" \
