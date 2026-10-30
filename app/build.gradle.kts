@@ -27,6 +27,13 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        providers.gradleProperty("ciVersionCode").orNull?.let {
+            versionCode = it.toInt().also { code -> require(code in 1..2_100_000_000) }
+        }
+        providers.gradleProperty("ciVersionName").orNull?.let {
+            require(Regex("""0[.]1[.]0-beta[.][1-9][0-9]*""").matches(it))
+            versionName = it
+        }
         ndk {
             // CI may build ARM64 alone for faster PR checks; all other builds retain every ABI.
             abiFilters += if (providers.gradleProperty("ciArm64Only").orNull == "true") {

@@ -15,6 +15,8 @@ def main():
     parser.add_argument("--apk", type=Path, required=True)
     parser.add_argument("--package", required=True)
     parser.add_argument("--aapt", type=Path, required=True)
+    parser.add_argument("--version-name", help="Expected versionName inside the APK")
+    parser.add_argument("--version-code", type=int, help="Expected versionCode inside the APK")
     parser.add_argument("--abi", action="append",
                         choices=("arm64-v8a", "armeabi-v7a", "x86_64"),
                         help="Expected native ABI (repeat to override the default three)")
@@ -56,6 +58,16 @@ def main():
             f"APK package mismatch: expected {args.package}, "
             f"found {match.group(1) if match else 'unknown'}"
         )
+    package_line = next((line for line in result.stdout.splitlines()
+                         if line.startswith("package:")), "")
+    if args.version_name is not None:
+        version_name = re.search(r"versionName='([^']+)'", package_line)
+        if not version_name or version_name.group(1) != args.version_name:
+            raise SystemExit(f"APK versionName mismatch: expected {args.version_name}")
+    if args.version_code is not None:
+        version_code = re.search(r"versionCode='([0-9]+)'", package_line)
+        if not version_code or int(version_code.group(1)) != args.version_code:
+            raise SystemExit(f"APK versionCode mismatch: expected {args.version_code}")
     print(
         f"Verified APK: {args.apk.name} "
         f"({args.apk.stat().st_size:,} bytes), package {args.package}, "

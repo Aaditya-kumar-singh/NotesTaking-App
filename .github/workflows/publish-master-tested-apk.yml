@@ -2,7 +2,7 @@ name: Publish Verified Master Universal Test APK
 
 on:
   workflow_run:
-    workflows: [Android CI]
+    workflows: [Android CI, CodeQL Kotlin Security Scan]
     branches: [master]
     types: [completed]
 
@@ -16,86 +16,126 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish CI-tested master APK
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.head_repository.full_name == github.repository }}
+    name: Publish current verified master APK
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master' && github.event.workflow_run.head_repository.full_name == github.repository && (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
-      RUN_ID: ${{ github.event.workflow_run.id }}
-      VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
-      RELEASE_TAG: v0.1.0-beta.4
+      TRIGGER_SHA: ${{ github.event.workflow_run.head_sha }}
 
     steps:
-      - name: Verify master commit and successful GitHub CI
+      - name: Require successful master Android CI and CodeQL on the same current SHA
+        id: gate
         shell: bash
         run: |
           set -euo pipefail
           master_sha="$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')"
-          test "$VERIFIED_SHA" = "$master_sha" || { echo "::error::Master moved; refusing to publish an outdated APK"; exit 1; }
-          conclusion="$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.conclusion')"
-          test "$conclusion" = "success"
-          echo "Verified successful Android CI on master: $VERIFIED_SHA"
-
-      - name: Download the verified all-ABI APK from that exact CI run
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.expired == false and (.name | startswith("NotesTakingApp-debug-all-abis-"))) | .name' | head -n 1)"
-          test -n "$artifact" || { echo "::error::No all-ABI debug APK from this run"; exit 1; }
-          mkdir -p release-input
-          gh run download "$RUN_ID" --repo "$REPO" --name "$artifact" --dir release-input
-          test -s release-input/app-debug.apk
-
-      - name: Verify APK archive and supported native architectures
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from zipfile import ZipFile
-          p = 'release-input/app-debug.apk'
-          with ZipFile(p) as z:
-              assert z.testzip() is None, 'Corrupt APK ZIP'
-              names = set(z.namelist())
-              assert {'AndroidManifest.xml', 'classes.dex'} <= names
-              expected = {'arm64-v8a', 'armeabi-v7a', 'x86_64'}
-              actual = {s.split('/')[1] for s in names if s.startswith('lib/') and s.endswith('.so')}
-              assert actual == expected, f'Native architectures missing: {expected - actual}'
-              for abi in expected:
-                  for lib in ('libnotestakingts.so', 'libnotestakingpdf.so'):
-                      assert f'lib/{abi}/{lib}' in names, f'Missing {lib} for {abi}'
-          print('Validated Android manifest, DEX, native libraries for all three ABIs and ZIP CRC')
-          PY
-          mkdir -p dist
-          cp release-input/app-debug.apk "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk"
-          (cd dist && sha256sum "NotesTakingApp-Universal-$RELEASE_TAG-debug.apk" > "NotesTakingApp-Universal-$RELEASE_TAG-debug.apk.sha256")
-
-      - name: Publish GitHub testing prerelease with direct APK asset
-        shell: bash
-        run: |
-          set -euo pipefail
-          current="$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')"
-          test "$VERIFIED_SHA" = "$current" || { echo "::error::Master moved before publishing"; exit 1; }
-          if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists; leave it unchanged"
+          if [[ "$TRIGGER_SHA" != "$master_sha" ]]; then
+            echo "Stale master result: skip outdated APK"
             exit 0
           fi
+          for workflow in android-ci.yml codeql.yml; do
+            passed="$(gh api "repos/$REPO/actions/workflows/$workflow/runs?branch=master&per_page=100" |
+              jq -r --arg sha "$master_sha" '[.workflow_runs[] |
+                select(.head_sha == $sha and (.event == "push" or .event == "workflow_dispatch") and
+                       .status == "completed" and .conclusion == "success")][0].id // empty')"
+            if [[ -z "$passed" ]]; then
+              echo "Waiting for successful $workflow on $master_sha; not publishing"
+              exit 0
+            fi
+            if [[ "$workflow" == "android-ci.yml" ]]; then android_id="$passed"; fi
+          done
+          echo "verified_sha=$master_sha" >> "$GITHUB_OUTPUT"
+          echo "android_run_id=$android_id" >> "$GITHUB_OUTPUT"
+          echo "Both master checks passed on $master_sha"
+
+      - name: Check out the exact verified master source
+        if: steps.gate.outputs.verified_sha != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.gate.outputs.verified_sha }}
+          persist-credentials: false
+
+      - name: Download the matching universal APK and release metadata
+        if: steps.gate.outputs.verified_sha != ''
+        id: artifact
+        shell: bash
+        env:
+          ANDROID_RUN_ID: ${{ steps.gate.outputs.android_run_id }}
+        run: |
+          set -euo pipefail
+          artifact="$(gh api "repos/$REPO/actions/runs/$ANDROID_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and (.name | startswith("NotesTakingApp-debug-all-abis-"))) | .name' | head -n 1)"
+          if [[ -z "$artifact" ]]; then
+            echo "::error::Verified Android CI has no all-ABI APK artifact"
+            exit 1
+          fi
+          mkdir -p release-input
+          gh run download "$ANDROID_RUN_ID" --repo "$REPO" --name "$artifact" --dir release-input
+          test -s release-input/app-debug.apk
+          if [[ ! -s release-input/release-metadata.json ]]; then
+            echo "This was a manual non-release Android build. No beta published."
+            exit 0
+          fi
+          echo "metadata_available=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify APK contents, commit, next version and SHA-256
+        if: steps.artifact.outputs.metadata_available == 'true'
+        id: version
+        shell: bash
+        env:
+          VERIFIED_SHA: ${{ steps.gate.outputs.verified_sha }}
+        run: |
+          set -euo pipefail
+          python3 tools/ci/auto_beta.py verify \
+            --apk release-input/app-debug.apk \
+            --metadata release-input/release-metadata.json \
+            --source-sha "$VERIFIED_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Publish immutable versioned APK prerelease
+        if: steps.version.outputs.tag != ''
+        shell: bash
+        env:
+          VERIFIED_SHA: ${{ steps.gate.outputs.verified_sha }}
+          ANDROID_RUN_ID: ${{ steps.gate.outputs.android_run_id }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_SHA256: ${{ steps.version.outputs.apk_sha256 }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')" = "$VERIFIED_SHA" || {
+            echo "::error::Master moved before publication"; exit 1;
+          }
+
+          if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
+            target="$(gh api "repos/$REPO/releases/tags/$RELEASE_TAG" --jq '.target_commitish')"
+            if [[ "$target" != "$VERIFIED_SHA" ]]; then
+              echo "::error::Release tag already belongs to another commit"
+              exit 1
+            fi
+            echo "$RELEASE_TAG already published for $VERIFIED_SHA"
+            exit 0
+          fi
+
+          mkdir -p dist
+          file="NotesTakingApp-Universal-$RELEASE_TAG-debug.apk"
+          cp release-input/app-debug.apk "dist/$file"
+          (cd dist && sha256sum "$file" > "$file.sha256")
           cat > release-notes.md <<'NOTES'
-          ## NotesTaking App — Universal Android Test Beta 4
+          ## NotesTaking App — Universal Android Test APK
 
-          This APK was built from the verified **master** branch and passed GitHub Android CI (Kotlin unit tests, lint, debug APK build and APK checks).
-
-          - Android 8.0+ (API 26), ARM64, 32-bit ARM and x86_64 native libraries.
-          - Includes PDF finger handwriting, stable area eraser rendering, and safety fixes for share/clipboard PNGs, template padding, native code highlighting, GL image retry, Trash errors, and orphan import files.
-          - **Debug/test APK**, not a production-signed release. App ID: `com.notestaking.app.debug`.
-          - Back up notes before replacing a previously installed debug APK: GitHub runners may use different debug signing keys, so an in-place update may fail.
-          - Physical device and stylus testing is still required. Unsupported CPUs, Android versions below 8.0 and vendor-specific input behavior are not guaranteed.
-          - Preserve third-party attribution and licenses.
+          - This prerelease was built from a verified master commit and passed Android unit tests, lint, all-ABI APK checks and CodeQL.
+          - Android 8.0+ (API 26), ARM64, 32-bit ARM and x86_64.
+          - This is a debug/test APK (`com.notestaking.app.debug`), NOT a production-signed app.
+          - Different GitHub runner debug signing keys may prevent in-place updates. Back up notes before reinstalling.
+          - Device testing is still required for stylus, palm rejection, PDF erasing, save/reopen and compatibility.
           NOTES
-          gh release create "$RELEASE_TAG" \
-            "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk" \
-            "dist/NotesTakingApp-Universal-$RELEASE_TAG-debug.apk.sha256" \
+          printf '\n- Source commit: %s\n- Android CI: https://github.com/%s/actions/runs/%s\n- APK SHA-256: %s\n' \
+            "$VERIFIED_SHA" "$REPO" "$ANDROID_RUN_ID" "$RELEASE_SHA256" >> release-notes.md
+
+          gh release create "$RELEASE_TAG" "dist/$file" "dist/$file.sha256" \
             --repo "$REPO" --target "$VERIFIED_SHA" --prerelease \
             --title "NotesTaking App $RELEASE_TAG — Universal Android Test" \
             --notes-file release-notes.md

@@ -9,13 +9,9 @@ on:
     branches: [main]
     paths: [".github/workflows/codeql.yml"]
     types: [opened, reopened, synchronize, ready_for_review]
+  # Every main commit needs a matching CodeQL result before automatic promotion.
   push:
     branches: [master, main]
-    paths:
-      - "app/src/main/java/**"
-      - "app/src/test/java/**"
-      - "app/build.gradle.kts"
-      - ".github/workflows/codeql.yml"
 
 permissions:
   contents: read
