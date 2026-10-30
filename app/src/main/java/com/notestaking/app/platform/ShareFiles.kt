@@ -9,9 +9,8 @@ import java.io.FileOutputStream
 object ShareFiles {
 
     /** [bmp] as `[stem].png`, or null when it could not be written. */
-    fun png(context: Context, bmp: Bitmap, stem: String): File? = runCatching {
-        val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        dir.listFiles()?.forEach { it.delete() }
-        File(dir, "$stem.png").also { file -> FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) } }
-    }.getOrNull()
+    fun png(context: Context, bmp: Bitmap, stem: String): File? =
+        CachedImageFiles.create(File(context.cacheDir, "share"), stem) { file ->
+            FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
 }

@@ -296,7 +296,7 @@ object TemplateReader {
                         if (lit.isNotEmpty()) { out += TextPart.Literal(lit.toString()); lit.clear() }
                         val body = t.substring(k + 1, end)
                         val colon = body.lastIndexOf(':')
-                        val pad = if (colon >= 0) PAD.matchEntire(body.substring(colon + 1).trim())?.groupValues?.get(1)?.toInt() else null
+                        val pad = if (colon >= 0) PAD.matchEntire(body.substring(colon + 1).trim())?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..32 } else null
                         if (colon >= 0 && pad == null) throw Unusable()
                         val expr = Expr.parse(if (colon >= 0) body.substring(0, colon) else body)
                         if (expr is Expr.Invalid) throw Unusable()
