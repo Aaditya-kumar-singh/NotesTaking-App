@@ -38,6 +38,38 @@ class SessionStoreTest {
         }
     }
 
+    @Test fun metadataWriteFailureDoesNotDestroySavedDocumentAndCanRetry() {
+        val dir = tempDir()
+        val pdf = pdfDir()
+        val images = imageDir()
+        try {
+            val store = SessionStore(dir, codec(), pdf, images)
+            assertTrue(store.save(
+                Document.blank(3), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            val metadata = File(dir, "session.json")
+            assertTrue(metadata.delete())
+            assertTrue(metadata.mkdir()) // Force metadata commit to fail without deleting the note.
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(4), zoom = 2.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            assertEquals(4, store.load()!!.document.pages.size)
+            assertTrue(metadata.delete())
+            assertTrue(store.save(
+                Document.blank(4), zoom = 2.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertEquals(4, store.load()!!.document.pages.size)
+            assertEquals(2.0, store.load()!!.zoom, 1e-9)
+        } finally {
+            dir.deleteRecursively()
+            pdf.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun roundTripsDocumentIdentityAndViewState() {
         val dir = tempDir()
         val doc = Document.blank(2).apply {
