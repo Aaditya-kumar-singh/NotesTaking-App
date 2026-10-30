@@ -1,0 +1,81 @@
+name: Promote Verified Main to Master
+
+on:
+  workflow_run:
+    workflows: [Android CI, CodeQL Kotlin Security Scan]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: main-to-master-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TRIGGER_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Require both successful checks on the current main commit
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$REPO/branches/main" --jq '.commit.sha')"
+          master_sha="$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')"
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_run" && "$TRIGGER_SHA" != "$main_sha" ]]; then
+            echo "Superseded main CI result: no promotion"
+            exit 0
+          fi
+          if [[ "$master_sha" == "$main_sha" ]]; then
+            echo "Already synchronized: no duplicate master build"
+            exit 0
+          fi
+
+          for workflow in android-ci.yml codeql.yml; do
+            passed="$(gh api "repos/$REPO/actions/workflows/$workflow/runs?branch=main&per_page=100" |
+              jq -r --arg sha "$main_sha" '[.workflow_runs[] |
+                select(.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion == "success")][0].id // empty')"
+            if [[ -z "$passed" ]]; then
+              echo "Waiting for successful $workflow on $main_sha; no promotion"
+              exit 0
+            fi
+          done
+
+          comparison="$(gh api "repos/$REPO/compare/$master_sha...$main_sha" --jq '.status')"
+          if [[ "$comparison" != "ahead" ]]; then
+            echo "::error::Main cannot fast-forward master (status: $comparison)"
+            exit 1
+          fi
+          if [[ "$(gh api "repos/$REPO/branches/main" --jq '.commit.sha')" != "$main_sha" ]]; then
+            echo "::error::Main changed during promotion"
+            exit 1
+          fi
+          echo "verified_sha=$main_sha" >> "$GITHUB_OUTPUT"
+          echo "Both main checks passed; safe to fast-forward $master_sha to $main_sha"
+
+      - name: Fast-forward master without rewriting history
+        if: steps.gate.outputs.verified_sha != ''
+        shell: bash
+        env:
+          VERIFIED_SHA: ${{ steps.gate.outputs.verified_sha }}
+        run: |
+          set -euo pipefail
+          gh api --method PATCH "repos/$REPO/git/refs/heads/master" -f sha="$VERIFIED_SHA" -F force=false > /dev/null
+          test "$(gh api "repos/$REPO/branches/master" --jq '.commit.sha')" = "$VERIFIED_SHA"
+
+          # GITHUB_TOKEN branch updates do NOT trigger push CI. Explicit dispatch does.
+          gh workflow run android-ci.yml --repo "$REPO" --ref master \
+            -f full_abis=true -f expected_sha="$VERIFIED_SHA"
+          gh workflow run codeql.yml --repo "$REPO" --ref master
+          echo "Dispatched master Android CI and CodeQL for $VERIFIED_SHA"

@@ -16,6 +16,11 @@ on:
         type: boolean
         required: false
         default: false
+      expected_sha:
+        description: 'Exact master SHA from automatic promotion; empty for ordinary manual CI'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -43,8 +48,10 @@ jobs:
       - name: Verify backup and device-transfer privacy rules
         run: python3 tools/ci/check_backup_privacy.py
 
-      - name: Check support scripts
-        run: python3 -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py tools/ci/check_backup_privacy.py
+      - name: Check support scripts and version contract
+        run: |
+          python3 -m py_compile tools/ci/check_project.py tools/ci/verify_apk.py tools/ci/check_backup_privacy.py tools/ci/auto_beta.py tools/ci/test_auto_beta.py
+          python3 -m unittest discover -s tools/ci -p 'test_auto_beta.py'
 
   build-debug:
     name: JDK 17 / tests / lint / debug APK
@@ -53,6 +60,9 @@ jobs:
     timeout-minutes: 120
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+      CI_RELEASE_TAG: ''
+      CI_VERSION_NAME: ''
+      CI_VERSION_CODE: ''
       # QA device-test branches build all supported ABIs; regular feature branches default to ARM64.
       CI_ARM64_ONLY: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/qa/') && !inputs.full_abis }}
     steps:
@@ -126,12 +136,40 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Select next version for a verified master APK
+        if: github.ref == 'refs/heads/master'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && -z "$EXPECTED_SHA" ]]; then
+            echo "Manual CI without promotion SHA: not a release build"
+            exit 0
+          fi
+          if [[ -n "$EXPECTED_SHA" && "$EXPECTED_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Master branch moved since it was promoted"
+            exit 1
+          fi
+          tag="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' | python3 tools/ci/auto_beta.py next-tag)"
+          code="$(printf '%s' "$tag" | sed 's/^.*[.]//')"
+          echo "CI_RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "CI_VERSION_NAME=$(printf '%s' "$tag" | cut -c2-)" >> "$GITHUB_ENV"
+          echo "CI_VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "Preparing APK $tag (versionCode=$code) from $GITHUB_SHA"
+
       - name: Run Kotlin unit tests, build APK, and lint
         shell: bash
         run: |
+          set -euo pipefail
           chmod +x gradlew
+          args=("-PciArm64Only=$CI_ARM64_ONLY")
+          if [[ -n "$CI_RELEASE_TAG" ]]; then
+            args+=("-PciVersionName=$CI_VERSION_NAME" "-PciVersionCode=$CI_VERSION_CODE")
+          fi
           ./gradlew --no-daemon --stacktrace --max-workers=2 \
-            "-PciArm64Only=$CI_ARM64_ONLY" \
+            "${args[@]}" \
             :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 
       - name: Validate generated APK and both native libraries
@@ -140,18 +178,33 @@ jobs:
           if [[ "$CI_ARM64_ONLY" == "true" ]]; then
             abi_args=(--abi arm64-v8a)
           fi
+          version_args=()
+          if [[ -n "$CI_RELEASE_TAG" ]]; then
+            version_args=(--version-name "$CI_VERSION_NAME-debug" --version-code "$CI_VERSION_CODE")
+          fi
           python3 tools/ci/verify_apk.py \
             --apk app/build/outputs/apk/debug/app-debug.apk \
             --package com.notestaking.app.debug \
             --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt" \
-            "${abi_args[@]}"
+            "${abi_args[@]}" "${version_args[@]}"
         shell: bash
+
+      - name: Bind release metadata to the exact verified APK
+        if: env.CI_RELEASE_TAG != ''
+        shell: bash
+        run: |
+          python3 tools/ci/auto_beta.py write \
+            --tag "$CI_RELEASE_TAG" --source-sha "$GITHUB_SHA" \
+            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --output app/build/outputs/apk/debug/release-metadata.json
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v7
         with:
           name: NotesTakingApp-debug-${{ steps.abi_mode.outputs.arm64_only == 'true' && 'arm64' || 'all-abis' }}-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/release-metadata.json
           if-no-files-found: error
           retention-days: 14
 
