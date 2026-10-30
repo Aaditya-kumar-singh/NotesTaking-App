@@ -830,6 +830,8 @@ class DocumentCodec(
 
         if (m.pages.isEmpty()) {
             doc.pages.add(Page.blank(PageSize.A4, Orientation.PORTRAIT, m.dpi))
+            imageFiles.values.forEach { it.delete() }
+            audioFiles.values.forEach { it.delete() }
             return doc
         }
         doc.pages.addAll(m.pages)
@@ -853,9 +855,12 @@ class DocumentCodec(
                 }
             }
         }
-        // A recording whose item did not survive leaves its file behind; nothing else will delete it.
-        val used = m.pageImages.flatMap { it.second }.filterIsInstance<PendingAudio>().map { it.asset }.toSet()
-        for ((name, f) in audioFiles) if (name !in used) f.delete()
+        // Successful imports must also discard orphaned or unrenderable assets.
+        val loadedItems = doc.pages.flatMap { it.items }
+        val usedImages = loadedItems.filterIsInstance<ImageItem>().map { it.image.file }.toSet()
+        val usedAudio = loadedItems.filterIsInstance<AudioItem>().map { it.audio.file }.toSet()
+        imageFiles.values.forEach { if (it !in usedImages) it.delete() }
+        audioFiles.values.forEach { if (it !in usedAudio) it.delete() }
         // Every page's items are in, so connectors can glue to whatever their ends name.
         for (glue in m.pageGlue) glue.resolve()
 
