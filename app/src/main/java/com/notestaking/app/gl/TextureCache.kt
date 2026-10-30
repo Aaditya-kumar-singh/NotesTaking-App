@@ -34,13 +34,16 @@ class TextureCache(private val budgetBytes: Long = DEFAULT_BUDGET_BYTES) {
         val bytes: Long get() = width.toLong() * height * 4
     }
 
-    private class Pending(val image: ImageData, val bitmap: Bitmap, val decodedFor: Int)
+    private class Pending(val image: ImageData, val bitmap: Bitmap, val decodedFor: Int, val generation: Int)
+    private class Failed(val image: ImageData, val decodedFor: Int, val generation: Int)
 
     private val entries = IdentityHashMap<ImageData, Entry>()
     private val ready = ConcurrentLinkedQueue<Pending>()
+    private val failed = ConcurrentLinkedQueue<Failed>()
     private val decoding = IdentityHashMap<ImageData, Int>()
+    private val lastFailureNs = IdentityHashMap<ImageData, Long>()
 
-    private var contextGen = -1
+    @Volatile private var contextGen = -1
     private var frame = 0L
 
     /** Bytes the live textures occupy, for the debug readout. */
@@ -57,6 +60,8 @@ class TextureCache(private val budgetBytes: Long = DEFAULT_BUDGET_BYTES) {
         contextGen = gen
         entries.clear()
         decoding.clear()
+        lastFailureNs.clear()
+        failed.clear()
         while (true) (ready.poll() ?: break).bitmap.recycle()
         residentBytes = 0
     }
@@ -64,9 +69,24 @@ class TextureCache(private val budgetBytes: Long = DEFAULT_BUDGET_BYTES) {
     /** Take in whatever finished decoding since the last frame. Call with the context current. */
     fun uploadPending() {
         while (true) {
+            val lost = failed.poll() ?: break
+            if (lost.generation == contextGen && decoding[lost.image] == lost.decodedFor) {
+                decoding.remove(lost.image)
+                lastFailureNs[lost.image] = System.nanoTime()
+            }
+        }
+        while (true) {
             val next = ready.poll() ?: return
-            decoding.remove(next.image)
-            if (next.bitmap.isRecycled) continue
+            if (next.generation != contextGen || next.bitmap.isRecycled) {
+                if (!next.bitmap.isRecycled) next.bitmap.recycle()
+                continue
+            }
+            if (decoding[next.image] == next.decodedFor) decoding.remove(next.image)
+            lastFailureNs.remove(next.image)
+            if ((entries[next.image]?.decodedFor ?: 0) > next.decodedFor) {
+                next.bitmap.recycle() // a late low-resolution decode must not replace a sharper texture
+                continue
+            }
             val existing = entries.remove(next.image)
             if (existing != null) {
                 residentBytes -= existing.bytes
@@ -129,21 +149,26 @@ class TextureCache(private val budgetBytes: Long = DEFAULT_BUDGET_BYTES) {
     }
 
     private fun request(image: ImageData, target: Int, decodeOn: (Runnable) -> Unit) {
+        if (!DecodeRetryPolicy.mayRetry(lastFailureNs[image], System.nanoTime())) return
         val already = decoding[image]
         if (already != null && already >= target) return
         decoding[image] = target
         val gen = contextGen
-        decodeOn(
-            Runnable {
+        try {
+            decodeOn(Runnable {
                 val edge = target.coerceAtMost(maxEdge(image))
                 val bitmap = runCatching { ImageDecoder.decodeSampledFile(image.file.path, edge, edge) }.getOrNull()
                 if (bitmap == null || gen != contextGen) {
                     bitmap?.recycle()
+                    failed.add(Failed(image, target, gen))
                     return@Runnable
                 }
-                ready.add(Pending(image, bitmap, target))
-            },
-        )
+                ready.add(Pending(image, bitmap, target, gen))
+            })
+        } catch (_: RuntimeException) {
+            if (decoding[image] == target) decoding.remove(image)
+            lastFailureNs[image] = System.nanoTime()
+        }
     }
 
     /**
