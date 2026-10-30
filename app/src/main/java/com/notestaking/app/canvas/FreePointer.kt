@@ -9,6 +9,10 @@ import com.notestaking.app.core.tools.Tool
  * only when the PAN tool itself is armed; a pan from its side button is a pen moving the page.
  */
 object FreePointer {
+    /** The same finger-input rule used by the PDF gesture controller. */
+    fun fingerTool(armed: Tool, drawsWithFinger: Boolean): Tool =
+        if (!drawsWithFinger && armed.fingerPansWhenOff) Tool.PAN else armed
+
     fun isFree(armed: Tool, effective: Tool, isFinger: Boolean): Boolean =
         effective == Tool.PAN && (isFinger || armed == Tool.PAN)
 }

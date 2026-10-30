@@ -6345,6 +6345,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     // --- tools & colour ---
 
+    /** One-tap PDF finger ink, without changing the default palm-safe stylus behaviour. */
+    fun toggleFingerDrawing() {
+        val enabled = !settings.prefs.fingerDraws
+        applyPreferences(settings.prefs.copy(fingerDraws = enabled))
+        if (enabled && tool == Tool.PAN) selectTool(Tool.PEN)
+    }
+
     fun selectTool(t: Tool) {
         // The markup tool marks a PDF's text: a note without one gets Pan, and the next with one gets it back.
         markupResting = t == Tool.MARKUP && !hasPdf
