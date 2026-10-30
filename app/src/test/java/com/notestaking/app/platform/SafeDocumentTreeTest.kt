@@ -76,6 +76,21 @@ class SafeDocumentTreeTest {
         assertFalse(File(folder, "folder").exists())
     }
 
+    @Test fun failedRecursiveCopyPreservesAllExistingNotes() = withTree { tree, root, _ ->
+        val folder = File(root, "folder").apply { mkdir() }
+        val child = File(folder, "child").apply { mkdir() }
+        val original = File(folder, "note.xnote").apply { writeText("original ink") }
+        val existing = File(child, "important.xnote").apply { writeText("other ink") }
+
+        rejected { tree.copy("root/folder", "root/folder/child") }
+        rejected { tree.copy("root/folder", "root/folder") }
+
+        assertEquals("original ink", original.readText())
+        assertEquals("other ink", existing.readText())
+        assertEquals(listOf("important.xnote"), child.listFiles()!!.map { it.name })
+        assertTrue(root.listFiles()!!.map { it.name }.contains("folder"))
+    }
+
     @Test fun moveValidatesRealSourceParentAndConflicts() = withTree { tree, root, _ ->
         val source = File(root, "from").apply { mkdir() }
         val target = File(root, "to").apply { mkdir() }
@@ -143,7 +158,9 @@ class SafeDocumentTreeTest {
             Files.createSymbolicLink(link.toPath(), outsideFile.toPath())
         }.isSuccess
         if (supported) {
-            rejected { tree.create("root", "linked.xnote", false) }
+            val created = tree.create("root", "linked.xnote", false)
+            assertEquals("root/linked (1).xnote", created)
+            assertTrue(File(root, "linked (1).xnote").isFile)
             File(root, "original.xnote").writeText("original")
             rejected { tree.rename("root/original.xnote", "linked.xnote") }
             assertEquals("original", File(root, "original.xnote").readText())
