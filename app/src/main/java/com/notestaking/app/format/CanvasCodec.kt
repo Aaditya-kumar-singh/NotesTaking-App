@@ -551,9 +551,11 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
                 if (spec is PendingImage) m.glue.named(item, spec.id)
             }
         }
-        // A recording whose item did not survive leaves its file behind; nothing else will delete it.
-        val used = m.images.filterIsInstance<PendingAudio>().map { it.asset }.toSet()
-        for ((name, f) in audioFiles) if (name !in used) f.delete()
+        // Remove orphaned or undecodable files while preserving files referenced by loaded items.
+        val usedImages = items.filterIsInstance<ImageItem>().map { it.image.file }.toSet()
+        val usedAudio = items.filterIsInstance<AudioItem>().map { it.audio.file }.toSet()
+        imageFiles.values.forEach { if (it !in usedImages) it.delete() }
+        audioFiles.values.forEach { if (it !in usedAudio) it.delete() }
         // Every item is in, so connectors can glue to whatever their ends name.
         m.glue.resolve()
         doc.addAll(items)

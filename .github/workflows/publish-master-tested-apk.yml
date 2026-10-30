@@ -25,7 +25,7 @@ jobs:
       REPO: ${{ github.repository }}
       RUN_ID: ${{ github.event.workflow_run.id }}
       VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
-      RELEASE_TAG: v0.1.0-beta.3
+      RELEASE_TAG: v0.1.0-beta.4
 
     steps:
       - name: Verify master commit and successful GitHub CI
@@ -82,12 +82,12 @@ jobs:
             exit 0
           fi
           cat > release-notes.md <<'NOTES'
-          ## NotesTaking App — Universal Android Test Beta 3
+          ## NotesTaking App — Universal Android Test Beta 4
 
           This APK was built from the verified **master** branch and passed GitHub Android CI (Kotlin unit tests, lint, debug APK build and APK checks).
 
           - Android 8.0+ (API 26), ARM64, 32-bit ARM and x86_64 native libraries.
-          - Includes latest PDF finger handwriting, area eraser rendering, and security/reliability updates.
+          - Includes PDF finger handwriting, stable area eraser rendering, and safety fixes for share/clipboard PNGs, template padding, native code highlighting, GL image retry, Trash errors, and orphan import files.
           - **Debug/test APK**, not a production-signed release. App ID: `com.notestaking.app.debug`.
           - Back up notes before replacing a previously installed debug APK: GitHub runners may use different debug signing keys, so an in-place update may fail.
           - Physical device and stylus testing is still required. Unsupported CPUs, Android versions below 8.0 and vendor-specific input behavior are not guaranteed.

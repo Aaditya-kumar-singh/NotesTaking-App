@@ -942,6 +942,10 @@
     <string name="the_top_folder">顶层文件夹</string>
     <string name="restored_item">已恢复“%1$s”</string>
     <string name="err_restore_item">无法恢复“%1$s”</string>
+    <string name="deleted_item">已永久删除“%1$s”</string>
+    <string name="err_delete_item">无法删除“%1$s”</string>
+    <string name="trash_emptied">回收站已清空</string>
+    <string name="err_empty_trash">无法完全清空回收站，部分项目可能仍然保留。</string>
     <string name="restore_hint">恢复会将项目放回它原来所在的文件夹；如果该文件夹已不存在，则放回%1$s。</string>
     <string name="delete_permanently_body">“%1$s”将被永久删除。此操作无法撤销。</string>
     <string name="trash_row_sub">%1$s · 来自 %2$s · %3$s</string>

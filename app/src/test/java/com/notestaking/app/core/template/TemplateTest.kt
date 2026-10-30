@@ -98,6 +98,18 @@ class TemplateTest {
         TemplateReader.read("""{ "name": "x", "items": [] }""")
     }
 
+    @Test
+    fun invalidOrEnormousTextPaddingDoesNotCrashOrAllocateHugeStrings() {
+        for (bad in listOf("0" + "9".repeat(50), "033", "00")) {
+            val template = TemplateReader.read(tpl("""{ "type": "text", "text": "{i:$bad}" }"""))
+            assertTrue("Bad padding $bad should drop only its text node", template.root.children.isEmpty())
+        }
+        val valid = TemplateReader.read(tpl("""{ "type": "text", "text": "{i:032}" }"""))
+        val text = valid.root.children.single() as TNode.Text
+        val pad = (text.texts.single().single() as TextPart.Value).pad
+        assertEquals(32, pad)
+    }
+
     @Test(expected = TemplateFormatException::class)
     fun refusesMalformedJson() {
         TemplateReader.read("""{ "xtemplate": 1, "items": [ """)
