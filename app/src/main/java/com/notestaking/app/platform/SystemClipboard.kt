@@ -18,7 +18,7 @@ object SystemClipboard {
         val clip = cm.primaryClip ?: return null
         if (clip.itemCount == 0) return null
         val uri = clip.getItemAt(0).uri ?: return null
-        val type = context.contentResolver.getType(uri)
+        val type = runCatching { context.contentResolver.getType(uri) }.getOrNull()
         val isImage = type?.startsWith("image/") == true || clip.description?.hasMimeType("image/*") == true
         return if (isImage) uri else null
     }

@@ -15,6 +15,8 @@ class CachedImageFilesTest {
         try {
             val first = CachedImageFiles.create(dir, "../same/label") { it.writeText("first"); true }!!
             val second = CachedImageFiles.create(dir, "../same/label") { it.writeText("second"); true }!!
+            val shortName = CachedImageFiles.create(dir, "a") { it.writeText("third"); true }!!
+            assertEquals("third", shortName.readText())
             assertNotEquals(first.absolutePath, second.absolutePath)
             assertEquals("first", first.readText())
             assertEquals("second", second.readText())

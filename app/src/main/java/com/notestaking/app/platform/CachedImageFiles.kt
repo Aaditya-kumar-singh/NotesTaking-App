@@ -9,7 +9,7 @@ internal object CachedImageFiles {
         val safeStem = stem.take(40).map { c ->
             if (c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '_' || c == '-') c else '_'
         }.joinToString("").ifBlank { "image" }
-        val file = runCatching { File.createTempFile("$safeStem-", ".png", directory) }.getOrNull() ?: return null
+        val file = runCatching { File.createTempFile("img-$safeStem-", ".png", directory) }.getOrNull() ?: return null
         return try {
             if (encode(file) && file.length() > 0L) file
             else { file.delete(); null }
