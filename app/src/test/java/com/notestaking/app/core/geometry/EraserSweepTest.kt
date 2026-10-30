@@ -5,6 +5,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EraserSweepTest {
+    @Test fun localPenRepairLeavesDistantInkOutsideItsDirtyRegion() {
+        // A short erase along a page-wide line must not clear/redraw other lines.
+        val dirty = EraserSweep.penRepairBounds(100.0, 120.0, 12.0, 3.0, 1.0)
+        assertTrue(dirty.contains(Pt(112.0, 120.0)))
+        assertTrue(dirty.w < 120.0)
+        assertTrue(!dirty.intersects(Rect(350.0, 110.0, 50.0, 20.0)))
+    }
+
+    @Test fun repairPaddingKeepsItsScreenSizeWhenZoomed() {
+        val normal = EraserSweep.penRepairBounds(100.0, 120.0, 12.0, 3.0, 1.0)
+        val zoomed = EraserSweep.penRepairBounds(100.0, 120.0, 6.0, 3.0, 2.0)
+        assertTrue(zoomed.w < normal.w)
+        assertTrue(zoomed.contains(Pt(106.0, 120.0)))
+    }
+
     @Test fun firstPointIsOneDiscreteEraserTap() {
         val visited = mutableListOf<Pt>()
         EraserSweep.visit(null, Pt(10.0, 20.0), 5.0, visited::add)
