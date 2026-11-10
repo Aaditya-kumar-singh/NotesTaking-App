@@ -58,6 +58,8 @@ internal fun MovableFloatingToolbar(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
+        val paneWidth = maxWidth
+        val paneHeight = maxHeight
         val edgePx = with(density) { 8.dp.roundToPx() }
         var measured by remember { mutableStateOf(IntSize.Zero) }
         val travelX = (constraints.maxWidth - measured.width - 2 * edgePx).coerceAtLeast(0).toFloat()
@@ -180,7 +182,7 @@ internal fun MovableFloatingToolbar(
         ) {
             if (look.position.vertical) {
                 Column(
-                    Modifier.heightIn(max = (maxHeight - 16.dp).coerceIn(48.dp, 600.dp)),
+                    Modifier.heightIn(max = (paneHeight - 16.dp).coerceIn(48.dp, 600.dp)),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -189,7 +191,7 @@ internal fun MovableFloatingToolbar(
                 }
             } else {
                 Row(
-                    Modifier.widthIn(max = (maxWidth - 16.dp).coerceIn(48.dp, if (expanded) 480.dp else 600.dp)),
+                    Modifier.widthIn(max = (paneWidth - 16.dp).coerceIn(48.dp, if (expanded) 480.dp else 600.dp)),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
