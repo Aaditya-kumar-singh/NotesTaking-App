@@ -174,7 +174,8 @@ data class Preferences(
                 put("material_surface_seed", Rgba.toHex(materialSurfaceSeed))
             }
             if (cornerStyle != CornerStyle.ROUNDED) put("corner_style", cornerStyle.id)
-            if (toolbarLook.position != ToolbarPosition.TOP) put("toolbar_position", toolbarLook.position.id)
+            // Write AUTO explicitly; missing keys in older settings must still mean TOP.
+            put("toolbar_position", toolbarLook.position.id)
             if (toolbarLook.size != ToolbarSize.REGULAR) put("toolbar_size", toolbarLook.size.id)
             if (toolbarLook.floating) put("toolbar_floating", true)
             startFullscreen?.let { put("start_fullscreen", it) }

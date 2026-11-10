@@ -575,8 +575,9 @@ fun PreferencesPane(
                 Chip(stringResource(R.string.toolbar_floating), look.floating) { updateHome(prefs.copy(toolbarLook = look.copy(floating = true))) }
             }
             FieldLabel(stringResource(R.string.pref_toolbar_position))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for ((position, label) in listOf(
+                    ToolbarPosition.AUTO to R.string.edge_auto,
                     ToolbarPosition.TOP to R.string.edge_top,
                     ToolbarPosition.BOTTOM to R.string.edge_bottom,
                     ToolbarPosition.LEFT to R.string.edge_left,
@@ -585,8 +586,13 @@ fun PreferencesPane(
                     Chip(stringResource(label), look.position == position) { updateHome(prefs.copy(toolbarLook = look.copy(position = position))) }
                 }
             }
+            Text(
+                stringResource(R.string.toolbar_position_auto_hint),
+                color = palette.textDim.toComposeColor(),
+                fontSize = 12.sp,
+            )
             FieldLabel(stringResource(R.string.pref_toolbar_size))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for ((size, label) in listOf(
                     ToolbarSize.COMPACT to R.string.toolbar_size_compact,
                     ToolbarSize.REGULAR to R.string.toolbar_size_regular,

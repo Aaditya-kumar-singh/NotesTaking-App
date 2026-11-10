@@ -178,7 +178,11 @@ class MainActivity : ComponentActivity() {
                 ed.prewarmBackstage() // warm recents/explorer caches so the first backstage open is instant
             }
             NotesTakingTheme(ed.palette, ed.cornerStyle) {
-                CompositionLocalProvider(com.notestaking.app.ui.LocalToolbarLook provides ed.toolbarLook) {
+                val look = ed.toolbarLook
+                val window = LocalConfiguration.current
+                val shortSide = minOf(window.screenWidthDp, window.screenHeightDp)
+                val resolvedLook = look.copy(position = look.position.resolve(shortSide))
+                CompositionLocalProvider(com.notestaking.app.ui.LocalToolbarLook provides resolvedLook) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (ready) EditorScreen(
                             ed,

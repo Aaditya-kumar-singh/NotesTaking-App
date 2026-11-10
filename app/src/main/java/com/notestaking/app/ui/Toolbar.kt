@@ -521,7 +521,9 @@ internal fun ToolbarIcon(
     val press by animateFloatAsState(if (pressed) 0.85f else 1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium), label = "toolPress")
     Tooltip(contentDescription, hint = hint, shortcut = shortcut) {
         Box(
-            Modifier.size(bar.button)
+            Modifier
+                .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
+                .size(bar.button)
                 .then(if (glideKey != null) Modifier.semantics { selected = active } else Modifier)
                 .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
@@ -565,17 +567,23 @@ internal fun Swatch(
     val accessibleLabel = if (ink != null) "$colourLabel ${Rgba.toHex(ink)}" else colourLabel
     Box(
         modifier = Modifier
-            .then(if (bar.vertical) Modifier.padding(vertical = 3.dp) else Modifier.padding(horizontal = 3.dp))
-            .size(bar.swatch)
+            .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
+            .size(bar.button)
             .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
-            // The selection ring takes the swatch's own colour, not the theme accent.
-            .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(color)
             .semantics { contentDescription = accessibleLabel; selected = active }
             .clickable(role = Role.Button, onClick = onClick),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(bar.swatch)
+                // The selection ring takes the swatch's own colour, not the theme accent.
+                .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(color),
+        )
+    }
 }
 
 @Composable

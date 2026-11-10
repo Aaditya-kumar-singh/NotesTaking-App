@@ -48,6 +48,8 @@
     <string name="edge_left">Left</string>
     <string name="edge_right">Right</string>
     <string name="edge_top">Top</string>
+    <string name="edge_auto">Auto</string>
+    <string name="toolbar_position_auto_hint">Auto: bottom on phones, top on tablets. Uses the available window size.</string>
     <string name="edge_bottom">Bottom</string>
     <string name="page_size_custom">Custom</string>
     <string name="page_size_letter">Letter</string>

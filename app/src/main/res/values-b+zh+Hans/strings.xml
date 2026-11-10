@@ -47,6 +47,8 @@
     <string name="edge_left">左侧</string>
     <string name="edge_right">右侧</string>
     <string name="edge_top">顶部</string>
+    <string name="edge_auto">自动</string>
+    <string name="toolbar_position_auto_hint">自动：窄窗口工具栏位于底部，宽窗口位于顶部。位置随窗口尺寸调整。</string>
     <string name="edge_bottom">底部</string>
     <string name="page_size_custom">自定义</string>
     <string name="page_size_letter">Letter</string>

@@ -61,9 +61,9 @@ internal data class BarMetrics(
 }
 
 internal fun barMetrics(size: ToolbarSize): BarMetrics = when (size) {
-    ToolbarSize.COMPACT -> BarMetrics(36.dp, 30.dp, 20.dp, 24.dp, 22.dp, 11.sp)
-    ToolbarSize.REGULAR -> BarMetrics(42.dp, 34.dp, 22.dp, 28.dp, 26.dp, 12.sp)
-    ToolbarSize.COMFORTABLE -> BarMetrics(50.dp, 40.dp, 26.dp, 34.dp, 30.dp, 13.sp)
+    ToolbarSize.COMPACT -> BarMetrics(48.dp, 40.dp, 20.dp, 28.dp, 22.dp, 12.sp)
+    ToolbarSize.REGULAR -> BarMetrics(48.dp, 40.dp, 24.dp, 28.dp, 26.dp, 12.sp)
+    ToolbarSize.COMFORTABLE -> BarMetrics(56.dp, 48.dp, 26.dp, 36.dp, 30.dp, 13.sp)
 }
 
 internal val LocalBar = staticCompositionLocalOf { barMetrics(ToolbarSize.REGULAR) }
@@ -96,7 +96,7 @@ internal fun ColumnScope.ToolbarAround(
         // Left and right are the screen's, as the canvas insets are, whatever the language.
         val across = Arrangement.Absolute.Left
         when (look.position) {
-            ToolbarPosition.TOP -> { bar(); Box(rest) { content(docked) } }
+            ToolbarPosition.TOP, ToolbarPosition.AUTO -> { bar(); Box(rest) { content(docked) } }
             ToolbarPosition.BOTTOM -> { Box(rest) { content(docked) }; bar() }
             ToolbarPosition.LEFT -> Row(rest, across) { bar(); Box(Modifier.weight(1f).fillMaxHeight()) { content(docked) } }
             ToolbarPosition.RIGHT -> Row(rest, across) { Box(Modifier.weight(1f).fillMaxHeight()) { content(docked) }; bar() }
@@ -109,13 +109,13 @@ internal fun ColumnScope.ToolbarAround(
     SideEffect {
         onCover(
             if (position == ToolbarPosition.LEFT) px else 0.0,
-            if (position == ToolbarPosition.TOP) px else 0.0,
+            if (position == ToolbarPosition.TOP || position == ToolbarPosition.AUTO) px else 0.0,
             if (position == ToolbarPosition.RIGHT) px else 0.0,
             if (position == ToolbarPosition.BOTTOM) px else 0.0,
         )
     }
     val (cover, edge) = when (position) {
-        ToolbarPosition.TOP -> PaddingValues(top = depth) to Alignment.TopCenter
+        ToolbarPosition.TOP, ToolbarPosition.AUTO -> PaddingValues(top = depth) to Alignment.TopCenter
         ToolbarPosition.BOTTOM -> PaddingValues(bottom = depth) to Alignment.BottomCenter
         ToolbarPosition.LEFT -> PaddingValues.Absolute(left = depth) to AbsoluteAlignment.CenterLeft
         ToolbarPosition.RIGHT -> PaddingValues.Absolute(right = depth) to AbsoluteAlignment.CenterRight
@@ -170,7 +170,7 @@ internal fun ToolbarFrame(
     // beside the rail, and on a right rail material mirrors it to the left side on its own.
     val menuOffset = if (bar.vertical) DpOffset(bar.thickness, -bar.button) else DpOffset.Zero
     val tipSide = when (look.position) {
-        ToolbarPosition.TOP -> TipSide.BELOW
+        ToolbarPosition.TOP, ToolbarPosition.AUTO -> TipSide.BELOW
         ToolbarPosition.BOTTOM -> TipSide.ABOVE
         ToolbarPosition.LEFT -> TipSide.RIGHT
         ToolbarPosition.RIGHT -> TipSide.LEFT

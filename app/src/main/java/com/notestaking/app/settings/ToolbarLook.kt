@@ -2,7 +2,7 @@ package com.notestaking.app.settings
 
 /** How the editor toolbar is drawn; one setting for both the paged and the canvas bar. */
 data class ToolbarLook(
-    val position: ToolbarPosition = ToolbarPosition.TOP,
+    val position: ToolbarPosition = ToolbarPosition.AUTO,
     val size: ToolbarSize = ToolbarSize.REGULAR,
     /** A rounded pill over the canvas instead of a strip along the pane's edge. */
     val floating: Boolean = false,
@@ -10,12 +10,20 @@ data class ToolbarLook(
 
 /** Which edge of its pane the toolbar runs along. */
 enum class ToolbarPosition(val id: String) {
+    AUTO("auto"),
     TOP("top"),
     BOTTOM("bottom"),
     LEFT("left"),
     RIGHT("right");
 
     val vertical: Boolean get() = this == LEFT || this == RIGHT
+
+    /** Resolve against the active window, so a tablet in split-screen uses phone placement. */
+    fun resolve(windowShortSideDp: Int): ToolbarPosition = when {
+        this != AUTO -> this
+        windowShortSideDp >= 600 -> TOP
+        else -> BOTTOM
+    }
 
     companion object {
         fun fromId(id: String): ToolbarPosition = entries.find { it.id == id } ?: TOP

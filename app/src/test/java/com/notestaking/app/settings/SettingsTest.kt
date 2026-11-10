@@ -522,10 +522,25 @@ class SettingsTest {
             assertEquals(p, Preferences.fromJson(p.toJson()))
         }
         val junk = JSONObject().put("toolbar_size", "huge").put("toolbar_position", "middle")
-        assertEquals(ToolbarLook(), Preferences.fromJson(junk).toolbarLook)
+        assertEquals(ToolbarLook(position = ToolbarPosition.TOP), Preferences.fromJson(junk).toolbarLook)
         assertFalse(Preferences().toJson().has("toolbar_size"))
-        assertFalse(Preferences().toJson().has("toolbar_position"))
+        assertEquals("auto", Preferences().toJson().getString("toolbar_position"))
+        assertEquals(ToolbarLook(), Preferences.fromJson(Preferences().toJson()).toolbarLook)
+        // Older installs omitted the TOP default. Do not silently move their toolbar.
+        assertEquals(ToolbarPosition.TOP, Preferences.fromJson(JSONObject()).toolbarLook.position)
+        assertEquals("top", Preferences.fromJson(JSONObject()).toJson().getString("toolbar_position"))
         assertFalse(Preferences().toJson().has("toolbar_floating"))
+    }
+
+    @Test fun autoToolbarPositionRespectsActiveWindowAndExplicitChoices() {
+        assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(320))
+        assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(599))
+        assertEquals(ToolbarPosition.TOP, ToolbarPosition.AUTO.resolve(600))
+        assertEquals(ToolbarPosition.TOP, ToolbarPosition.AUTO.resolve(840))
+        for (position in ToolbarPosition.entries.filter { it != ToolbarPosition.AUTO }) {
+            assertEquals(position, position.resolve(320))
+            assertEquals(position, position.resolve(840))
+        }
     }
 
     @Test fun defaultPresetsRoundTripInEveryMode() {
