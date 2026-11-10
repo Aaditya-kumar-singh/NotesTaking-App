@@ -98,7 +98,7 @@ enum class SidePanelTab { PAGES, CONTENTS, BOOKMARKS, SEARCH }
 
 /** Quick page count and entry points; actual insert/reorder/export work stays in Editor. */
 @Composable
-private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit) {
+private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport: () -> Unit) {
     val palette = LocalPalette.current
     val pages = remember(editor.contentVersion) { editor.pagesSnapshot() }
     val currentIndex = editor.pageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
@@ -133,6 +133,13 @@ private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit) {
                 }
             }
         }
+        if (!selecting && pages.isNotEmpty()) {
+            TextButton(onClick = onExport, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                Icon(NotesTakingIcons.exportDoc, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.page_export_open))
+            }
+        }
         if (!selecting && pages.size > 1) {
             Text(stringResource(R.string.page_reorder_hint), color = palette.textDim.toComposeColor(),
                 fontSize = 12.sp, maxLines = 2, modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp))
@@ -160,6 +167,22 @@ fun SidePanel(
     val palette = LocalPalette.current
     val tab = editor.sidePanelTab
     var pickingCover by remember { mutableStateOf(false) }
+    var exportStart by remember(editor) { mutableStateOf<PageExportStart?>(null) }
+    exportStart?.let { start ->
+        PageExportDialog(
+            start = start,
+            totalPages = editor.pagesSnapshot().size,
+            onDismiss = { exportStart = null },
+            onExport = { pages, format, destination ->
+                exportStart = null
+                when {
+                    destination == PageExportDestination.SHARE -> onSharePages(pages, format == PageExportFormat.PDF)
+                    format == PageExportFormat.PDF -> onSavePagesAsPdf(pages)
+                    else -> onSavePagesAsImages(pages)
+                }
+            },
+        )
+    }
     if (pickingCover) {
         NewNoteScreen(
             editor = editor,
@@ -190,18 +213,31 @@ fun SidePanel(
             SegIcon(NotesTakingIcons.search, stringResource(R.string.search), tab == SidePanelTab.SEARCH, shortcut = Keys.SEARCH) { editor.sidePanelTab = SidePanelTab.SEARCH }
         }
         if (tab == SidePanelTab.PAGES) {
-            PagePanelHeader(editor, onInsertPdf)
+            PagePanelHeader(editor, onInsertPdf) {
+                exportStart = PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL)
+            }
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
             when (tab) {
-                SidePanelTab.PAGES -> PagesTab(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages, onInsertPdf) { pickingCover = true }
+                SidePanelTab.PAGES -> PagesTab(
+                    editor,
+                    onStartExport = { page, destination ->
+                        exportStart = PageExportStart(page, editor.selectedPageIndices(), PageExportScope.THIS, destination)
+                    },
+                    onInsertPdf = onInsertPdf,
+                    onPickCover = { pickingCover = true },
+                )
                 SidePanelTab.CONTENTS -> ContentsTab(editor)
                 SidePanelTab.BOOKMARKS -> BookmarksTab(editor)
                 SidePanelTab.SEARCH -> SearchTab(editor)
             }
         }
         if (tab == SidePanelTab.PAGES && editor.inPageSelectionMode) {
-            PageSelectionBar(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages)
+            PageSelectionBar(editor) { destination ->
+                exportStart = PageExportStart(
+                    editor.pageIndex, editor.selectedPageIndices(), PageExportScope.SELECTED, destination,
+                )
+            }
         }
     }
 }
@@ -230,9 +266,7 @@ private fun SegIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, desc:
 @Composable
 private fun PagesTab(
     editor: Editor,
-    onSharePages: (List<Int>, Boolean) -> Unit,
-    onSavePagesAsPdf: (List<Int>) -> Unit,
-    onSavePagesAsImages: (List<Int>) -> Unit,
+    onStartExport: (Int, PageExportDestination) -> Unit,
     onInsertPdf: (Int) -> Unit,
     onPickCover: () -> Unit,
 ) {
@@ -391,7 +425,7 @@ private fun PagesTab(
         ) {
             itemsIndexed(pages, key = { _, page -> page.uid }) { index, page ->
                 val carried = drag?.pages?.any { it === page } == true
-                PageThumb(editor, index, page, selecting, settled, carried, Modifier.animateItem(), onSharePages, onSavePagesAsPdf, onSavePagesAsImages, onInsertPdf, onPickCover)
+                PageThumb(editor, index, page, selecting, settled, carried, Modifier.animateItem(), onStartExport, onInsertPdf, onPickCover)
             }
         }
         drag?.let { d ->
@@ -498,9 +532,7 @@ private fun PageThumb(
     /** Lifted in a drag: the row dims while the pages are carried. */
     carried: Boolean,
     rowModifier: Modifier,
-    onSharePages: (List<Int>, Boolean) -> Unit,
-    onSavePagesAsPdf: (List<Int>) -> Unit,
-    onSavePagesAsImages: (List<Int>) -> Unit,
+    onStartExport: (Int, PageExportDestination) -> Unit,
     onInsertPdf: (Int) -> Unit,
     onPickCover: () -> Unit,
 ) {
@@ -575,7 +607,7 @@ private fun PageThumb(
                     }
                     PageContextMenu(
                         editor, index, page, menuOpen, { menuOpen = false }, { sizing = true }, { extracting = it },
-                        onSharePages, onSavePagesAsPdf, onSavePagesAsImages, onInsertPdf, onPickCover,
+                        onStartExport, onInsertPdf, onPickCover,
                     )
                 }
             }
@@ -589,10 +621,8 @@ private fun PageThumb(
     }
 }
 
-/** Page sub-pages of the three-dot menu (main / share-format / save-format / rotate). */
+/** Only rotation needs a nested page-menu level; export settings use the shared dialog. */
 private const val MENU_MAIN = 0
-private const val MENU_SHARE = 1
-private const val MENU_SAVE = 2
 private const val MENU_ROTATE = 3
 
 /** The Rotate sub-page: its back row, then a quarter turn either way and a half turn; [onTurn] gets clockwise quarter turns. */
@@ -615,9 +645,7 @@ private fun PageContextMenu(
     onDismiss: () -> Unit,
     onPageSize: () -> Unit,
     onExtract: (move: Boolean) -> Unit,
-    onSharePages: (List<Int>, Boolean) -> Unit,
-    onSavePagesAsPdf: (List<Int>) -> Unit,
-    onSavePagesAsImages: (List<Int>) -> Unit,
+    onStartExport: (Int, PageExportDestination) -> Unit,
     onInsertPdf: (Int) -> Unit,
     onPickCover: () -> Unit,
 ) {
@@ -636,15 +664,6 @@ private fun PageContextMenu(
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         when (sub) {
             MENU_ROTATE -> RotateRows({ sub = MENU_MAIN }) { turns -> onDismiss(); editor.rotatePages(one, turns) }
-            MENU_SHARE, MENU_SAVE -> PageFormatRows(sub == MENU_SHARE, { sub = MENU_MAIN }) { image ->
-                val saving = sub == MENU_SAVE
-                onDismiss()
-                when {
-                    saving && image -> onSavePagesAsImages(one)
-                    saving -> onSavePagesAsPdf(one)
-                    else -> onSharePages(one, !image)
-                }
-            }
             else -> {
                 // The cover is only ever the first page, so only it offers these.
                 if (isCover) {
@@ -677,8 +696,10 @@ private fun PageContextMenu(
                 DropdownMenuItem(text = { Text(stringResource(R.string.move_to_new_note)) }, leadingIcon = menuIcon(NotesTakingIcons.moveToFolder), onClick = { onDismiss(); onExtract(true) })
                 DropdownMenuItem(text = { Text(stringResource(R.string.erase_page)) }, leadingIcon = menuIcon(NotesTakingIcons.eraser), onClick = { editor.erasePages(one); onDismiss() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, leadingIcon = menuIcon(NotesTakingIcons.trash), onClick = { editor.deletePages(one); onDismiss() })
-                DropdownMenuItem(text = { Text(stringResource(R.string.share_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.share), onClick = { sub = MENU_SHARE })
-                DropdownMenuItem(text = { Text(stringResource(R.string.save_as_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.download), onClick = { sub = MENU_SAVE })
+                DropdownMenuItem(text = { Text(stringResource(R.string.share_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.share),
+                    onClick = { onDismiss(); onStartExport(index, PageExportDestination.SHARE) })
+                DropdownMenuItem(text = { Text(stringResource(R.string.save_as_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.download),
+                    onClick = { onDismiss(); onStartExport(index, PageExportDestination.SAVE) })
             }
         }
     }
@@ -712,26 +733,14 @@ private fun ExtractDialog(editor: Editor, indices: List<Int>, move: Boolean, onD
     )
 }
 
-/** A Share or Save as sub-page: its back row, then Image (PNG) and PDF; [onPick] says which. */
-@Composable
-private fun PageFormatRows(share: Boolean, onBack: () -> Unit, onPick: (image: Boolean) -> Unit) {
-    val palette = LocalPalette.current
-    fun menuIcon(icon: ImageVector) = @Composable { Icon(icon, null, tint = palette.textDim.toComposeColor(), modifier = Modifier.size(18.dp)) }
-    DropdownMenuItem(text = { Text(stringResource(if (share) R.string.back_share_as else R.string.back_save_as)) }, onClick = onBack)
-    DropdownMenuItem(text = { Text(stringResource(R.string.image_png)) }, leadingIcon = menuIcon(NotesTakingIcons.image), onClick = { onPick(true) })
-    DropdownMenuItem(text = { Text("PDF") }, leadingIcon = menuIcon(NotesTakingIcons.exportDoc), onClick = { onPick(false) })
-}
-
 /**
  * Two rows preserve 48dp action targets in a narrow panel: selection controls above,
- * quick PDF export and delete below. Copy and advanced actions remain in More.
+ * export options and delete below. Copy and advanced actions remain in More.
  */
 @Composable
 private fun PageSelectionBar(
     editor: Editor,
-    onSharePages: (List<Int>, Boolean) -> Unit,
-    onSavePagesAsPdf: (List<Int>) -> Unit,
-    onSavePagesAsImages: (List<Int>) -> Unit,
+    onStartExport: (PageExportDestination) -> Unit,
 ) {
     val palette = LocalPalette.current
     CompositionLocalProvider(LocalTipSide provides TipSide.ABOVE) {
@@ -756,13 +765,13 @@ private fun PageSelectionBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                BarAction(NotesTakingIcons.exportDoc, stringResource(R.string.save_selected_pages_pdf)) {
-                    onSavePagesAsPdf(editor.selectedPageIndices())
+                BarAction(NotesTakingIcons.exportDoc, stringResource(R.string.page_export_open)) {
+                    onStartExport(PageExportDestination.SAVE)
                 }
                 BarAction(NotesTakingIcons.trash, stringResource(R.string.delete)) {
                     editor.deletePages(editor.selectedPageIndices())
                 }
-                PageSelectionMore(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages)
+                PageSelectionMore(editor, onStartExport)
             }
         }
     }
@@ -772,9 +781,7 @@ private fun PageSelectionBar(
 @Composable
 private fun PageSelectionMore(
     editor: Editor,
-    onSharePages: (List<Int>, Boolean) -> Unit,
-    onSavePagesAsPdf: (List<Int>) -> Unit,
-    onSavePagesAsImages: (List<Int>) -> Unit,
+    onStartExport: (PageExportDestination) -> Unit,
 ) {
     val palette = LocalPalette.current
     var open by remember { mutableStateOf(false) }
@@ -793,16 +800,6 @@ private fun PageSelectionMore(
         DropdownMenu(expanded = open, onDismissRequest = { close() }) {
             when (sub) {
                 MENU_ROTATE -> RotateRows({ sub = MENU_MAIN }) { turns -> close(); editor.rotatePages(editor.selectedPageIndices(), turns) }
-                MENU_SHARE, MENU_SAVE -> PageFormatRows(sub == MENU_SHARE, { sub = MENU_MAIN }) { image ->
-                    val picked = editor.selectedPageIndices()
-                    val saving = sub == MENU_SAVE
-                    close()
-                    when {
-                        saving && image -> onSavePagesAsImages(picked)
-                        saving -> onSavePagesAsPdf(picked)
-                        else -> onSharePages(picked, !image)
-                    }
-                }
                 else -> {
                     DropdownMenuItem(text = { Text(stringResource(R.string.copy)) }, leadingIcon = menuIcon(NotesTakingIcons.copy), onClick = { close(); editor.copyPages(editor.selectedPageIndices()) })
                     DropdownMenuItem(text = { Text(stringResource(R.string.cut)) }, leadingIcon = menuIcon(NotesTakingIcons.cut), onClick = { close(); editor.cutPages(editor.selectedPageIndices()) })
@@ -827,8 +824,10 @@ private fun PageSelectionMore(
                         close()
                         extracting = editor.selectedPageIndices() to true
                     })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.save_as_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.download), onClick = { sub = MENU_SAVE })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.share_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.share), onClick = { sub = MENU_SHARE })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.save_as_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.download),
+                        onClick = { close(); onStartExport(PageExportDestination.SAVE) })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.share_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.share),
+                        onClick = { close(); onStartExport(PageExportDestination.SHARE) })
                 }
             }
         }
