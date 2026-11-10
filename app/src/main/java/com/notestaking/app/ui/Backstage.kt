@@ -846,36 +846,29 @@ private fun HomePane(
     }
 }
 
-/** The explorer's quick-create button, the ⋮ menu's New block; while items are picked it stretches into an Export PDF pill. */
+/** One-tap New Note is the primary library action; selection mode replaces it with Export PDF. */
 @Composable
 private fun CreateButton(
     exporting: Boolean,
     onCreateMode: (CreateMode) -> Unit,
-    onImportPdf: () -> Unit,
     onExport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var menuOpen by remember { mutableStateOf(false) }
-    val createLabel = stringResource(R.string.create_new)
+    val createLabel = stringResource(R.string.new_note_menu)
     val exportLabel = stringResource(R.string.export_pdf_action)
-    Box(modifier) {
-        // One button throughout, so the pill grows out of the circle instead of replacing it.
-        Tooltip(if (exporting) exportLabel else createLabel) {
-            ExtendedFloatingActionButton(
-                text = { Text(exportLabel) },
-                icon = {
-                    Crossfade(exporting, label = "createButtonIcon") { e ->
-                        Icon(if (e) NotesTakingIcons.pdfFile else NotesTakingIcons.edit, if (e) exportLabel else createLabel, Modifier.size(24.dp))
-                    }
-                },
-                onClick = { if (exporting) onExport() else menuOpen = true },
-                expanded = exporting,
-                shape = CircleShape,
-            )
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            NewItemMenuItems({ menuOpen = false }, onCreateMode, onImportPdf)
-        }
+    Tooltip(if (exporting) exportLabel else createLabel) {
+        ExtendedFloatingActionButton(
+            text = { Text(if (exporting) exportLabel else createLabel) },
+            icon = {
+                Crossfade(exporting, label = "createButtonIcon") { e ->
+                    Icon(if (e) NotesTakingIcons.pdfFile else NotesTakingIcons.edit, null, Modifier.size(24.dp))
+                }
+            },
+            onClick = { if (exporting) onExport() else onCreateMode(CreateMode.FILE) },
+            expanded = true,
+            modifier = modifier,
+            shape = MaterialTheme.shapes.large,
+        )
     }
 }
 
@@ -913,9 +906,13 @@ private fun ExplorerSection(
                 }
             }
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyPane(stringResource(R.string.choose_folder_hint), EmptyArt.PAGES) {
-                    PrimaryButton(NotesTakingIcons.folder, stringResource(R.string.choose_folder), onClick = calls.pickRoot)
+                EmptyPane(stringResource(R.string.library_start_hint), EmptyArt.PAGES) {
                     PrimaryButton(NotesTakingIcons.database, stringResource(R.string.use_app_storage)) { editor.useInternalStorage() }
+                    TextButton(onClick = calls.pickRoot) {
+                        Icon(NotesTakingIcons.folder, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.choose_folder))
+                    }
                 }
             }
         }
@@ -1398,10 +1395,21 @@ private fun ExplorerSection(
     val floatEdge = palette.border.toComposeColor()
     // The chip row is the files' first row, so it scrolls away with them; under the pinned selection bar it stays empty.
     val chipRow: @Composable (Dp) -> Unit = { height ->
-        Box(Modifier.fillMaxWidth().height(height).padding(top = 8.dp)) {
+        Box(Modifier.fillMaxWidth().height(maxOf(height, 48.dp) + 8.dp).padding(top = 4.dp)) {
             if (selection.isEmpty()) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     FittedChipRow(Modifier.weight(1f)) { labelled ->
+                        if (stack.isEmpty() && !searching && colorFilter == null) {
+                            val destination = if (showRecent) R.string.top_folder else R.string.recent
+                            ExplorerChip(
+                                stringResource(destination), false,
+                                icon = if (showRecent) NotesTakingIcons.home else NotesTakingIcons.clock,
+                                labelled = labelled,
+                            ) {
+                                showRecent = !showRecent
+                                selection.clear()
+                            }
+                        }
                         if (layout == ExplorerLayout.TIMELINE) {
                             var byOpen by remember { mutableStateOf(false) }
                             Box {
@@ -1686,13 +1694,13 @@ private fun ExplorerSection(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val wide = maxWidth >= 760.dp
                 val headerWidth = maxWidth
-                val reservedWidth = 96.dp + if (sidebarOpen) 0.dp else 48.dp
+                val reservedWidth = 112.dp + if (sidebarOpen) 0.dp else 48.dp
                 Row(Modifier.fillMaxWidth().height(EXPLORER_HEADER), verticalAlignment = Alignment.CenterVertically) {
                     if (!sidebarOpen) {
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                             Tooltip(stringResource(R.string.show_sidebar)) {
                                 Box(
-                                    Modifier.size(40.dp).floatingBacking(liftNow, CircleShape, floatFill, floatEdge)
+                                    Modifier.size(48.dp).floatingBacking(liftNow, CircleShape, floatFill, floatEdge)
                                         .clip(CircleShape).clickable(role = Role.Button, onClick = onShowSidebar),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -1730,12 +1738,21 @@ private fun ExplorerSection(
                                     modifier = Modifier.size(18.dp).clip(MaterialTheme.shapes.extraSmall).clickable { stack.clear(); clearUp() },
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Crumb(rootName ?: stringResource(R.string.folder), current = stack.isEmpty()) { stack.clear(); clearUp() }
-                                stack.forEachIndexed { i, (_, name) ->
-                                    Text("/", color = palette.textDim.toComposeColor(), fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
-                                    Crumb(name, current = i == stack.lastIndex) {
-                                        while (stack.size > i + 1) stack.removeAt(stack.lastIndex)
-                                        clearUp()
+                                if (stack.isEmpty()) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                                        Text(stringResource(R.string.library_title), color = palette.text.toComposeColor(),
+                                            fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        Text(rootName ?: stringResource(R.string.folder), color = palette.textDim.toComposeColor(),
+                                            fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                } else {
+                                    Crumb(rootName ?: stringResource(R.string.folder), current = false) { stack.clear(); clearUp() }
+                                    stack.forEachIndexed { i, (_, name) ->
+                                        Text("/", color = palette.textDim.toComposeColor(), fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                                        Crumb(name, current = i == stack.lastIndex) {
+                                            while (stack.size > i + 1) stack.removeAt(stack.lastIndex)
+                                            clearUp()
+                                        }
                                     }
                                 }
                             }
@@ -1782,7 +1799,7 @@ private fun ExplorerSection(
                 }
             }
             // While items are picked, the selection bar stays pinned where the chip row starts.
-            if (selection.isNotEmpty()) Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.CenterStart) {
+            if (selection.isNotEmpty()) Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = Alignment.CenterStart) {
                 // Registered when the bar appears, after the search field's, so Back clears the picks first.
                 BackHandler { selection.clear() }
                 SelectionBar(selection.size, onClear = { selection.clear() }, onSelectAll = { selection.clear(); selection.addAll(arranged.orEmpty()) }) {
@@ -1859,7 +1876,6 @@ private fun ExplorerSection(
         CreateButton(
             exporting = selection.isNotEmpty(),
             onCreateMode = onCreateMode,
-            onImportPdf = calls.importPdf,
             onExport = {
                 val picked = selection.toList()
                 // A lone folder zips under its own name, anything else under the folder it was picked in.
@@ -2060,7 +2076,7 @@ private fun ExplorerSection(
 }
 
 /** Height of the search pill (also its rounded-end radius via CircleShape), and the idle icon's width. */
-private val SEARCH_HEIGHT = 40.dp
+private val SEARCH_HEIGHT = 48.dp
 
 /**
  * The explorer's recursive name filter. Idle it's a bare magnifier like the header's other icons; tapped,

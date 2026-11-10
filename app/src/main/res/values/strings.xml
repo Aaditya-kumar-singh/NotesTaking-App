@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">NotesTaking App</string>
+    <string name="library_title">My library</string>
+    <string name="library_start_hint">Keep your notes on this device, or choose another folder. No account needed.</string>
 
     <!-- Tools and toolbar items -->
     <string name="tool_pen">Pen</string>

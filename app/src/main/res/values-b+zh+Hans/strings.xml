@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string name="library_title">我的资料库</string>
+    <string name="library_start_hint">可以将笔记保存在本设备，也可以选择其他文件夹。无需注册账户。</string>
+
     <!-- Tools and toolbar items -->
     <string name="tool_pen">钢笔</string>
     <string name="tool_dashed">虚线笔</string>

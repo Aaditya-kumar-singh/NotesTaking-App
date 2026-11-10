@@ -122,7 +122,7 @@ private fun ChipBody(
     val iconTint = (if (on) palette.selectionForeground else palette.textDim).toComposeColor()
     Row(
         modifier
-            .height(32.dp)
+            .height(48.dp).widthIn(min = 48.dp)
             .clip(MaterialTheme.shapes.small)
             .background(if (on) palette.selectionBackground.toComposeColor() else palette.surface.toComposeColor())
             .border(1.dp, if (on) palette.accent.toComposeColor() else palette.border.toComposeColor(), MaterialTheme.shapes.small)
@@ -198,7 +198,7 @@ internal fun LayoutSwitcher(layouts: List<ExplorerLayout>, current: ExplorerLayo
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.medium
     Row(
-        Modifier.height(40.dp).floatingBacking(lift, shape, palette.surface.toComposeColor(), Color.Transparent)
+        Modifier.height(48.dp).floatingBacking(lift, shape, palette.surface.toComposeColor(), Color.Transparent)
             .clip(shape).border(1.dp, palette.border.toComposeColor(), shape),
     ) {
         layouts.forEach { l ->
@@ -206,8 +206,8 @@ internal fun LayoutSwitcher(layouts: List<ExplorerLayout>, current: ExplorerLayo
             Tooltip(stringResource(l.labelRes)) {
                 Box(
                     Modifier
-                        .width(42.dp)
-                        .height(40.dp)
+                        .width(48.dp)
+                        .height(48.dp)
                         .background(if (on) palette.selectionBackground.toComposeColor() else Color.Transparent)
                         .clickable { onPick(l) },
                     contentAlignment = Alignment.Center,
@@ -224,7 +224,7 @@ internal fun LayoutSwitcher(layouts: List<ExplorerLayout>, current: ExplorerLayo
 internal fun ExplorerIcon(icon: ImageVector, desc: String, tint: Color? = null, enabled: Boolean = true, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Tooltip(desc) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
             Icon(
                 icon, desc,
                 tint = (tint ?: palette.text.toComposeColor()).copy(alpha = if (enabled) 1f else 0.35f),
@@ -263,7 +263,7 @@ internal fun SelectionBar(
     Row(
         // Opaque under its fill, since it stays put while files scroll beneath it, and edged so the
         // pinned bar reads as a surface rather than a tint over the ones sliding past.
-        Modifier.fillMaxWidth().height(44.dp).shadow(3.dp, shape)
+        Modifier.fillMaxWidth().height(56.dp).shadow(3.dp, shape)
             .clip(shape).background(palette.bg.toComposeColor())
             .background(palette.selectionBackground.toComposeColor())
             .border(1.dp, fg.copy(alpha = 0.25f), shape)
