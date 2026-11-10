@@ -5,6 +5,7 @@ import com.notestaking.app.core.model.PageSize
 import com.notestaking.app.core.model.PageSizeChoice
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.util.NameTemplate
+import com.notestaking.app.core.tools.Tool
 import org.json.JSONObject
 
 /**
@@ -183,6 +184,11 @@ data class Preferences(
                 put("toolbar_floating_x", toolbarLook.floatingX)
                 put("toolbar_floating_y", toolbarLook.floatingY)
             }
+            if (toolbarLook.favoriteTools != ToolbarLook.DEFAULT_FAVORITES) {
+                put("toolbar_favorites", org.json.JSONArray().apply {
+                    toolbarLook.favoriteTools.forEach { put(it.id) }
+                })
+            }
             startFullscreen?.let { put("start_fullscreen", it) }
             codeThemePath?.let { put("code_theme_path", it) }
             codeThemeName?.let { put("code_theme_name", it) }
@@ -236,6 +242,11 @@ data class Preferences(
             val legacyDualAccent = legacySeed ?: Rgba.fromHex(o.optString("accent_color")) ?: DEFAULT_ACCENT
             val savedX = o.optDouble("toolbar_floating_x", Double.NaN).takeIf { it.isFinite() && it in 0.0..1.0 }
             val savedY = o.optDouble("toolbar_floating_y", Double.NaN).takeIf { it.isFinite() && it in 0.0..1.0 }
+            val favorites = o.optJSONArray("toolbar_favorites")?.let { saved ->
+                ToolbarLook.sanitizeFavorites((0 until saved.length()).mapNotNull {
+                    Tool.fromId(saved.optString(it))
+                })
+            } ?: ToolbarLook.DEFAULT_FAVORITES
             return Preferences(
                 uiAppearance = appearance,
                 materialMode = materialMode,
@@ -254,6 +265,7 @@ data class Preferences(
                     floating = o.optBoolean("toolbar_floating", false),
                     floatingX = if (savedX != null && savedY != null) savedX.toFloat() else null,
                     floatingY = if (savedX != null && savedY != null) savedY.toFloat() else null,
+                    favoriteTools = favorites,
                 ),
                 hideWindowDecoration = o.optBoolean("hide_window_decoration", false),
                 pageColor = if (o.isNull("page_color")) null else Rgba.fromHex(o.optString("page_color")),

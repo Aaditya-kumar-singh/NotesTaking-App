@@ -1541,7 +1541,9 @@ private fun EditorPane(
                         onTakePhoto = { actions.onTakePhoto(editor) },
                     )
                 }
-                ToolbarAround(bar, onCover = canvas::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar) { floatingBar ->
+                ToolbarAround(bar, onCover = canvas::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar,
+                    favorites = { count -> com.notestaking.app.ui.FavoriteToolDock(canvas, canvas.tool, app.toolbarLook.favoriteTools, count, canvas::armTool) },
+                ) { floatingBar ->
                     Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
                         AndroidView(
                             factory = { detached(canvas.surfaces) },
@@ -1579,7 +1581,9 @@ private fun EditorPane(
                         onTakePhoto = { actions.onTakePhoto(editor) },
                     ) }
                 }
-                ToolbarAround(bar, onCover = editor::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar) { floatingBar ->
+                ToolbarAround(bar, onCover = editor::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar,
+                    favorites = { count -> com.notestaking.app.ui.FavoriteToolDock(editor, editor.tool, app.toolbarLook.favoriteTools, count, editor::selectTool) },
+                ) { floatingBar ->
                     Row(modifier = Modifier.fillMaxSize()) {
                         if (editor.sidebarVisible) {
                             com.notestaking.app.ui.SidePanel(

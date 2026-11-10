@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -51,6 +53,7 @@ import kotlin.math.roundToInt
 internal fun MovableFloatingToolbar(
     look: ToolbarLook,
     bar: @Composable () -> Unit,
+    favorites: @Composable (Int) -> Unit,
     onDrop: (Float, Float) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -65,6 +68,13 @@ internal fun MovableFloatingToolbar(
         var dragStartX by remember { mutableFloatStateOf(x) }
         var dragStartY by remember { mutableFloatStateOf(y) }
         val commit by rememberUpdatedState(onDrop)
+        var expanded by remember { mutableStateOf(false) }
+        val length = if (look.position.vertical) maxHeight else maxWidth
+        val count = ToolbarLook.visibleFavoriteCount(
+            shortSideDp = minOf(maxWidth, maxHeight).value.toInt(),
+            axisDp = length.value.toInt(),
+            buttonDp = barMetrics(look.size).button.value.toInt(),
+        )
 
         fun nudge(dx: Float, dy: Float): Boolean {
             if ((dx != 0f && travelX == 0f) || (dy != 0f && travelY == 0f)) return false
@@ -126,6 +136,38 @@ internal fun MovableFloatingToolbar(
             }
         }
 
+        val shownBar: @Composable () -> Unit = {
+            if (expanded) {
+                CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
+                    val collapse: @Composable () -> Unit = {
+                        ToolbarIcon(NotesTakingIcons.chevronDown, stringResource(R.string.toolbar_collapse_to_favorites)) {
+                            expanded = false
+                        }
+                    }
+                    if (look.position.vertical) Column { collapse(); bar() }
+                    else Row(verticalAlignment = Alignment.CenterVertically) { collapse(); bar() }
+                }
+            } else {
+                val palette = LocalPalette.current
+                val shape = MaterialTheme.shapes.extraLarge
+                val surface = Modifier
+                    .shadow(6.dp, shape)
+                    .clip(shape)
+                    .background(palette.panel.toComposeColor())
+                    .border(1.dp, palette.border.toComposeColor(), shape)
+                CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
+                    val content: @Composable () -> Unit = {
+                        favorites(count)
+                        ToolbarIcon(NotesTakingIcons.more, stringResource(R.string.toolbar_expand_all_tools)) {
+                            expanded = true
+                        }
+                    }
+                    if (look.position.vertical) Column(surface) { content() }
+                    else Row(surface, verticalAlignment = Alignment.CenterVertically) { content() }
+                }
+            }
+        }
+
         Box(
             Modifier
                 .absoluteOffset {
@@ -143,16 +185,16 @@ internal fun MovableFloatingToolbar(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     grip()
-                    bar()
+                    shownBar()
                 }
             } else {
                 Row(
-                    Modifier.widthIn(max = (maxWidth - 16.dp).coerceIn(48.dp, 480.dp)),
+                    Modifier.widthIn(max = (maxWidth - 16.dp).coerceIn(48.dp, if (expanded) 480.dp else 600.dp)),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     grip()
-                    bar()
+                    shownBar()
                 }
             }
         }

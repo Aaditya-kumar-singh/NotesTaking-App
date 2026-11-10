@@ -556,6 +556,34 @@ class SettingsTest {
         assertEquals(0.23f to 0.79f, ToolbarLook(floatingX = 0.23f, floatingY = 0.79f).floatingFractions)
     }
 
+    @Test fun favoriteToolsPersistAndIgnoreUnsupportedOrDuplicateIds() {
+        val chosen = listOf(Tool.ERASER, Tool.PEN, Tool.SELECT)
+        val prefs = Preferences(toolbarLook = ToolbarLook(floating = true, favoriteTools = chosen))
+        assertEquals(chosen, Preferences.fromJson(prefs.toJson()).toolbarLook.favoriteTools)
+        assertFalse(Preferences().toJson().has("toolbar_favorites"))
+
+        val ids = org.json.JSONArray().put("pen").put("pen").put("image")
+            .put("lasso").put("eraser").put("unknown")
+        val restored = Preferences.fromJson(JSONObject().put("toolbar_favorites", ids))
+        assertEquals(listOf(Tool.PEN, Tool.LASSO, Tool.ERASER), restored.toolbarLook.favoriteTools)
+        val bad = Preferences.fromJson(JSONObject().put("toolbar_favorites", org.json.JSONArray().put("image")))
+        assertEquals(ToolbarLook.DEFAULT_FAVORITES, bad.toolbarLook.favoriteTools)
+        val many = org.json.JSONArray().apply { ToolbarLook.FAVORITE_CHOICES.forEach { put(it.id) } }
+        assertEquals(ToolbarLook.DEFAULT_FAVORITES,
+            Preferences.fromJson(JSONObject().put("toolbar_favorites", many)).toolbarLook.favoriteTools)
+    }
+
+    @Test fun favoriteDockRespectsPhoneTabletAndNarrowPaneWidth() {
+        assertEquals(listOf(Tool.PEN, Tool.HIGHLIGHTER, Tool.ERASER, Tool.LASSO),
+            ToolbarLook.DEFAULT_FAVORITES.take(4))
+        assertEquals(4, ToolbarLook.visibleFavoriteCount(360, 360, 48))
+        assertEquals(2, ToolbarLook.visibleFavoriteCount(320, 320, 56))
+        assertEquals(8, ToolbarLook.visibleFavoriteCount(800, 800, 48))
+        assertEquals(7, ToolbarLook.visibleFavoriteCount(800, 800, 56))
+        assertEquals(4, ToolbarLook.visibleFavoriteCount(420, 700, 48))
+        assertEquals(1, ToolbarLook.visibleFavoriteCount(180, 180, 48))
+    }
+
     @Test fun autoToolbarPositionRespectsActiveWindowAndExplicitChoices() {
         assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(320))
         assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(599))

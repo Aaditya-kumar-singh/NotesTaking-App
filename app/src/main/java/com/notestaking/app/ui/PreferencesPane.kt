@@ -81,6 +81,7 @@ import com.notestaking.app.core.util.NameTemplate
 import com.notestaking.app.settings.Preferences
 import com.notestaking.app.settings.MaterialStyle
 import com.notestaking.app.settings.CornerStyle
+import com.notestaking.app.settings.ToolbarLook
 import com.notestaking.app.settings.ToolbarPosition
 import com.notestaking.app.settings.ToolbarSize
 import com.notestaking.app.settings.MaterialColourMode
@@ -601,6 +602,24 @@ fun PreferencesPane(
                     Chip(stringResource(label), look.size == size) { updateHome(prefs.copy(toolbarLook = look.copy(size = size))) }
                 }
             }
+            if (look.floating) {
+                FieldLabel(stringResource(R.string.toolbar_favorites_title))
+                Text(stringResource(R.string.toolbar_favorites_hint),
+                    color = palette.textDim.toComposeColor(), fontSize = 12.sp)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (tool in ToolbarLook.FAVORITE_CHOICES) {
+                        val selected = tool in look.favoriteTools
+                        Chip(stringResource(tool.labelRes), selected,
+                            enabled = selected || look.favoriteTools.size < ToolbarLook.MAX_FAVORITES) {
+                            val next = if (selected) look.favoriteTools.filterNot { it == tool }
+                                else look.favoriteTools + tool
+                            if (next.isNotEmpty() && next.size <= ToolbarLook.MAX_FAVORITES) {
+                                updateHome(prefs.copy(toolbarLook = look.copy(favoriteTools = next)))
+                            }
+                        }
+                    }
+                }
+            }
             FieldLabel(stringResource(R.string.pref_toolbar_colours_n, editor.toolbarColorCount))
             Slider(
                 value = editor.toolbarColorCount.toFloat(),
@@ -792,7 +811,7 @@ private fun CustomMaterialControls(prefs: Preferences, update: (Preferences) -> 
 }
 
 @Composable
-private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun Chip(label: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Box(
         Modifier
@@ -800,7 +819,8 @@ private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
             .background(if (selected) palette.selectionBackground.toComposeColor() else palette.surface.toComposeColor())
             .border(1.dp, if (selected) palette.accent.toComposeColor() else palette.border.toComposeColor(), MaterialTheme.shapes.small)
             .semantics { this.selected = selected }
-            .clickable(onClick = onClick)
+            .alpha(if (enabled) 1f else 0.45f)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Text(

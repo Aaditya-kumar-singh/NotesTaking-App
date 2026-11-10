@@ -50,6 +50,10 @@
     <string name="edge_top">Top</string>
     <string name="edge_auto">Auto</string>
     <string name="toolbar_position_auto_hint">Auto: bottom on phones, top on tablets. Uses the available window size.</string>
+    <string name="toolbar_favorites_title">Favorite drawing tools</string>
+    <string name="toolbar_favorites_hint">Choose up to eight in selection order. Up to four appear on phones; remove a selected favorite to add another.</string>
+    <string name="toolbar_expand_all_tools">Show all tools</string>
+    <string name="toolbar_collapse_to_favorites">Show favorite tools</string>
     <string name="toolbar_drag_handle">Drag floating toolbar</string>
     <string name="toolbar_move_left">Move toolbar left</string>
     <string name="toolbar_move_right">Move toolbar right</string>

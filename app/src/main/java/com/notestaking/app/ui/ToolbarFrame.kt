@@ -86,6 +86,7 @@ internal fun ColumnScope.ToolbarAround(
     bar: @Composable () -> Unit,
     onCover: (Double, Double, Double, Double) -> Unit,
     onFloatingDrop: (Float, Float) -> Unit,
+    favorites: @Composable (Int) -> Unit,
     content: @Composable (floatingBar: @Composable BoxScope.() -> Unit) -> Unit,
 ) {
     val look = LocalToolbarLook.current
@@ -121,7 +122,7 @@ internal fun ColumnScope.ToolbarAround(
         ToolbarPosition.RIGHT -> PaddingValues.Absolute(right = depth)
     }
     CompositionLocalProvider(LocalToolbarCover provides cover) {
-        Box(rest) { content { MovableFloatingToolbar(look, bar, onFloatingDrop) } }
+        Box(rest) { content { MovableFloatingToolbar(look, bar, favorites, onFloatingDrop) } }
     }
 }
 

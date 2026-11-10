@@ -49,6 +49,10 @@
     <string name="edge_top">顶部</string>
     <string name="edge_auto">自动</string>
     <string name="toolbar_position_auto_hint">自动：窄窗口工具栏位于底部，宽窗口位于顶部。位置随窗口尺寸调整。</string>
+    <string name="toolbar_favorites_title">常用绘画工具</string>
+    <string name="toolbar_favorites_hint">按选择顺序最多添加八个。手机上最多显示前四个；若要添加新工具，请先取消选择一个常用工具。</string>
+    <string name="toolbar_expand_all_tools">显示全部工具</string>
+    <string name="toolbar_collapse_to_favorites">显示常用工具</string>
     <string name="toolbar_drag_handle">拖动浮动工具栏</string>
     <string name="toolbar_move_left">向左移动工具栏</string>
     <string name="toolbar_move_right">向右移动工具栏</string>
