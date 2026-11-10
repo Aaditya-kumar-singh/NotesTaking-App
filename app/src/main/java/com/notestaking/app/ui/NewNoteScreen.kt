@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -285,6 +286,7 @@ internal fun NewNoteScreen(
         val hasCover = coverOn && coverT != null
 
         fun create() {
+            if (busy) return
             if (coverEdit != null) {
                 if (hasCover) coverEdit.onDone(coverStyle)
                 return
@@ -398,8 +400,8 @@ internal fun NewNoteScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 modifier = Modifier
-                    .width(64.dp)
-                    .height(40.dp)
+                    .width(80.dp)
+                    .height(48.dp)
                     .semantics { contentDescription = label }
                     .onGloballyPositioned { fieldBounds[label] = it.boundsInRoot() }
                     .onFocusChanged { focused = it.isFocused }
@@ -420,31 +422,41 @@ internal fun NewNoteScreen(
         @Composable
         fun OrientationButton(o: Orientation, desc: String) {
             val on = (o == Orientation.PORTRAIT) == portrait
-            Box(
+            val fg = if (on) palette.selectionForeground.toComposeColor() else text
+            Row(
                 Modifier
-                    .size(44.dp, 38.dp)
+                    .height(48.dp).widthIn(min = 112.dp)
                     .background(if (on) palette.selectionBackground.toComposeColor() else Color.Transparent)
                     .semantics { contentDescription = desc; selected = on }
-                    .clickable { setOrientation(o) },
-                contentAlignment = Alignment.Center,
+                    .clickable { setOrientation(o) }
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             ) {
-                val fg = if (on) palette.selectionForeground.toComposeColor() else dim
-                Box(Modifier.size(if (o == Orientation.PORTRAIT) 11.dp else 17.dp, if (o == Orientation.PORTRAIT) 17.dp else 11.dp).border(2.dp, fg, RoundedCornerShape(2.dp)))
+                Box(
+                    Modifier.size(
+                        if (o == Orientation.PORTRAIT) 11.dp else 17.dp,
+                        if (o == Orientation.PORTRAIT) 17.dp else 11.dp,
+                    ).border(2.dp, fg, RoundedCornerShape(2.dp)),
+                )
+                Text(desc, color = fg, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
 
         @Composable
-        fun FormatRow() = Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        fun FormatRow() = Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+            Text(stringResource(R.string.paper_format_title), color = text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(8.dp))
             FlowRow(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Box {
                     var open by remember { mutableStateOf(false) }
                     Row(
                         Modifier
-                            .height(40.dp)
+                            .height(48.dp)
                             .clip(MaterialTheme.shapes.small)
                             .border(1.dp, border, MaterialTheme.shapes.small)
                             .background(palette.menuBg.toComposeColor())
@@ -495,7 +507,7 @@ internal fun NewNoteScreen(
                 }
                 Row(Modifier.clip(MaterialTheme.shapes.small).border(1.dp, border, MaterialTheme.shapes.small)) {
                     OrientationButton(Orientation.PORTRAIT, stringResource(R.string.orientation_portrait))
-                    Box(Modifier.width(1.dp).height(38.dp).background(border))
+                    Box(Modifier.width(1.dp).height(48.dp).background(border))
                     OrientationButton(Orientation.LANDSCAPE, stringResource(R.string.orientation_landscape))
                 }
             }
@@ -662,7 +674,7 @@ internal fun NewNoteScreen(
 
         @Composable
         fun Tabs() {
-            Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 12.dp)) {
+            Row(Modifier.fillMaxWidth().height(52.dp).horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
                 // The cover picker of an open note styles its cover alone, so it has no Pages tab.
                 if (!coverOnly) Tab(stringResource(R.string.pages), !aiOpen && face == Face.PAGES) { face = Face.PAGES; aiOpen = false }
                 Tab(stringResource(R.string.cover), !aiOpen && face == Face.COVER) { face = Face.COVER; aiOpen = false }
@@ -705,8 +717,8 @@ internal fun NewNoteScreen(
                 }
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    label, color = if (selected) palette.selectionForeground.toComposeColor() else text,
-                    fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    label, color = if (selected) accent else text,
+                    fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.remove_template)) }, onClick = { menu = false; onRemove?.invoke() })
@@ -875,7 +887,8 @@ internal fun NewNoteScreen(
         ) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val screenW = maxWidth
-                val wide = screenW >= 720.dp
+                // A landscape phone can be wide but too short for the two-pane paper preview.
+                val wide = screenW >= 720.dp && maxHeight >= 600.dp
                 Column(Modifier.fillMaxSize()) {
                     Row(
                         Modifier.fillMaxWidth().height(76.dp).padding(start = 8.dp, end = 20.dp),
@@ -930,8 +943,12 @@ internal fun NewNoteScreen(
                         Button(
                             onClick = { create() },
                             // While the note is written the button stays gold and spins; create() ignores another tap.
-                            enabled = if (coverOnly) hasCover else sizeOk,
-                            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = palette.onAccent.toComposeColor()),
+                            enabled = !busy && (if (coverOnly) hasCover else sizeOk),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = accent, contentColor = palette.onAccent.toComposeColor(),
+                                disabledContainerColor = if (busy) accent else palette.menuBg.toComposeColor(),
+                                disabledContentColor = if (busy) palette.onAccent.toComposeColor() else dim,
+                            ),
                         ) {
                             if (busy) {
                                 CircularProgressIndicator(Modifier.size(18.dp), color = palette.onAccent.toComposeColor(), strokeWidth = 2.dp)
@@ -939,7 +956,7 @@ internal fun NewNoteScreen(
                                 Icon(NotesTakingIcons.check, null, modifier = Modifier.size(18.dp))
                             }
                             Spacer(Modifier.size(8.dp))
-                            Text(stringResource(if (coverOnly) R.string.done else R.string.create), fontWeight = FontWeight.Medium)
+                            Text(stringResource(if (coverOnly) R.string.done else if (wide) R.string.create_note else R.string.create), fontWeight = FontWeight.Medium)
                         }
                     }
                     HorizontalDivider(color = border)
@@ -950,6 +967,8 @@ internal fun NewNoteScreen(
                                 Modifier.width(stageW).fillMaxHeight().background(palette.bg.toComposeColor()).padding(horizontal = 24.dp, vertical = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
+                                Text(stringResource(R.string.note_preview_title), color = text, fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold)
                                 Sheets(260.dp, 300.dp)
                                 if (!coverOnly) FormatRow()
                                 HorizontalDivider(color = border)
@@ -977,6 +996,9 @@ internal fun NewNoteScreen(
                                 ) { Tune() }
                             }
                             Column(Modifier.weight(1f).fillMaxHeight()) {
+                                Text(stringResource(if (aiOpen) R.string.tab_generate_ai else R.string.note_template_gallery_title), color = text,
+                                    fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp))
                                 Tabs()
                                 HorizontalDivider(color = border)
                                 if (aiOpen) {
@@ -1025,11 +1047,20 @@ internal fun NewNoteScreen(
                                         Modifier.fillMaxWidth().padding(top = 12.dp).background(palette.bg.toComposeColor(), RoundedCornerShape(12.dp)).padding(14.dp),
                                         verticalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
+                                        Text(stringResource(R.string.note_preview_title), color = text,
+                                            fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                                         Sheets(120.dp, 170.dp)
                                         if (!coverOnly) FormatRow()
                                     }
                                 }
-                                item(span = { GridItemSpan(maxLineSpan) }) { Tabs() }
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Column {
+                                        Text(stringResource(if (aiOpen) R.string.tab_generate_ai else R.string.note_template_gallery_title), color = text,
+                                            fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp))
+                                        Tabs()
+                                    }
+                                }
                                 if (aiOpen) {
                                     item(span = { GridItemSpan(maxLineSpan) }) {
                                         AiTemplateTab(coverOnly, wide = false, onImport = onImportTemplate, modifier = Modifier.padding(top = 12.dp))
@@ -1042,6 +1073,7 @@ internal fun NewNoteScreen(
                                     .fillMaxWidth()
                                     .background(palette.menuBg.toComposeColor(), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                                     .clickable { tuneOpen = true }
+                                    .heightIn(min = 64.dp)
                                     .padding(horizontal = 20.dp, vertical = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -1056,6 +1088,8 @@ internal fun NewNoteScreen(
                                     )
                                     Text(stringResource(if (face == Face.PAGES) R.string.every_page else R.string.cover), color = dim, fontSize = 12.sp)
                                 }
+                                Icon(NotesTakingIcons.sliders, null, tint = accent, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.customize), color = accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             }
                         }

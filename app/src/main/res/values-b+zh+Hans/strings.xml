@@ -4,6 +4,11 @@
     <string name="library_title">我的资料库</string>
     <string name="library_start_hint">可以将笔记保存在本设备，也可以选择其他文件夹。无需注册账户。</string>
 
+    <string name="create_note">创建笔记</string>
+    <string name="paper_format_title">纸张尺寸和方向</string>
+    <string name="note_preview_title">预览</string>
+    <string name="note_template_gallery_title">纸张和封面模板</string>
+
     <!-- Tools and toolbar items -->
     <string name="tool_pen">钢笔</string>
     <string name="tool_dashed">虚线笔</string>

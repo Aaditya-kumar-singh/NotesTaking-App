@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">NotesTaking App</string>
+    <string name="create_note">Create note</string>
+    <string name="paper_format_title">Paper size and orientation</string>
+    <string name="note_preview_title">Preview</string>
+    <string name="note_template_gallery_title">Paper and cover templates</string>
     <string name="library_title">My library</string>
     <string name="library_start_hint">Keep your notes on this device, or choose another folder. No account needed.</string>
 
