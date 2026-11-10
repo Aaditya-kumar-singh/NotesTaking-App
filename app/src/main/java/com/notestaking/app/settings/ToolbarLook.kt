@@ -6,7 +6,18 @@ data class ToolbarLook(
     val size: ToolbarSize = ToolbarSize.REGULAR,
     /** A rounded pill over the canvas instead of a strip along the pane's edge. */
     val floating: Boolean = false,
-)
+    /** Normalized position within the pane's free space. Null follows [position]. */
+    val floatingX: Float? = null,
+    val floatingY: Float? = null,
+) {
+    val floatingFractions: Pair<Float, Float>
+        get() = if (floatingX != null && floatingY != null) floatingX to floatingY else when (position) {
+            ToolbarPosition.TOP, ToolbarPosition.AUTO -> 0.5f to 0f
+            ToolbarPosition.BOTTOM -> 0.5f to 1f
+            ToolbarPosition.LEFT -> 0f to 0.5f
+            ToolbarPosition.RIGHT -> 1f to 0.5f
+        }
+}
 
 /** Which edge of its pane the toolbar runs along. */
 enum class ToolbarPosition(val id: String) {

@@ -50,6 +50,12 @@
     <string name="edge_top">Top</string>
     <string name="edge_auto">Auto</string>
     <string name="toolbar_position_auto_hint">Auto: bottom on phones, top on tablets. Uses the available window size.</string>
+    <string name="toolbar_drag_handle">Drag floating toolbar</string>
+    <string name="toolbar_move_left">Move toolbar left</string>
+    <string name="toolbar_move_right">Move toolbar right</string>
+    <string name="toolbar_move_up">Move toolbar up</string>
+    <string name="toolbar_move_down">Move toolbar down</string>
+    <string name="toolbar_move_reset">Reset toolbar position</string>
     <string name="edge_bottom">Bottom</string>
     <string name="page_size_custom">Custom</string>
     <string name="page_size_letter">Letter</string>

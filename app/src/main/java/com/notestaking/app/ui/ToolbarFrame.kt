@@ -24,7 +24,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,6 +85,7 @@ internal val LocalToolbarCover = compositionLocalOf { PaddingValues(0.dp) }
 internal fun ColumnScope.ToolbarAround(
     bar: @Composable () -> Unit,
     onCover: (Double, Double, Double, Double) -> Unit,
+    onFloatingDrop: (Float, Float) -> Unit,
     content: @Composable (floatingBar: @Composable BoxScope.() -> Unit) -> Unit,
 ) {
     val look = LocalToolbarLook.current
@@ -114,14 +114,14 @@ internal fun ColumnScope.ToolbarAround(
             if (position == ToolbarPosition.BOTTOM) px else 0.0,
         )
     }
-    val (cover, edge) = when (position) {
-        ToolbarPosition.TOP, ToolbarPosition.AUTO -> PaddingValues(top = depth) to Alignment.TopCenter
-        ToolbarPosition.BOTTOM -> PaddingValues(bottom = depth) to Alignment.BottomCenter
-        ToolbarPosition.LEFT -> PaddingValues.Absolute(left = depth) to AbsoluteAlignment.CenterLeft
-        ToolbarPosition.RIGHT -> PaddingValues.Absolute(right = depth) to AbsoluteAlignment.CenterRight
+    val cover = when (position) {
+        ToolbarPosition.TOP, ToolbarPosition.AUTO -> PaddingValues(top = depth)
+        ToolbarPosition.BOTTOM -> PaddingValues(bottom = depth)
+        ToolbarPosition.LEFT -> PaddingValues.Absolute(left = depth)
+        ToolbarPosition.RIGHT -> PaddingValues.Absolute(right = depth)
     }
     CompositionLocalProvider(LocalToolbarCover provides cover) {
-        Box(rest) { content { Box(Modifier.align(edge).padding(FLOAT_MARGIN)) { bar() } } }
+        Box(rest) { content { MovableFloatingToolbar(look, bar, onFloatingDrop) } }
     }
 }
 

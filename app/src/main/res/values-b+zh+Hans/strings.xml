@@ -49,6 +49,12 @@
     <string name="edge_top">顶部</string>
     <string name="edge_auto">自动</string>
     <string name="toolbar_position_auto_hint">自动：窄窗口工具栏位于底部，宽窗口位于顶部。位置随窗口尺寸调整。</string>
+    <string name="toolbar_drag_handle">拖动浮动工具栏</string>
+    <string name="toolbar_move_left">向左移动工具栏</string>
+    <string name="toolbar_move_right">向右移动工具栏</string>
+    <string name="toolbar_move_up">向上移动工具栏</string>
+    <string name="toolbar_move_down">向下移动工具栏</string>
+    <string name="toolbar_move_reset">重置工具栏位置</string>
     <string name="edge_bottom">底部</string>
     <string name="page_size_custom">自定义</string>
     <string name="page_size_letter">Letter</string>

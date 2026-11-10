@@ -532,6 +532,30 @@ class SettingsTest {
         assertFalse(Preferences().toJson().has("toolbar_floating"))
     }
 
+    @Test fun floatingToolbarPlacementRoundTripsAndRejectsMalformedCoordinates() {
+        val position = ToolbarLook(position = ToolbarPosition.LEFT, floating = true, floatingX = 0.23f, floatingY = 0.79f)
+        assertEquals(position, Preferences.fromJson(Preferences(toolbarLook = position).toJson()).toolbarLook)
+        val missingY = JSONObject().put("toolbar_position", "left").put("toolbar_floating_x", 0.25)
+        assertNull(Preferences.fromJson(missingY).toolbarLook.floatingX)
+        assertNull(Preferences.fromJson(missingY).toolbarLook.floatingY)
+        val invalid = JSONObject().put("toolbar_position", "bottom")
+            .put("toolbar_floating_x", 2.0).put("toolbar_floating_y", "invalid")
+        assertEquals(ToolbarLook(position = ToolbarPosition.BOTTOM), Preferences.fromJson(invalid).toolbarLook)
+        assertFalse(Preferences().toJson().has("toolbar_floating_x"))
+        assertFalse(Preferences().toJson().has("toolbar_floating_y"))
+        val unsafe = Preferences(toolbarLook = ToolbarLook(floatingX = Float.NaN, floatingY = 0.4f)).toJson()
+        assertFalse(unsafe.has("toolbar_floating_x"))
+        assertFalse(unsafe.has("toolbar_floating_y"))
+    }
+
+    @Test fun floatingToolbarAnchorMatchesSelectedEdge() {
+        assertEquals(0.5f to 0f, ToolbarLook(position = ToolbarPosition.TOP).floatingFractions)
+        assertEquals(0.5f to 1f, ToolbarLook(position = ToolbarPosition.BOTTOM).floatingFractions)
+        assertEquals(0f to 0.5f, ToolbarLook(position = ToolbarPosition.LEFT).floatingFractions)
+        assertEquals(1f to 0.5f, ToolbarLook(position = ToolbarPosition.RIGHT).floatingFractions)
+        assertEquals(0.23f to 0.79f, ToolbarLook(floatingX = 0.23f, floatingY = 0.79f).floatingFractions)
+    }
+
     @Test fun autoToolbarPositionRespectsActiveWindowAndExplicitChoices() {
         assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(320))
         assertEquals(ToolbarPosition.BOTTOM, ToolbarPosition.AUTO.resolve(599))

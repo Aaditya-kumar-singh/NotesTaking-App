@@ -178,6 +178,11 @@ data class Preferences(
             put("toolbar_position", toolbarLook.position.id)
             if (toolbarLook.size != ToolbarSize.REGULAR) put("toolbar_size", toolbarLook.size.id)
             if (toolbarLook.floating) put("toolbar_floating", true)
+            if (toolbarLook.floatingX?.let { it.isFinite() && it in 0f..1f } == true &&
+                toolbarLook.floatingY?.let { it.isFinite() && it in 0f..1f } == true) {
+                put("toolbar_floating_x", toolbarLook.floatingX)
+                put("toolbar_floating_y", toolbarLook.floatingY)
+            }
             startFullscreen?.let { put("start_fullscreen", it) }
             codeThemePath?.let { put("code_theme_path", it) }
             codeThemeName?.let { put("code_theme_name", it) }
@@ -229,6 +234,8 @@ data class Preferences(
                 else -> MaterialColourMode.SYSTEM
             }
             val legacyDualAccent = legacySeed ?: Rgba.fromHex(o.optString("accent_color")) ?: DEFAULT_ACCENT
+            val savedX = o.optDouble("toolbar_floating_x", Double.NaN).takeIf { it.isFinite() && it in 0.0..1.0 }
+            val savedY = o.optDouble("toolbar_floating_y", Double.NaN).takeIf { it.isFinite() && it in 0.0..1.0 }
             return Preferences(
                 uiAppearance = appearance,
                 materialMode = materialMode,
@@ -245,6 +252,8 @@ data class Preferences(
                     position = ToolbarPosition.fromId(o.optString("toolbar_position")),
                     size = ToolbarSize.fromId(o.optString("toolbar_size")),
                     floating = o.optBoolean("toolbar_floating", false),
+                    floatingX = if (savedX != null && savedY != null) savedX.toFloat() else null,
+                    floatingY = if (savedX != null && savedY != null) savedY.toFloat() else null,
                 ),
                 hideWindowDecoration = o.optBoolean("hide_window_decoration", false),
                 pageColor = if (o.isNull("page_color")) null else Rgba.fromHex(o.optString("page_color")),

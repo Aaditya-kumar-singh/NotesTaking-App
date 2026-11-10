@@ -2875,6 +2875,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         prefsVersion++
     }
 
+    /** Persist a floating toolbar move without invalidating the document or ink buffers. */
+    fun placeFloatingToolbar(x: Float, y: Float) {
+        if (!x.isFinite() || !y.isFinite()) return
+        val next = settings.prefs.toolbarLook.copy(
+            floatingX = x.coerceIn(0f, 1f), floatingY = y.coerceIn(0f, 1f),
+        )
+        if (settings.prefs.toolbarLook == next) return
+        settings = settings.copy(prefs = settings.prefs.copy(toolbarLook = next))
+        toolbarLook = next
+        prefsVersion++
+        settingsRepo.save(settings)
+    }
+
     /** Apply an edited toolbar layout live and persist (used by the toolbar customiser). */
     fun applyToolbarLayout(layout: ToolbarLayout) {
         toolbarLayout = layout

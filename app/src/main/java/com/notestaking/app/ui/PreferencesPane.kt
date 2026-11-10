@@ -583,7 +583,7 @@ fun PreferencesPane(
                     ToolbarPosition.LEFT to R.string.edge_left,
                     ToolbarPosition.RIGHT to R.string.edge_right,
                 )) {
-                    Chip(stringResource(label), look.position == position) { updateHome(prefs.copy(toolbarLook = look.copy(position = position))) }
+                    Chip(stringResource(label), look.position == position) { updateHome(prefs.copy(toolbarLook = look.copy(position = position, floatingX = null, floatingY = null))) }
                 }
             }
             Text(
