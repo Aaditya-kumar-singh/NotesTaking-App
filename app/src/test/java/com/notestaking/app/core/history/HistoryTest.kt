@@ -226,6 +226,23 @@ class HistoryTest {
         assertEquals(listOf("c", "a", "b", "d", "e"), MovePages.order(pages, setOf("c"), -4))
     }
 
+    @Test fun pageMenuMoveUpAndDownUseOriginalListGaps() {
+        // Menu actions use index-1 for Up, index+2 for Down, matching the drag reorder algorithm.
+        val pages = listOf("cover", "one", "two", "three")
+        assertEquals(
+            listOf("cover", "two", "one", "three"),
+            MovePages.order(pages, listOf(pages[2]), 2 - 1),
+        )
+        assertEquals(
+            listOf("cover", "two", "one", "three"),
+            MovePages.order(pages, listOf(pages[1]), 1 + 2),
+        )
+        assertEquals(
+            listOf("cover", "one", "three", "two"),
+            MovePages.order(pages, listOf(pages[2]), 2 + 2),
+        )
+    }
+
     @Test fun movePagesUndoesAndCarriesBookmarks() {
         val doc = Document.blank(count = 4)
         val (p0, p1, p2, p3) = doc.pages.toList()

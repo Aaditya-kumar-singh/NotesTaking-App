@@ -71,7 +71,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,6 +95,51 @@ import kotlinx.coroutines.launch
 
 /** The side panel's tabs. */
 enum class SidePanelTab { PAGES, CONTENTS, BOOKMARKS, SEARCH }
+
+/** Quick page count and entry points; actual insert/reorder/export work stays in Editor. */
+@Composable
+private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit) {
+    val palette = LocalPalette.current
+    val pages = remember(editor.contentVersion) { editor.pagesSnapshot() }
+    val currentIndex = editor.pageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+    val selecting = editor.inPageSelectionMode
+    Column {
+        Row(
+            Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.pages), color = palette.text.toComposeColor(),
+                    fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                if (pages.isNotEmpty()) {
+                    Text(stringResource(R.string.page_position_count, currentIndex + 1, pages.size),
+                        color = palette.textDim.toComposeColor(), fontSize = 12.sp, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (!selecting && pages.isNotEmpty()) {
+                Tooltip(stringResource(R.string.add_page)) {
+                    IconButton(onClick = { editor.insertPageAfter(currentIndex) }, modifier = Modifier.size(48.dp)) {
+                        Icon(NotesTakingIcons.plus, stringResource(R.string.add_page),
+                            tint = palette.accent.toComposeColor(), modifier = Modifier.size(20.dp))
+                    }
+                }
+                Tooltip(stringResource(R.string.insert_pdf)) {
+                    IconButton(onClick = { onInsertPdf(currentIndex) }, modifier = Modifier.size(48.dp)) {
+                        Icon(NotesTakingIcons.importDoc, stringResource(R.string.insert_pdf),
+                            tint = palette.text.toComposeColor(), modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
+        if (!selecting && pages.size > 1) {
+            Text(stringResource(R.string.page_reorder_hint), color = palette.textDim.toComposeColor(),
+                fontSize = 12.sp, maxLines = 2, modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp))
+        }
+        HorizontalDivider(color = palette.border.toComposeColor())
+    }
+}
 
 /**
  * The side panel. The Pages tab shows page thumbnails with a per-page three-dot menu (add / copy /
@@ -142,6 +189,9 @@ fun SidePanel(
             SegIcon(NotesTakingIcons.bookmark, stringResource(R.string.bookmarks), tab == SidePanelTab.BOOKMARKS) { editor.sidePanelTab = SidePanelTab.BOOKMARKS }
             SegIcon(NotesTakingIcons.search, stringResource(R.string.search), tab == SidePanelTab.SEARCH, shortcut = Keys.SEARCH) { editor.sidePanelTab = SidePanelTab.SEARCH }
         }
+        if (tab == SidePanelTab.PAGES) {
+            PagePanelHeader(editor, onInsertPdf)
+        }
         Box(Modifier.fillMaxWidth().weight(1f)) {
             when (tab) {
                 SidePanelTab.PAGES -> PagesTab(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages, onInsertPdf) { pickingCover = true }
@@ -160,7 +210,13 @@ fun SidePanel(
 private fun SegIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, desc: String, selected: Boolean, shortcut: String? = null, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Tooltip(desc, shortcut = shortcut) {
-        IconButton(onClick = onClick) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (selected) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
+                .semantics { this.selected = selected },
+        ) {
             Icon(
                 icon,
                 contentDescription = desc,
@@ -449,6 +505,7 @@ private fun PageThumb(
     onPickCover: () -> Unit,
 ) {
     val palette = LocalPalette.current
+    val pageLabel = if (page.cover) stringResource(R.string.cover) else stringResource(R.string.page_n, index + 1)
     val current = index == editor.pageIndex
     val selected = editor.isPageSelected(index)
     var menuOpen by remember { mutableStateOf(false) }
@@ -486,9 +543,13 @@ private fun PageThumb(
                 // Tap navigates (or toggles selection in select mode). Long-presses belong to the
                 // panel (see PagesTab), so a drag survives the row scrolling away.
                 .clickable { if (selecting) editor.togglePageSelection(index) else editor.goToPage(index) }
-                .semantics { onLongClick { editor.togglePageSelection(index); true } },
+                .semantics {
+                    contentDescription = pageLabel
+                    this.selected = if (selecting) selected else current
+                    onLongClick { editor.togglePageSelection(index); true }
+                },
         ) {
-            bitmap?.let { Image(it, contentDescription = stringResource(R.string.page_n, index + 1), modifier = Modifier.fillMaxSize()) }
+            bitmap?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
 
             if (selected) {
                 Box(Modifier.matchParentSize().background(palette.selectionBackground.withAlpha(77).toComposeColor()))
@@ -504,16 +565,16 @@ private fun PageThumb(
                 Box(Modifier.align(Alignment.TopEnd).padding(2.dp)) {
                     Tooltip(stringResource(R.string.page_options)) {
                         Box(
-                            Modifier.size(26.dp).clip(CircleShape)
-                                .background(palette.panel.toComposeColor().copy(alpha = 0.7f))
+                            Modifier.size(48.dp).clip(CircleShape)
+                                .background(palette.panel.toComposeColor().copy(alpha = 0.9f))
                                 .clickable { menuOpen = true },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(NotesTakingIcons.more, stringResource(R.string.page_options), tint = palette.text.toComposeColor(), modifier = Modifier.size(16.dp))
+                            Icon(NotesTakingIcons.more, stringResource(R.string.page_options), tint = palette.text.toComposeColor(), modifier = Modifier.size(20.dp))
                         }
                     }
                     PageContextMenu(
-                        editor, index, page.cover, page.pdfPage != null, menuOpen, { menuOpen = false }, { sizing = true }, { extracting = it },
+                        editor, index, page, menuOpen, { menuOpen = false }, { sizing = true }, { extracting = it },
                         onSharePages, onSavePagesAsPdf, onSavePagesAsImages, onInsertPdf, onPickCover,
                     )
                 }
@@ -521,8 +582,9 @@ private fun PageThumb(
         }
         val captionColor = (if (current || selected) palette.accent else palette.textDim).toComposeColor()
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("%02d".format(index + 1), color = captionColor, fontSize = 10.sp)
-            if (page.cover) Text(stringResource(R.string.cover), color = captionColor, fontSize = 10.sp)
+            Text(stringResource(R.string.page_n, index + 1), color = captionColor, fontSize = 12.sp,
+                fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal)
+            if (page.cover) Text(stringResource(R.string.cover), color = captionColor, fontSize = 12.sp)
         }
     }
 }
@@ -548,8 +610,7 @@ private fun RotateRows(onBack: () -> Unit, onTurn: (Int) -> Unit) {
 private fun PageContextMenu(
     editor: Editor,
     index: Int,
-    isCover: Boolean,
-    isPdf: Boolean,
+    page: Page,
     expanded: Boolean,
     onDismiss: () -> Unit,
     onPageSize: () -> Unit,
@@ -561,6 +622,13 @@ private fun PageContextMenu(
     onPickCover: () -> Unit,
 ) {
     val palette = LocalPalette.current
+    val isCover = page.cover
+    val isPdf = page.pdfPage != null
+    // Avoid copying every page list while dozens of closed thumbnail menus recompose.
+    val pages = remember(expanded, editor.contentVersion) {
+        if (expanded) editor.pagesSnapshot() else emptyList()
+    }
+    val firstMovable = if (pages.firstOrNull()?.cover == true) 1 else 0
     var sub by remember { mutableStateOf(MENU_MAIN) }
     LaunchedEffect(expanded) { if (!expanded) sub = MENU_MAIN } // always reopen on the main page
     val one = listOf(index)
@@ -590,6 +658,14 @@ private fun PageContextMenu(
                 DropdownMenuItem(text = { Text(stringResource(R.string.add_page)) }, leadingIcon = menuIcon(NotesTakingIcons.plus), onClick = { editor.insertPageAfter(index); onDismiss() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.insert_pdf)) }, leadingIcon = menuIcon(NotesTakingIcons.importDoc), onClick = { onInsertPdf(index); onDismiss() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.duplicate)) }, leadingIcon = menuIcon(NotesTakingIcons.duplicate), onClick = { onDismiss(); editor.duplicatePages(one) })
+                if (!isCover && index > firstMovable) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.move_page_up)) }, leadingIcon = menuIcon(NotesTakingIcons.arrowUp),
+                        onClick = { onDismiss(); editor.movePages(listOf(page), index - 1) })
+                }
+                if (!isCover && index < pages.lastIndex) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.move_page_down)) }, leadingIcon = menuIcon(NotesTakingIcons.arrowDown),
+                        onClick = { onDismiss(); editor.movePages(listOf(page), index + 2) })
+                }
                 DropdownMenuItem(text = { Text(stringResource(R.string.copy)) }, leadingIcon = menuIcon(NotesTakingIcons.copy), onClick = { editor.copyPages(one); onDismiss() })
                 DropdownMenuItem(text = { Text(stringResource(R.string.cut)) }, leadingIcon = menuIcon(NotesTakingIcons.cut), onClick = { editor.cutPages(one); onDismiss() })
                 if (editor.canPastePages) {
@@ -647,8 +723,8 @@ private fun PageFormatRows(share: Boolean, onBack: () -> Unit, onPick: (image: B
 }
 
 /**
- * Bottom action bar shown while pages are multi-selected: Select all, Copy and Delete, and a
- * three-dot menu with the rest. A tap anywhere but the pages and this bar lets the selection go.
+ * Two rows preserve 48dp action targets in a narrow panel: selection controls above,
+ * quick PDF export and delete below. Copy and advanced actions remain in More.
  */
 @Composable
 private fun PageSelectionBar(
@@ -658,23 +734,36 @@ private fun PageSelectionBar(
     onSavePagesAsImages: (List<Int>) -> Unit,
 ) {
     val palette = LocalPalette.current
-    // The bar sits at the panel's foot, so its tips open upward.
     CompositionLocalProvider(LocalTipSide provides TipSide.ABOVE) {
-        Row(
-            Modifier.fillMaxWidth().height(52.dp).background(palette.surface.toComposeColor()).padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Tooltip(stringResource(R.string.clear_selection)) {
-                IconButton(onClick = { editor.clearPageSelection() }) {
-                    Icon(NotesTakingIcons.close, stringResource(R.string.clear_selection), tint = palette.textDim.toComposeColor(), modifier = Modifier.size(18.dp))
+        Column(Modifier.fillMaxWidth().background(palette.surface.toComposeColor())) {
+            Row(
+                Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Tooltip(stringResource(R.string.clear_selection)) {
+                    IconButton(onClick = { editor.clearPageSelection() }, modifier = Modifier.size(48.dp)) {
+                        Icon(NotesTakingIcons.close, stringResource(R.string.clear_selection),
+                            tint = palette.textDim.toComposeColor(), modifier = Modifier.size(20.dp))
+                    }
                 }
+                Text(stringResource(R.string.page_selected_count, editor.pageSelectionCount),
+                    color = palette.text.toComposeColor(), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                BarAction(NotesTakingIcons.selectAll, stringResource(R.string.select_all)) { editor.selectAllPages() }
             }
-            Text("${editor.pageSelectionCount}", color = palette.text.toComposeColor(), fontSize = 13.sp)
-            Spacer(Modifier.weight(1f))
-            BarAction(NotesTakingIcons.selectAll, stringResource(R.string.select_all)) { editor.selectAllPages() }
-            BarAction(NotesTakingIcons.copy, stringResource(R.string.copy)) { editor.copyPages(editor.selectedPageIndices()) }
-            BarAction(NotesTakingIcons.trash, stringResource(R.string.delete)) { editor.deletePages(editor.selectedPageIndices()) }
-            PageSelectionMore(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages)
+            HorizontalDivider(color = palette.border.toComposeColor())
+            Row(
+                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                BarAction(NotesTakingIcons.exportDoc, stringResource(R.string.save_selected_pages_pdf)) {
+                    onSavePagesAsPdf(editor.selectedPageIndices())
+                }
+                BarAction(NotesTakingIcons.trash, stringResource(R.string.delete)) {
+                    editor.deletePages(editor.selectedPageIndices())
+                }
+                PageSelectionMore(editor, onSharePages, onSavePagesAsPdf, onSavePagesAsImages)
+            }
         }
     }
 }
@@ -715,6 +804,7 @@ private fun PageSelectionMore(
                     }
                 }
                 else -> {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.copy)) }, leadingIcon = menuIcon(NotesTakingIcons.copy), onClick = { close(); editor.copyPages(editor.selectedPageIndices()) })
                     DropdownMenuItem(text = { Text(stringResource(R.string.cut)) }, leadingIcon = menuIcon(NotesTakingIcons.cut), onClick = { close(); editor.cutPages(editor.selectedPageIndices()) })
                     DropdownMenuItem(text = { Text(stringResource(R.string.duplicate)) }, leadingIcon = menuIcon(NotesTakingIcons.duplicate), onClick = { close(); editor.duplicatePages(editor.selectedPageIndices()) })
                     DropdownMenuItem(text = { Text(stringResource(R.string.rotate_ellipsis)) }, leadingIcon = menuIcon(NotesTakingIcons.rotateRight), onClick = { sub = MENU_ROTATE })
@@ -748,8 +838,8 @@ private fun PageSelectionMore(
 @Composable
 private fun BarAction(icon: ImageVector, desc: String, onClick: () -> Unit) {
     Tooltip(desc) {
-        IconButton(onClick = onClick, modifier = Modifier.size(34.dp)) {
-            Icon(icon, desc, tint = LocalPalette.current.textDim.toComposeColor(), modifier = Modifier.size(19.dp))
+        IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
+            Icon(icon, desc, tint = LocalPalette.current.textDim.toComposeColor(), modifier = Modifier.size(20.dp))
         }
     }
 }

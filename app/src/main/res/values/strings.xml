@@ -6,6 +6,12 @@
     <string name="note_preview_title">Preview</string>
     <string name="note_template_gallery_title">Paper and cover templates</string>
     <string name="library_title">My library</string>
+    <string name="page_position_count">Page %1$d of %2$d</string>
+    <string name="page_reorder_hint">Hold to select, then hold again to drag pages.</string>
+    <string name="page_selected_count">%1$d selected</string>
+    <string name="move_page_up">Move page up</string>
+    <string name="move_page_down">Move page down</string>
+    <string name="save_selected_pages_pdf">Save selected pages as PDF</string>
     <string name="library_start_hint">Keep your notes on this device, or choose another folder. No account needed.</string>
 
     <!-- Tools and toolbar items -->

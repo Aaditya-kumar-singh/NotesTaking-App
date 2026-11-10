@@ -2,6 +2,12 @@
 <resources>
 
     <string name="library_title">我的资料库</string>
+    <string name="page_position_count">第 %1$d 页，共 %2$d 页</string>
+    <string name="page_reorder_hint">长按选择页面，再次长按并拖动可调整顺序。</string>
+    <string name="page_selected_count">已选择 %1$d 页</string>
+    <string name="move_page_up">上移页面</string>
+    <string name="move_page_down">下移页面</string>
+    <string name="save_selected_pages_pdf">将所选页面保存为 PDF</string>
     <string name="library_start_hint">可以将笔记保存在本设备，也可以选择其他文件夹。无需注册账户。</string>
 
     <string name="create_note">创建笔记</string>
