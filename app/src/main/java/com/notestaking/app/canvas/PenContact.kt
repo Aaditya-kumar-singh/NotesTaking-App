@@ -8,6 +8,10 @@ internal object PenContact {
     fun isPen(toolType: Int, stylusType: Int, eraserType: Int): Boolean =
         toolType == stylusType || toolType == eraserType
 
+    /** A pen or its eraser tip must ink, even when touching the visible scrollbar band. */
+    fun canStartScrollbar(toolType: Int, stylusType: Int, eraserType: Int): Boolean =
+        !isPen(toolType, stylusType, eraserType)
+
     fun finishesGesture(penActive: Boolean, ownsGesture: Boolean, activeId: Int, liftedId: Int): Boolean =
         penActive && ownsGesture && activeId == liftedId
 

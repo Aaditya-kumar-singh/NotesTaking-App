@@ -17,6 +17,16 @@ class PenContactTest {
         assertFalse(PenContact.isPen(mouse, stylus, eraser))
     }
 
+    @Test fun scrollbarNeverTakesStylusOrEraserTipFromDrawing() {
+        assertTrue(PenContact.canStartScrollbar(finger, stylus, eraser))
+        assertTrue(PenContact.canStartScrollbar(mouse, stylus, eraser))
+        assertFalse(PenContact.canStartScrollbar(stylus, stylus, eraser))
+        assertFalse(PenContact.canStartScrollbar(eraser, stylus, eraser))
+        // An existing finger drag may yield when the next pointer is a pen.
+        assertTrue(PenContact.canStartWhileFingersDown(intArrayOf(finger, stylus), 1, finger, stylus, eraser))
+        assertTrue(PenContact.canStartWhileFingersDown(intArrayOf(finger, eraser), 1, finger, stylus, eraser))
+    }
+
     @Test fun onlyActivePenLiftCommitsItsGesture() {
         assertTrue(PenContact.finishesGesture(true, true, activeId = 7, liftedId = 7))
         assertFalse(PenContact.finishesGesture(true, true, activeId = 7, liftedId = 4))

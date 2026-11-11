@@ -207,6 +207,7 @@ class CanvasView @JvmOverloads constructor(
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (!scrollbarActive(st)) return false
+                if (!PenContact.canStartScrollbar(e.getToolType(0), MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)) return false
                 val band = SCROLLBAR_TOUCH_DP * resources.displayMetrics.density
                 val onBand = if (st.verticalScroll) e.x >= st.viewportW - st.insetRight - band else e.y >= st.viewportH - st.insetBottom - band
                 if (!onBand) return false
@@ -240,8 +241,17 @@ class CanvasView @JvmOverloads constructor(
                 }
                 return true
             }
-            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP ->
-                if (scrollbarDragging) return true // extra fingers never reach the canvas mid-drag
+            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP -> if (scrollbarDragging) {
+                // A pen arriving over a finger-controlled scrollbar takes over the touch stream.
+                if (e.actionMasked == MotionEvent.ACTION_POINTER_DOWN &&
+                    !PenContact.canStartScrollbar(e.getToolType(e.actionIndex), MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)
+                ) {
+                    scrollbarDragging = false
+                    requestRender()
+                    return false // PenContactRouter turns this into the pen's own ACTION_DOWN.
+                }
+                return true // additional fingers never control the canvas mid-scrollbar drag
+            }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (scrollbarDragging) {
                 scrollbarDragging = false
                 requestRender()
