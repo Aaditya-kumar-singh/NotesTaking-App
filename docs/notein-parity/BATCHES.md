@@ -16,7 +16,8 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 ## Current implementation checkpoint (2026-11-11)
 
 - `developer` commit `62c46b9` contains the unsquashed B08–B12 commits; Android CI run [#42971179169](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42971179169) passed the exact SHA, including native APK/lint/tests. Physical QA is still pending.
-- **B13–B16 source-prepared:** hybrid contract `9b2dd17`; tablet PDF finger input `a568090` (reconciles own earlier `65d67a6`); scoped area-eraser repaint `32ab31c` (reconciles own earlier `2235d9f`); PDF finger mode accessibility `e133b56`. Distinct commits, source checks passed, combined cloud/device gates still pending.
+- **B13–B17 integrated:** `developer` now at `edb45f1` and [Android CI #42973906542](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42973906542) passed the exact SHA, including APK upload. All stylus and visual QA on a physical device remains pending.
+- **B18–B20 source-prepared:** six recovery/security regression-test commits; three clipboard/share/Trash/template safety commits; two GL/native highlighting and successful-import cleanup commits. Each original fix/test commit remains independent. Review combined diff, then publish one developer CI checkpoint.
 - **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)
@@ -24,7 +25,7 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 Git reports remote branches outside `developer` ancestry. **Do not assume they are all missing features:** release branches, old fixes, Dependabot upgrades and historical branch structures are mixed together. After B08–B12's combined development CI, review the latest `origin/main`/`origin/master` code differences and bring over **only still-missing, safe changes** as their own reviewed batch(es). The most relevant known candidates are:
 
 - Tablet PDF finger handwriting and area-eraser repaint: own-code fixes `65d67a6` and `2235d9f` are reconciled into the B14/B15 local candidate (`a568090`/`32ab31c`). These repairs remain hardware-QA pending.
-- Reliability and native import/clipboard/Trash improvements: `origin/fix/audit-reliability-batch-2026-10-30` and current `origin/main` (review the code and tests before cherry-picking).
+- Reliability and native import/clipboard/Trash improvements: the first-party fixes and regression tests from `origin/fix/audit-reliability-batch-2026-10-30` have been inspected and cherry-picked into the B18–B20 candidate on top of `developer`. Native release/CI workflow commits remain excluded. Reconcile any *additional* unique `main`/`master` changes separately.
 - Main → master promotion/release workflows and some native/ABI CI changes: already in current `origin/main`/`origin/master`; **do not** blindly merge release automation into a development workflow.
 - Dependabot/library updates and old feature branches: audit separately; count neither an unmerged Git ref nor a shared SHA as evidence of a user-visible missing feature.
 

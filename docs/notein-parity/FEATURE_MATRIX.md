@@ -28,7 +28,7 @@ Evidence and NotesTaking targets: N29, N31, N32, N33 · NotesTaking `ui/Backstag
 | NP-014 | P2 | Sort and grid/gallery/list toggles | SOURCE | Preserve sorting and view choice per folder | Correct order and no lost selection after toggle |
 | NP-015 | P2 | Favorites/stars for notes (not favorite pens) | INVESTIGATE | Confirm note-level flag/store; implement only if absent | Starred filter updates and persists across relaunch |
 | NP-016 | P2 | Labels/tags and color filters | PARTIAL | Color filters present; label/tag model needs independent design | Tag add/remove/filter with safe migration and multi-note handling |
-| NP-017 | P1 | Recent items and Trash recovery | SOURCE | Test restore, permanent delete confirmation and redirection | Restore note without lost attachments; delete is deliberate |
+| NP-017 | P1 | Recent items and Trash recovery | PARTIAL | B19 restores truthful success/failure/partial-delete messages and busy state; real Trash behavior still requires provider QA | Restore note without lost attachments; delete is deliberate |
 | NP-018 | P2 | Bulk copy/move/export/delete in library | SOURCE | Verify selection actions and partial failures | N selected documents processed exactly once with errors |
 | NP-019 | P1 | Accessible create menu and empty-library recovery | SOURCE | Validate 48dp controls, no dead-end empty screens | Create/Import accessible at phone/tablet sizes |
 
@@ -55,7 +55,7 @@ Evidence and NotesTaking targets: N13, N21, N26, N29, N32, N33 · `canvas/Intera
 | NP-034 | P2 | Color overrides, custom colors and recents | SOURCE | Ensure saved pen color remains fixed when toolbar color changes | Color override and recents survive reopening |
 | NP-035 | P2 | Movable toolbar and visible tool states | SOURCE | B01/B02; verify dragging never leaves screen or draws ink | Tool drag is separate from canvas ink |
 | NP-036 | P2 | Shape recognition/hold-to-snap | SOURCE | Test false positives, undo and page transforms | Intentional hold shapes recognized; freehand retained otherwise |
-| NP-037 | P1 | Text, image, sticker, screenshot, hyperlink tools | SOURCE | Review actual operation and export/reopen behavior | Each object can be edited, moved and restored |
+| NP-037 | P1 | Text, image, sticker, screenshot, hyperlink tools | PARTIAL | B19 preserves exported image URI files; B20 adds GL decode retry; verify clipboard and image roundtrip on Android | Each object can be edited, moved and restored |
 | NP-038 | P2 | Audio recording and synchronized playback | SOURCE | Validate permission denial and clip lifecycle | Playback works after relaunch; no lost recording |
 
 ## Eraser, selection, layers and undo
@@ -123,7 +123,7 @@ Evidence and NotesTaking targets: N18, N26, N28, N30, N33 · `ui/PageExportDialo
 | NP-081 | P0 | SAF Save As/Share URI, MIME and write completion | SOURCE | Check CreateDocument/OpenDocumentTree and retry outcomes | Only report success after durable, complete bytes |
 | NP-082 | P0 | Export progress, cancel and temporary file cleanup | SOURCE | Test cancellation and provider exceptions | No corrupt output or abandoned large staging files |
 | NP-083 | P0 | Safe native ZIP import and resource limits | SOURCE | BoundedZipInputStream exists; execute malformed/traversal/bomb fixtures in CI | Traversal rejected; original/staging untouched |
-| NP-084 | P0 | Atomic local save and document recovery | PARTIAL | Audit process kill/low storage/renames and snapshot fallback | Old valid note survives interrupted write |
+| NP-084 | P0 | Atomic local save and document recovery | PARTIAL | B18 adds overwrite retry/session fallback regression tests; force-stop and low-storage checks remain | Old valid note survives interrupted write |
 | NP-085 | P1 | Save Page As creates independent native note | PARTIAL | Verify page-cargo copy vs new-note path and asset ownership | New page note is editable; source remains unchanged |
 | NP-086 | P2 | Version history/recovery snapshot UI | GAP | Design local version snapshots with quotas and restore preview | Restore past version without touching unrelated notes |
 | NP-087 | P2 | Local backup, settings restore and conflict resolution | PARTIAL | B12 `a8647c5` locally hardens settings ZIP read/skip budgets; native note-level backup/restore and provider QA remain open | Restore into test folder, no silent overwrite |
