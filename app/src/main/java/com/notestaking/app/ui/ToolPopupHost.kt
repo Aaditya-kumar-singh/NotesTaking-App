@@ -41,6 +41,11 @@ interface ToolPopupHost : SwatchHost {
     /** Apply and persist a tool's style. */
     fun updateToolConfig(tool: Tool, config: ToolConfig)
 
+    /** User-saved configurations, shared between notes and infinite canvas. */
+    fun savedPenPresets(tool: Tool): List<ToolConfig>
+    fun savePenPreset(tool: Tool, config: ToolConfig): Boolean
+    fun removePenPreset(tool: Tool, index: Int)
+
     /** The shape tool's style. */
     val hostShapeConfig: ShapeConfig
 

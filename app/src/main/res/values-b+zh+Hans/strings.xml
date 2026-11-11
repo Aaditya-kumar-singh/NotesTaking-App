@@ -2,6 +2,11 @@
 <resources>
 
     <string name="library_title">我的资料库</string>
+    <string name="pen_saved_styles">已保存的画笔样式</string>
+    <string name="pen_style_label">样式 %1$d · 宽度 %2$.1f</string>
+    <string name="pen_style_save">保存当前样式</string>
+    <string name="pen_style_remove">删除样式 %1$d</string>
+    <string name="pen_style_limit">已保存三个样式。请先删除一个，再保存新样式。</string>
     <string name="pdf_reader_tools">PDF 阅读与批注</string>
     <string name="pdf_read_mode">阅读（平移）</string>
     <string name="pdf_annotate_mode">批注</string>

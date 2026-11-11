@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -113,6 +114,7 @@ fun ToolConfigPopup(editor: ToolPopupHost, tool: Tool, onDismiss: () -> Unit) {
     var intensity by remember { mutableStateOf(ToolConversions.highlighterAlphaToIntensity(base.highlighterAlpha).toFloat()) }
     var inverse by remember { mutableStateOf(base.highlighterInverse) }
     var colorOverride by remember { mutableStateOf(base.colorOverride) }
+    var savedStyles by remember(editor, tool) { mutableStateOf(editor.savedPenPresets(tool)) }
 
     fun emit() {
         val m = ToolConversions.sensitivityToMinFactor(sensitivity.toDouble())
@@ -202,6 +204,52 @@ fun ToolConfigPopup(editor: ToolPopupHost, tool: Tool, onDismiss: () -> Unit) {
                 ToggleRow(stringResource(R.string.caption_neon), glow) { glow = it; emit() }
                 if (glow) {
                     SliderRow(stringResource(R.string.caption_glow_intensity), glowIntensity, 0f..100f) { glowIntensity = it; emit() }
+                }
+            }
+            if (tool.isStroke) {
+                Spacer(Modifier.size(12.dp))
+                HorizontalDivider(color = LocalPalette.current.border.toComposeColor())
+                StyleCaption(stringResource(R.string.pen_saved_styles))
+                savedStyles.forEachIndexed { index, preset ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = { editor.updateToolConfig(tool, preset); onDismiss() },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        ) {
+                            Box(Modifier.size(14.dp).clip(MaterialTheme.shapes.extraSmall)
+                                .background((preset.colorOverride ?: preset.rgba).toComposeColor()))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.pen_style_label, index + 1, preset.baseWidth))
+                        }
+                        IconButton(
+                            onClick = { editor.removePenPreset(tool, index); savedStyles = editor.savedPenPresets(tool) },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(NotesTakingIcons.trash, stringResource(R.string.pen_style_remove, index + 1),
+                                modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+                if (savedStyles.size < com.notestaking.app.settings.Settings.MAX_PEN_PRESETS) {
+                    TextButton(
+                        onClick = {
+                            val current = editor.toolConfig(tool)
+                            val ink = current.colorOverride
+                                ?: editor.hostToolbarColors.getOrNull(editor.hostActiveColorIndex)
+                                ?: current.rgba
+                            if (editor.savePenPreset(tool, current.copy(colorOverride = ink))) {
+                                savedStyles = editor.savedPenPresets(tool)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) {
+                        Icon(NotesTakingIcons.plus, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.pen_style_save))
+                    }
+                } else {
+                    Text(stringResource(R.string.pen_style_limit), color = LocalPalette.current.textDim.toComposeColor(),
+                        fontSize = 12.sp)
                 }
             }
         }

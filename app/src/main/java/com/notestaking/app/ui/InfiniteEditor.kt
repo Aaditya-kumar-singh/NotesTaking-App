@@ -86,6 +86,7 @@ private const val INK_TAP_DP = 8.0
 class InfiniteEditor(context: Context) : ToolPopupHost, SelectionMenuHost, LongPressMenuHost, TextEditHost, ColorDropHost, AudioHost, CropHost {
 
     private val appContext = context.applicationContext
+    private val penPresetRepo = com.notestaking.app.settings.SettingsRepository(appContext)
 
     var document: InfiniteDocument = InfiniteDocument()
         private set
@@ -1060,6 +1061,26 @@ class InfiniteEditor(context: Context) : ToolPopupHost, SelectionMenuHost, LongP
     override fun updateToolConfig(tool: Tool, config: ToolConfig) {
         toolConfigs[tool] = config
         onToolStyleChanged?.invoke()
+    }
+
+    override fun savedPenPresets(tool: Tool): List<ToolConfig> =
+        com.notestaking.app.settings.LiveSettings.get(penPresetRepo).savedPenPresets(tool)
+
+    override fun savePenPreset(tool: Tool, config: ToolConfig): Boolean {
+        val current = com.notestaking.app.settings.LiveSettings.get(penPresetRepo)
+        val next = current.withAddedPenPreset(tool, config)
+        if (next === current) return false
+        com.notestaking.app.settings.LiveSettings.set(next)
+        penPresetRepo.save(next)
+        return true
+    }
+
+    override fun removePenPreset(tool: Tool, index: Int) {
+        val current = com.notestaking.app.settings.LiveSettings.get(penPresetRepo)
+        val next = current.withoutPenPreset(tool, index)
+        if (next === current) return
+        com.notestaking.app.settings.LiveSettings.set(next)
+        penPresetRepo.save(next)
     }
 
     override val hostShapeConfig: ShapeConfig get() = shapeConfig

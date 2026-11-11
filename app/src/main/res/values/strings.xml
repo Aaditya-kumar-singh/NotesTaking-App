@@ -6,6 +6,11 @@
     <string name="note_preview_title">Preview</string>
     <string name="note_template_gallery_title">Paper and cover templates</string>
     <string name="library_title">My library</string>
+    <string name="pen_saved_styles">Saved pen styles</string>
+    <string name="pen_style_label">Style %1$d · width %2$.1f</string>
+    <string name="pen_style_save">Save current style</string>
+    <string name="pen_style_remove">Remove style %1$d</string>
+    <string name="pen_style_limit">Three styles saved. Remove one to save another.</string>
     <string name="pdf_reader_tools">PDF reading and annotation</string>
     <string name="pdf_read_mode">Read (Pan)</string>
     <string name="pdf_annotate_mode">Annotate</string>

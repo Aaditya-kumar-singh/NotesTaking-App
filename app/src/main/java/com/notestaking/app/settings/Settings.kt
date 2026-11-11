@@ -89,8 +89,26 @@ data class Settings(
     val prefs: Preferences = Preferences(),
     /** One-shot flag: the first-run stylus check (which may auto-enable finger-draw) has run. */
     val fingerDrawAutoChecked: Boolean = false,
+    /** Up to three saved styles per stroke tool. Independent of documents and current tool settings. */
+    val penPresets: Map<Tool, List<ToolConfig>> = emptyMap(),
 ) {
     fun configFor(tool: Tool): ToolConfig = tools[tool] ?: ToolDefaults.configFor(tool)
+
+    fun savedPenPresets(tool: Tool): List<ToolConfig> =
+        if (tool.isStroke) penPresets[tool].orEmpty().take(MAX_PEN_PRESETS) else emptyList()
+
+    fun withAddedPenPreset(tool: Tool, config: ToolConfig): Settings {
+        val saved = savedPenPresets(tool)
+        if (!tool.isStroke || saved.size >= MAX_PEN_PRESETS) return this
+        return copy(penPresets = penPresets + (tool to (saved + config)))
+    }
+
+    fun withoutPenPreset(tool: Tool, index: Int): Settings {
+        val saved = savedPenPresets(tool)
+        if (index !in saved.indices) return this
+        val remaining = saved.filterIndexed { i, _ -> i != index }
+        return copy(penPresets = if (remaining.isEmpty()) penPresets - tool else penPresets + (tool to remaining))
+    }
 
     /** Push a colour to the front of recent colours, de-duped, capped at 24. */
     fun rememberColor(c: Rgba): Settings =
@@ -141,9 +159,21 @@ data class Settings(
             .put("prefs", prefs.toJson())
             .put("view_defaults", com.notestaking.app.platform.ViewSettingsJson.write(JSONObject(), viewDefaults))
             .put("finger_draw_auto_checked", fingerDrawAutoChecked)
+            .apply {
+                val saved = JSONObject()
+                for (tool in Tool.entries.filter { it.isStroke }) {
+                    val presets = savedPenPresets(tool)
+                    if (presets.isNotEmpty()) saved.put(tool.id, JSONArray().apply {
+                        presets.forEach { put(toolConfigJson(it)) }
+                    })
+                }
+                if (saved.length() > 0) put("pen_presets", saved)
+            }
     }
 
     companion object {
+        const val MAX_PEN_PRESETS = 3
+
         fun fromJson(o: JSONObject): Settings {
             val toolsObj = o.optJSONObject("tools")
             val tools = HashMap<Tool, ToolConfig>()
@@ -197,6 +227,15 @@ data class Settings(
                 newTable = tableDefaults(o.optJSONObject("new_table")),
                 prefs = Preferences.fromJson(o.optJSONObject("prefs")),
                 fingerDrawAutoChecked = o.optBoolean("finger_draw_auto_checked", false),
+                penPresets = o.optJSONObject("pen_presets")?.let { saved ->
+                    Tool.entries.filter { it.isStroke }.mapNotNull { tool ->
+                        val rows = saved.optJSONArray(tool.id) ?: return@mapNotNull null
+                        val presets = (0 until minOf(rows.length(), MAX_PEN_PRESETS)).mapNotNull { index ->
+                            rows.optJSONObject(index)?.let { toolConfig(it, tool) }
+                        }
+                        if (presets.isEmpty()) null else tool to presets
+                    }.toMap()
+                }.orEmpty(),
             )
         }
 

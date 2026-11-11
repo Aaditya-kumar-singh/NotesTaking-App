@@ -27,6 +27,48 @@ class SettingsTest {
         assertEquals(com.notestaking.app.canvas.ViewSettings(), s.viewDefaults)
     }
 
+    @Test fun savedPenStylesRoundTripWithoutReplacingCurrentTool() {
+        val thinBlue = com.notestaking.app.core.tools.ToolDefaults.configFor(Tool.PEN)
+            .copy(baseWidth = 2.5, pressureEnabled = false, colorOverride = Rgba(25, 90, 210))
+        val thickRed = com.notestaking.app.core.tools.ToolDefaults.configFor(Tool.PEN)
+            .copy(baseWidth = 7.0, pressureMinFactor = 0.6, colorOverride = Rgba(220, 40, 35))
+        val marker = com.notestaking.app.core.tools.ToolDefaults.configFor(Tool.HIGHLIGHTER)
+            .copy(highlighterAlpha = 0.55, colorOverride = Rgba(25, 155, 40))
+        val current = com.notestaking.app.core.tools.ToolDefaults.configFor(Tool.PEN).copy(baseWidth = 4.0)
+        val saved = Settings(tools = mapOf(Tool.PEN to current))
+            .withAddedPenPreset(Tool.PEN, thinBlue)
+            .withAddedPenPreset(Tool.PEN, thickRed)
+            .withAddedPenPreset(Tool.HIGHLIGHTER, marker)
+
+        val back = Settings.fromJson(saved.toJson())
+        assertEquals(listOf(thinBlue, thickRed), back.savedPenPresets(Tool.PEN))
+        assertEquals(listOf(marker), back.savedPenPresets(Tool.HIGHLIGHTER))
+        assertEquals(current.baseWidth, back.configFor(Tool.PEN).baseWidth, 0.0)
+        assertTrue(Settings.fromJson(JSONObject()).savedPenPresets(Tool.PEN).isEmpty())
+    }
+
+    @Test fun savedPenStyleSlotsAreBoundedAndSafeToDelete() {
+        val pen = com.notestaking.app.core.tools.ToolDefaults.configFor(Tool.PEN)
+        val full = (1..5).fold(Settings()) { s, n ->
+            s.withAddedPenPreset(Tool.PEN, pen.copy(baseWidth = n.toDouble()))
+        }
+        assertEquals(3, full.savedPenPresets(Tool.PEN).size)
+        assertEquals(1.0, full.savedPenPresets(Tool.PEN)[0].baseWidth, 0.0)
+        assertTrue(full === full.withAddedPenPreset(Tool.ERASER, pen))
+        assertTrue(full === full.withoutPenPreset(Tool.PEN, 7))
+
+        val after = full.withoutPenPreset(Tool.PEN, 1)
+        assertEquals(listOf(1.0, 3.0), after.savedPenPresets(Tool.PEN).map { it.baseWidth })
+        assertEquals(3, after.withAddedPenPreset(Tool.PEN, pen).savedPenPresets(Tool.PEN).size)
+        assertTrue(after.withoutPenPreset(Tool.PEN, 0).withoutPenPreset(Tool.PEN, 0)
+            .savedPenPresets(Tool.PEN).isEmpty())
+
+        val oversized = full.toJson()
+        oversized.getJSONObject("pen_presets").getJSONArray("pen")
+            .put(JSONObject().put("base_width", 999.0))
+        assertEquals(3, Settings.fromJson(oversized).savedPenPresets(Tool.PEN).size)
+    }
+
     @Test fun viewDefaultsRoundTrip() {
         val original = Settings(
             viewDefaults = com.notestaking.app.canvas.ViewSettings(

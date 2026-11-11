@@ -6553,6 +6553,23 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         controller.setToolConfig(tool, config.copy(rgba = controller.inkColor))
     }
 
+    override fun savedPenPresets(tool: Tool) = settings.savedPenPresets(tool)
+
+    override fun savePenPreset(tool: Tool, config: com.notestaking.app.core.tools.ToolConfig): Boolean {
+        val next = settings.withAddedPenPreset(tool, config)
+        if (next === settings) return false
+        settings = next
+        settingsRepo.save(next)
+        return true
+    }
+
+    override fun removePenPreset(tool: Tool, index: Int) {
+        val next = settings.withoutPenPreset(tool, index)
+        if (next === settings) return
+        settings = next
+        settingsRepo.save(next)
+    }
+
     val recentColors: List<Rgba> get() = settings.recentColors
 
     // --- history ---
