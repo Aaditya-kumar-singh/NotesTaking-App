@@ -8410,14 +8410,21 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         var theme: ByteArray? = null
         var totalBytes = 0L
         var entries = 0
-        java.util.zip.ZipInputStream(input).use { zis ->
+        // Apply the native reader's duplicate-name and traversal checks to settings backups too.
+        com.notestaking.app.format.BoundedZipInputStream(input).use { zis ->
             while (true) {
                 val entry = zis.nextEntry ?: break
                 if (++entries > 64) return@runCatching null
                 val name = entry.name
                 val wanted = name == "settings.json" || name == "code-theme.toml" ||
                     (name.startsWith("fonts/") && name.count { it == '/' } == 1 && name.length > 6)
-                if (!wanted || entry.isDirectory) continue
+                if (!wanted || entry.isDirectory) {
+                    // Future-version entries may be ignored, but still count every inflated byte.
+                    totalBytes += com.notestaking.app.platform.BoundedBytes.discard(
+                        zis, minOf(SETTINGS_ENTRY_MAX, 64L * 1024 * 1024 - totalBytes),
+                    )
+                    continue
+                }
                 val limit = when {
                     name == "code-theme.toml" -> com.notestaking.app.platform.BoundedBytes.MAX_CODE_THEME_BYTES.toLong()
                     name.startsWith("fonts/") -> com.notestaking.app.platform.BoundedBytes.MAX_FONT_BYTES.toLong()

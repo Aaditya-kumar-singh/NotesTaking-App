@@ -39,6 +39,27 @@ class BoundedBytesTest {
         assertThrows(IOException::class.java) { BoundedBytes.read(repeated, 64 * 1024) }
     }
 
+    @Test fun discardedUnknownArchiveMembersCountTowardTheBudget() {
+        assertEquals(5L, BoundedBytes.discard(ByteArrayInputStream(ByteArray(5)), 5L))
+        assertEquals(0L, BoundedBytes.discard(ByteArrayInputStream(byteArrayOf()), 0L))
+        assertThrows(IOException::class.java) {
+            BoundedBytes.discard(ByteArrayInputStream(ByteArray(6)), 5L)
+        }
+        val repeated = object : java.io.InputStream() {
+            var remaining = 1024L * 1024 * 1024
+            override fun read(): Int = if (remaining-- > 0) 42 else -1
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                val n = minOf(remaining, len.toLong()).toInt()
+                if (n <= 0) return -1
+                remaining -= n
+                return n
+            }
+        }
+        assertThrows(IOException::class.java) {
+            BoundedBytes.discard(repeated, 128 * 1024L)
+        }
+    }
+
     @Test fun fileReadRefusesOversizeBeforeLoading() {
         val file = Files.createTempFile("notes-img-limit", ".png").toFile()
         try {

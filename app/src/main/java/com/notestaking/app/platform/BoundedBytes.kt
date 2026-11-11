@@ -36,6 +36,26 @@ internal object BoundedBytes {
         }
     }
 
+    /** Drain an unrecognized archive member without allocating it or bypassing the size budget. */
+    @Throws(IOException::class)
+    fun discard(input: InputStream, maxBytes: Long): Long {
+        require(maxBytes >= 0)
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        var emptyReads = 0
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) return total
+            if (n == 0) {
+                if (++emptyReads > 16) throw IOException("Import stream stalled")
+                continue
+            }
+            emptyReads = 0
+            if (n > maxBytes - total) throw IOException("Skipped archive entry exceeds size limit")
+            total += n
+        }
+    }
+
     @Throws(IOException::class)
     fun readFile(file: File, maxBytes: Int = MAX_IMAGE_BYTES): ByteArray {
         if (!file.isFile || file.length() > maxBytes) throw IOException("File exceeds size limit")
