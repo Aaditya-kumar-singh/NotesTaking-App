@@ -6,6 +6,12 @@
     <string name="note_preview_title">Preview</string>
     <string name="note_template_gallery_title">Paper and cover templates</string>
     <string name="library_title">My library</string>
+    <string name="pdf_reader_tools">PDF reading and annotation</string>
+    <string name="pdf_read_mode">Read (Pan)</string>
+    <string name="pdf_annotate_mode">Annotate</string>
+    <string name="pdf_search_text">Search PDF text</string>
+    <string name="pdf_reading_active">Reading PDF — tap to annotate</string>
+    <string name="pdf_annotating_active">Annotating PDF — tap to read</string>
     <string name="page_export_title">Export pages</string>
     <string name="page_export_open">Export pages</string>
     <string name="page_export_format">File format</string>

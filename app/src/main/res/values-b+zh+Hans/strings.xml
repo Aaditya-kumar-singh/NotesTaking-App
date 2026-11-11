@@ -2,6 +2,12 @@
 <resources>
 
     <string name="library_title">我的资料库</string>
+    <string name="pdf_reader_tools">PDF 阅读与批注</string>
+    <string name="pdf_read_mode">阅读（平移）</string>
+    <string name="pdf_annotate_mode">批注</string>
+    <string name="pdf_search_text">搜索 PDF 文本</string>
+    <string name="pdf_reading_active">正在阅读 PDF，点击切换至批注</string>
+    <string name="pdf_annotating_active">正在批注 PDF，点击切换至阅读</string>
     <string name="page_export_title">导出页面</string>
     <string name="page_export_open">导出页面</string>
     <string name="page_export_format">文件格式</string>

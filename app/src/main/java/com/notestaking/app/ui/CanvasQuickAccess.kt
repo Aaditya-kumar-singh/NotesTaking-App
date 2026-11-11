@@ -52,6 +52,8 @@ internal fun PagedCanvasQuickAccess(
 private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImportTemplate: () -> Unit) {
     var viewOpen by remember { mutableStateOf(false) }
     var stylesOpen by remember { mutableStateOf(false) }
+    var pageJumpOpen by remember { mutableStateOf(false) }
+    if (editor.hasPdf) PdfModeButton(editor)
     PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
     PinnedPageInsertion(editor)
     CanvasAllTools(
@@ -64,6 +66,22 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
         undo = editor::undo,
         redo = editor::redo,
         extras = { dismiss ->
+            if (editor.hasPdf) {
+                HorizontalDivider()
+                Text(stringResource(R.string.pdf_reader_tools), style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                QuickActionRow(stringResource(R.string.pdf_read_mode), enabled = editor.tool != Tool.PAN) {
+                    dismiss(); editor.setPdfReadingMode(true)
+                }
+                QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN) {
+                    dismiss(); editor.setPdfReadingMode(false)
+                }
+                QuickActionRow(stringResource(R.string.tool_markup)) { dismiss(); editor.selectTool(Tool.MARKUP) }
+                QuickActionRow(stringResource(R.string.pdf_search_text)) { dismiss(); editor.openSearch() }
+                QuickActionRow(stringResource(R.string.title_go_to_page)) { dismiss(); pageJumpOpen = true }
+                QuickActionRow(stringResource(R.string.fit_width)) { dismiss(); editor.fitWidth() }
+                QuickActionRow(stringResource(R.string.fit_page)) { dismiss(); editor.fitPage() }
+            }
             HorizontalDivider()
             QuickActionRow(stringResource(R.string.pages)) {
                 dismiss()
@@ -77,8 +95,21 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
             QuickActionRow(stringResource(R.string.toolbar_view)) { dismiss(); viewOpen = true }
         },
     )
+    if (pageJumpOpen) Box { PageJumpPopup(editor) { pageJumpOpen = false } }
     if (viewOpen) Box { ViewMenuPopup(editor) { viewOpen = false } }
     if (stylesOpen) Box { StylesPopup(editor, onImportTemplate = onImportTemplate) { stylesOpen = false } }
+}
+
+/** One tap swaps PDF navigation and the last annotation tool, without changing the document. */
+@Composable
+internal fun PdfModeButton(editor: Editor) {
+    val reading = editor.tool == Tool.PAN
+    ToolbarIcon(
+        if (reading) NotesTakingIcons.pan else NotesTakingIcons.edit,
+        stringResource(if (reading) R.string.pdf_reading_active else R.string.pdf_annotating_active),
+        active = reading,
+        hint = stringResource(if (reading) R.string.pdf_annotate_mode else R.string.pdf_read_mode),
+    ) { editor.setPdfReadingMode(!reading) }
 }
 
 /** Infinite canvas shares the same quick tool access, but page actions are never shown. */

@@ -36,7 +36,10 @@ internal fun FavoriteToolDock(
     onSelect: (Tool) -> Unit,
 ) {
     var settingsFor by remember { mutableStateOf<Tool?>(null) }
-    val visible = favorites.take(maxVisible).ifEmpty { listOf(Tool.PEN) }
+    val pdfEditor = (host as? Editor)?.takeIf { it.hasPdf }
+    // Reserve one slot for Read/Annotate so a narrow floating dock never clips its grip.
+    val favoriteSlots = (maxVisible - if (pdfEditor != null) 1 else 0).coerceAtLeast(0)
+    val visible = favorites.take(favoriteSlots).ifEmpty { if (pdfEditor == null) listOf(Tool.PEN) else emptyList() }
     val vertical = LocalToolbarLook.current.position.vertical
     val actions: @Composable () -> Unit = {
         for (tool in visible) {
@@ -90,6 +93,7 @@ internal fun FavoriteToolDock(
                 }
             }
         }
+        pdfEditor?.let { PdfModeButton(it) }
     }
     if (vertical) Column { actions() } else Row { actions() }
 }

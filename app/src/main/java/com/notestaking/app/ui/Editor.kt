@@ -108,6 +108,7 @@ import com.notestaking.app.core.text.withTableSeparators
 import com.notestaking.app.core.text.wordBoundary
 import com.notestaking.app.core.text.MathCaret
 import com.notestaking.app.core.tools.InkPalette
+import com.notestaking.app.core.tools.PdfReadingToolChoice
 import com.notestaking.app.core.tools.ShapeConfig
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolDefaults
@@ -308,6 +309,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** The markup tool was asked for while the note had no PDF; it comes back with the next note that has one. */
     private var markupResting = false
+    private val pdfReadingToolChoice = PdfReadingToolChoice()
 
     private val deviceHasDisplayCutout = com.notestaking.app.deviceHasDisplayCutout(context)
 
@@ -6364,6 +6366,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val armed = if (markupResting) Tool.PAN else t
         controller.setTool(armed)
         tool = armed
+        if (hasPdf) pdfReadingToolChoice.remember(armed)
+    }
+
+    /** Read navigates with Pan; Annotate restores the last selected PDF tool. */
+    fun setPdfReadingMode(reading: Boolean) {
+        if (!hasPdf) return
+        if (reading) pdfReadingToolChoice.remember(tool)
+        val target = pdfReadingToolChoice.toolFor(reading)
+        if (tool != target) selectTool(target)
     }
 
 
