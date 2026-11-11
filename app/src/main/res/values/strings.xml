@@ -690,6 +690,7 @@
     </plurals>
     <string name="err_export_pdf">Could not export to PDF.</string>
     <string name="err_save_copy">Could not save a copy.</string>
+    <string name="err_save_copy_leftover">Copy failed. An empty or incomplete file may remain at the destination; please delete it.</string>
     <string name="err_save_image">Could not save the image.</string>
     <string name="err_save_images">Could not save the images.</string>
     <string name="err_read_image">Could not read the image.</string>
