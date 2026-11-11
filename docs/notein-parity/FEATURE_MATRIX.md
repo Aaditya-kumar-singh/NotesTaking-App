@@ -44,7 +44,7 @@ Evidence and NotesTaking targets: N13, N21, N26, N29, N32, N33 · `canvas/Intera
 | NP-023 | P0 | Pressure-sensitive pen strokes | SOURCE | Profile pressure values and low/high-pressure continuity | Pressure affects resulting stroke at 25–400% zoom |
 | NP-024 | P2 | Tilt/orientation brush response | INVESTIGATE | Confirm raw axis handling before adding tilt curve UI | Supported tablet responds; unsupported device degrades safely |
 | NP-025 | P1 | Smooth in-progress ink with commit on pen-up | SOURCE | Test front buffer cancellation/flush and no double frame | No disappearing ink, doubling or late commit |
-| NP-026 | P1 | Stylus-only ink vs finger draw setting | SOURCE | Validate gestures and status in both editors | Finger pans in stylus-only mode; can draw when enabled |
+| NP-026 | P1 | Stylus-only ink vs finger draw setting | LOCAL | B14 finger-write toggle + B16 state/overflow UX integrated locally; verify cloud build and real pen/finger gestures | Finger pans in stylus-only mode; can draw when enabled |
 | NP-027 | P1 | Two/three finger gestures and pinch zoom | SOURCE | Verify no synthetic tap or phantom ink; clear settings names | Gesture action triggers once; zoom keeps ink anchored |
 | NP-028 | P1 | Stylus side button/rear eraser mappings | SOURCE | Test reported button codes and tool switching on S Pen tablet | Configured action works and restores previous tool |
 | NP-029 | P1 | One-tap Read/Pan vs Annotate on PDFs | PUBLISHED | B08 `5633d01` pushed; CI/device status must be checked | Read pans, Annotate restores actual last tool |
@@ -72,7 +72,7 @@ Evidence and NotesTaking targets: N13, N21, N26, N32, N33 · `core/model/Stroke.
 | NP-044 | P2 | Erase only marker/highlighter content | GAP | Add independent content filter without deleting PDF source | Marker removed while pen and source PDF unchanged |
 | NP-045 | P2 | Erase only tape/selected object types | GAP | Provide safe type filters with explicit active indication | Only permitted types erased in mixed layer test |
 | NP-046 | P2 | Eraser affects PDF markup when opted in | SOURCE | Verify toggle and that source PDF text remains untouched | Markup erased/not erased exactly per setting |
-| NP-047 | P0 | Area eraser flicker under dense ink | PARTIAL | Reproduce on stylus tablet and profile wet buffer vs cache | No flash/blank region while continuous erasing |
+| NP-047 | P0 | Area eraser flicker under dense ink | LOCAL | B15 bounded repaint for plain pen strokes added; dense-PDF flicker reproduction and hardware traces still required | No flash/blank region while continuous erasing |
 | NP-048 | P1 | One erase sweep is one undo transaction | SOURCE | Verify multi-crossing and cancel paths | Undo once restores all pieces; Redo identical |
 | NP-049 | P1 | Separate Undo/Redo stack and branch policy | SOURCE | Check per-pane focus and redo invalidation | Undo/redo deterministic, no other pane modified |
 | NP-050 | P2 | Layer management UI, hide, lock and reorder | PARTIAL | PageLayers render ordering exists; full named-layer editor needs audit | Hidden/locked layer preserved and excluded from erase |

@@ -7,16 +7,20 @@
 | B01–B07 | NP-009–010, NP-033–035, NP-057–060, NP-072, NP-089–090 (partial) | `developer` `ac0508d` | Implemented and pushed | Prior Android CI passed | **Pending** tablet/phone QA |
 | B08 | NP-029, NP-066 | `feature/pdf-reading-annotation-ux-b08` `5633d01` | Pushed | **Passed** full Android CI on exact SHA; [run #42962656473](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42962656473), completed 2026-11-11 | Pending S Pen tablet/device QA |
 | B09 | NP-022 | `feature/stylus-eraser-scrollbar-b09` `5072725` | **Pushed**, remote SHA verified; source checks passed | **Passed** on exact SHA [CI #42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) 2026-11-11 | Pending S Pen/finger/scrollbar device QA |
-| B10 | NP-032 | `feature/saved-pen-styles-b10` `65d1aaa` | Locally committed; source checks passed | **Not run** for B10 | Pending settings roundtrip/gesture |
-| **B11 / G01** | NP-073 (PDF/native export clarity) | `feature/notein-parity-master-plan-b11` `29daa41`, ledger `a50bdf2` | **Committed locally**; 110 NP/79 NT IDs, resource and privacy checks passed | **Not run** for B11 | Pending phone/TalkBack export copy review |
-| **B12 / G03** | NP-087, NP-083 (ZIP safety support) | `fix/settings-backup-zip-budget-b12` `a8647c5` | **Committed locally**; strict ZIP reader, skipped-member 64 MiB accounting, new streaming regression tests; source/privacy checks passed | **Not run** for B12 | Pending malformed settings backups and settings-roundtrip verification |
-| G02–G12 | Remaining NP tasks, refer to [BATCHES.md](BATCHES.md) | Not started | Planned / needs evidence | Not run | Pending |
+| B10 | NP-032 | `feature/saved-pen-styles-b10` `65d1aaa` | Integrated into `developer` `62c46b9`, source checks passed | **Passed combined developer CI #42971179169** | Pending settings roundtrip/gesture |
+| **B11 / G01** | NP-073 (PDF/native export clarity) | `feature/notein-parity-master-plan-b11` `29daa41`, ledger `a50bdf2` | Integrated into `developer` `62c46b9`, 110 NP/79 NT IDs checked | **Passed combined developer CI #42971179169** | Pending phone/TalkBack export copy review |
+| **B12 / G03** | NP-087, NP-083 (ZIP safety support) | `fix/settings-backup-zip-budget-b12` `a8647c5` | Integrated into `developer` `62c46b9`, strict ZIP and overflow guards | **Passed combined developer CI #42971179169** | Pending malformed settings backups and settings-roundtrip verification |
+| B13 | Hybrid UX/product contract | `9b2dd17` | Product/UX/performance and final master promotion gates written; local source check passed | New combined CI pending | No performance measurements |
+| B14 | NP-026 tablet finger writing | `a568090` | Existing own-code fix reconciled: active finger-writing option without removing PDF Read/Annotate; local checks passed | New combined CI pending | Real pen/finger tablet QA pending |
+| B15 | NP-047 eraser dirty-region optimization | `32ab31c` | Existing own-code eraser repaint bound integrated, with unit regression; local checks passed | New combined CI pending | Dense ink visual flicker QA pending |
+| B16 | NP-026 PDF finger control UX | `e133b56` | Bilingual accessible mode status and overflow fallback; local checks passed | New combined CI pending | Small screen/TalkBack QA pending |
+| G03–G12 | Remaining NP tasks, refer to [BATCHES.md](BATCHES.md) | Not completed | Backlog / needs evidence | Pending | Pending |
 
 ## Hybrid product decision and latest integrated baseline (2026-11-11)
 
 - User directs hybridization: retain all useful NotesTaking-only features; for shared features independently improve logic, UI/UX, ergonomics and smoothness toward observed Notein behavior without copying proprietary code or assets. [Contract](HYBRID_PRODUCT_CONTRACT.md); [performance acceptance](PERFORMANCE_ACCEPTANCE.md).
 - All eight B08–B12 development commits were fast-forwarded without squash and pushed to `developer` at exact SHA `62c46b9572ed1b34c3409b88f7cc697545c4e096`. [CI #42971179169](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42971179169) passed, including Kotlin tests, lint and APK. No physical device connected; all hardware-dependent acceptance remains pending.
-- Next: reconcile tablet PDF finger ink and bounded area-eraser repaint from existing own-code commits `65d67a6` and `2235d9f`. Keep separate commits on the `developer` lineage; publish one coherent CI checkpoint.
+- B13–B16 local checkpoints: hybrid product contract `9b2dd17`, tablet PDF finger input `a568090` from our earlier `65d67a6`, eraser dirty-region repair `32ab31c` from our earlier `2235d9f`, and bilingual accessible finger mode `e133b56`. All source/backup-privacy checks passed; these code changes are not yet Android-CI verified or device tested at this ledger checkpoint.
 - Future intent: only after all agreed source/CI work is complete (hardware QA may remain pending), safely reconcile and replace master application source with developer, safeguarding prior master and release automation; never silently overwrite branch history. No master change now.
 
 ## Evidence collected this turn
