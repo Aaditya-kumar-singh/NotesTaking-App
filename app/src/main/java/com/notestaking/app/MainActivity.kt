@@ -446,8 +446,18 @@ private fun EditorScreen(
     ) { uri ->
         val src = pendingSaveCopyUri; pendingSaveCopyUri = null
         if (uri != null && src != null) {
-            runCatching { resolver.openOutputStream(uri)?.use { o -> editor.copyFileTo(src, o) } }
-                .onFailure { editor.message = resources.getString(R.string.err_save_copy) }
+            scope.launch {
+                val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        com.notestaking.app.platform.ProviderInput.read(resolver.openInputStream(Uri.parse(src))) { input ->
+                            com.notestaking.app.platform.ProviderOutput.write(resolver.openOutputStream(uri)) { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }.isSuccess
+                }
+                if (!ok) editor.message = resources.getString(R.string.err_save_copy)
+            }
         }
     }
 

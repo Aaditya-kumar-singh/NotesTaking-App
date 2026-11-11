@@ -6190,7 +6190,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Streams a stored note's raw bytes to [out] (share-as-.xnote / save-a-copy). */
     fun copyFileTo(srcUri: String, out: OutputStream) {
-        appContext.contentResolver.openInputStream(android.net.Uri.parse(srcUri))?.use { it.copyTo(out) }
+        com.notestaking.app.platform.ProviderInput.read(
+            appContext.contentResolver.openInputStream(android.net.Uri.parse(srcUri)),
+        ) { it.copyTo(out) }
     }
 
     /**
