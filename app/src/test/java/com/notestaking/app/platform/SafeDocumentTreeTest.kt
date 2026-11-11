@@ -172,6 +172,19 @@ class SafeDocumentTreeTest {
         }
     }
 
+    @Test fun createSkipsDanglingSymlinkWithoutFollowingIt() = withTree { tree, root, outside ->
+        val link = File(root, "linked.xnote")
+        val supported = runCatching {
+            Files.createSymbolicLink(link.toPath(), File(outside, "missing.xnote").toPath())
+        }.isSuccess
+        if (supported) {
+            assertEquals("root/linked (1).xnote", tree.create("root", "linked.xnote", false))
+            assertTrue(Files.isSymbolicLink(link.toPath()))
+            assertTrue(File(root, "linked (1).xnote").isFile)
+            assertFalse(File(outside, "missing.xnote").exists())
+        }
+    }
+
     @Test fun symbolicLinksAreRejectedWhenSupported() = withTree { tree, root, outside ->
         File(outside, "secret").writeText("secret")
         val link = File(root, "link")

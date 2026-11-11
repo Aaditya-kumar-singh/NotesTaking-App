@@ -4,6 +4,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.FileVisitResult
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
@@ -184,14 +185,16 @@ internal class SafeDocumentTree(base: File) {
 
     private fun freeChild(parent: File, name: String): File {
         validateName(name)
-        val first = child(parent, name)
-        if (!first.exists()) return first
+        // A symlink occupies its name even though child() must reject following it.
+        val first = File(parent, name)
+        if (!Files.exists(first.toPath(), LinkOption.NOFOLLOW_LINKS)) return child(parent, name)
         val dot = name.lastIndexOf('.')
         val stem = if (dot > 0) name.substring(0, dot) else name
         val ext = if (dot > 0) name.substring(dot) else ""
         for (i in 1..9999) {
-            val candidate = child(parent, "$stem ($i)$ext")
-            if (!candidate.exists()) return candidate
+            val candidateName = "$stem ($i)$ext"
+            val candidate = File(parent, candidateName)
+            if (!Files.exists(candidate.toPath(), LinkOption.NOFOLLOW_LINKS)) return child(parent, candidateName)
         }
         throw FileNotFoundException("Cannot find an available name")
     }
