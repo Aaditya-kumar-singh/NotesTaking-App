@@ -42,4 +42,4 @@
 
 ## Current implementation starting point
 
-B01–B07 and Kotlin toolbar scope fix are on `developer` at `ac0508d`, with a prior passing CI checkpoint. B08 Read/Annotate PDF shortcuts passed Android CI at `5633d01`; B09 stylus/eraser scrollbar routing was **pushed** at `5072725` with Android CI running; B10 saved pen styles remains local at `65d1aaa`. B11 implemented honest shareable-PDF copy and this tracker locally at `29daa41`. See [PROGRESS.md](PROGRESS.md) for up-to-date exact CI/device states; none of B08–B11 is marked device-verified or merged.
+B01–B07 and Kotlin toolbar scope fix are on `developer` at `ac0508d`, with a prior passing CI checkpoint. B08 Read/Annotate PDF shortcuts passed Android CI at `5633d01`; B09 stylus/eraser scrollbar routing was **pushed** at `5072725` with Android CI running; B10 saved pen styles remains local at `65d1aaa`. B11 implemented honest shareable-PDF copy and this tracker locally at `29daa41` (ledger `a50bdf2`). B12 tightened settings ZIP backup imports locally at `a8647c5`. See [PROGRESS.md](PROGRESS.md) for up-to-date exact CI/device states; none of B08–B12 is marked device-verified or merged.

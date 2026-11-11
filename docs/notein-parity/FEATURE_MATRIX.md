@@ -126,7 +126,7 @@ Evidence and NotesTaking targets: N18, N26, N28, N30, N33 · `ui/PageExportDialo
 | NP-084 | P0 | Atomic local save and document recovery | PARTIAL | Audit process kill/low storage/renames and snapshot fallback | Old valid note survives interrupted write |
 | NP-085 | P1 | Save Page As creates independent native note | PARTIAL | Verify page-cargo copy vs new-note path and asset ownership | New page note is editable; source remains unchanged |
 | NP-086 | P2 | Version history/recovery snapshot UI | GAP | Design local version snapshots with quotas and restore preview | Restore past version without touching unrelated notes |
-| NP-087 | P2 | Local backup, settings restore and conflict resolution | PARTIAL | Settings backup exists; audit note-level backup/restore and identity | Restore into test folder, no silent overwrite |
+| NP-087 | P2 | Local backup, settings restore and conflict resolution | PARTIAL | B12 `a8647c5` locally hardens settings ZIP read/skip budgets; native note-level backup/restore and provider QA remain open | Restore into test folder, no silent overwrite |
 | NP-088 | P3 | Optional cloud backup/sync | OPTIONAL | Needs separate secure backend, consent, E2E policy and conflict model | Offline remains fully functional; sync opt-in only |
 
 ## Navigation, responsive UX and accessibility
