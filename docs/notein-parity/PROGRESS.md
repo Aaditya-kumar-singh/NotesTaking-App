@@ -12,6 +12,13 @@
 | **B12 / G03** | NP-087, NP-083 (ZIP safety support) | `fix/settings-backup-zip-budget-b12` `a8647c5` | **Committed locally**; strict ZIP reader, skipped-member 64 MiB accounting, new streaming regression tests; source/privacy checks passed | **Not run** for B12 | Pending malformed settings backups and settings-roundtrip verification |
 | G02–G12 | Remaining NP tasks, refer to [BATCHES.md](BATCHES.md) | Not started | Planned / needs evidence | Not run | Pending |
 
+## Hybrid product decision and latest integrated baseline (2026-11-11)
+
+- User directs hybridization: retain all useful NotesTaking-only features; for shared features independently improve logic, UI/UX, ergonomics and smoothness toward observed Notein behavior without copying proprietary code or assets. [Contract](HYBRID_PRODUCT_CONTRACT.md); [performance acceptance](PERFORMANCE_ACCEPTANCE.md).
+- All eight B08–B12 development commits were fast-forwarded without squash and pushed to `developer` at exact SHA `62c46b9572ed1b34c3409b88f7cc697545c4e096`. [CI #42971179169](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42971179169) passed, including Kotlin tests, lint and APK. No physical device connected; all hardware-dependent acceptance remains pending.
+- Next: reconcile tablet PDF finger ink and bounded area-eraser repaint from existing own-code commits `65d67a6` and `2235d9f`. Keep separate commits on the `developer` lineage; publish one coherent CI checkpoint.
+- Future intent: only after all agreed source/CI work is complete (hardware QA may remain pending), safely reconcile and replace master application source with developer, safeguarding prior master and release automation; never silently overwrite branch history. No master change now.
+
 ## Evidence collected this turn
 
 - Located and re-read 11 previous Notein reverse-engineering phase reports in `E:\Notein_ReverseEngineering\`; confirmed source APK SHA-256 matches exact published report.

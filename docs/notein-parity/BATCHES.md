@@ -1,6 +1,6 @@
 # Execution order: Notein findings → independent NotesTaking updates
 
-This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md). **Do not work by copying Notein's code or assets.** Advance a task only when it is the highest-priority **unblocked** item, its upstream branch/CI checkpoint is known, and the change can be reviewed safely.
+This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user-approved [hybrid product contract](HYBRID_PRODUCT_CONTRACT.md). **Keep all unique NotesTaking features, adopt the best observed reference behavior on overlapping flows, and do not copy Notein's code or assets.** Advance a task only when it is the highest-priority **unblocked** item, its upstream branch/CI checkpoint is known, and the change can be reviewed safely.
 
 ## Acceptance and Git discipline
 
@@ -12,6 +12,12 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md). **Do not wo
 6. When the previous published CI checkpoint is resolved, fast-forward each complete short-lived batch onto `developer` without squash and publish one reviewed development checkpoint. Verify remote exact SHA and GitHub Kotlin/unit/lint/APK/CodeQL where configured. Each batch's original commit remains visible even if several are published together.
 7. For any gesture/UI/export/data safety change, complete applicable [TEST_PLAN.md](TEST_PLAN.md) tests on an Android phone **and** S Pen tablet. A source check is not a device pass. Record binary hash, OS/device, test artifacts and observed output.
 8. Only then mark requirements **VERIFIED**, merge following repository review policy, and update the matrix to avoid repeatedly implementing existing work.
+
+## Current implementation checkpoint (2026-11-11)
+
+- `developer` commit `62c46b9` contains the unsquashed B08–B12 commits; Android CI run [#42971179169](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42971179169) passed the exact SHA, including native APK/lint/tests. Physical QA is still pending.
+- **B13**: preserve own app's features and align the hybrid UX/performance/controlled master replacement contract. Next focused integration: tablet PDF finger-inking and bounded area-eraser invalidation fixes from our own older master branch, with distinct commits and CI.
+- **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)
 

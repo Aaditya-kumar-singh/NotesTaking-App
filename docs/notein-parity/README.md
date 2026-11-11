@@ -8,11 +8,13 @@
 
 ## Read this folder in order
 
-1. [SOURCE_EVIDENCE.md](SOURCE_EVIDENCE.md) — what was actually observed in the APK, and what remains uncertain.
-2. [FEATURE_MATRIX.md](FEATURE_MATRIX.md) — comprehensive, prioritized feature-by-feature comparison and concrete acceptance conditions. This is the **source of truth** for remaining work; every item has an NP ID.
-3. [BATCHES.md](BATCHES.md) — safe implementation order, dependencies, source touchpoints, and branch/CI gates.
-4. [TEST_PLAN.md](TEST_PLAN.md) — reproducible test cases for phone, real S Pen tablet, PDFs, undo, exports, recovery and accessibility.
-5. [PROGRESS.md](PROGRESS.md) — exact commits, CI state, and change log. Update after **every** local batch/publish/merge.
+1. [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md) — preserve our features, improve overlapping behavior toward Notein's observed UX, and plan a controlled future master replacement.
+2. [PERFORMANCE_ACCEPTANCE.md](PERFORMANCE_ACCEPTANCE.md) — measurable frame/input/eraser quality goals, with hardware verification still pending.
+3. [SOURCE_EVIDENCE.md](SOURCE_EVIDENCE.md) — what was actually observed in the APK, and what remains uncertain.
+4. [FEATURE_MATRIX.md](FEATURE_MATRIX.md) — comprehensive, prioritized feature-by-feature comparison and concrete acceptance conditions. This is the **source of truth** for remaining work; every item has an NP ID.
+5. [BATCHES.md](BATCHES.md) — safe implementation order, dependencies, source touchpoints, and branch/CI gates.
+6. [TEST_PLAN.md](TEST_PLAN.md) — reproducible test cases for phone, real S Pen tablet, PDFs, undo, exports, recovery and accessibility.
+7. [PROGRESS.md](PROGRESS.md) — exact commits, CI state, and change log. Update after **every** local batch/publish/merge.
 
 ## Truth labels used by the tracker
 
@@ -42,4 +44,4 @@
 
 ## Current implementation starting point
 
-B01–B07 and Kotlin toolbar scope fix are on `developer` at `ac0508d`, with a prior passing CI checkpoint. B08 Read/Annotate PDF shortcuts passed Android CI at `5633d01`; B09 stylus/eraser scrollbar routing was **pushed** at `5072725` with Android CI running; B10 saved pen styles remains local at `65d1aaa`. B11 implemented honest shareable-PDF copy and this tracker locally at `29daa41` (ledger `a50bdf2`). B12 tightened settings ZIP backup imports locally at `a8647c5`. See [PROGRESS.md](PROGRESS.md) for up-to-date exact CI/device states; none of B08–B12 is marked device-verified or merged.
+B01–B12 are integrated into `developer` at `62c46b9`, and Android CI #42971179169 passed for that exact commit. Individual B08/B09 cloud CI also passed. Real hardware tests remain pending. This hybrid program now follows [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md): keep NotesTaking-only features, independently improve shared behavior against observed Notein UX, and postpone master replacement until a separately checked final gate. See [PROGRESS.md](PROGRESS.md) for the exact live statuses.
