@@ -31,7 +31,7 @@
 
 ## Implementation boundaries
 
-- Work through [BATCHES.md](BATCHES.md), starting with the highest-priority **unblocked** item. Make the smallest complete independently designed update; cite the NP IDs in the batch commit/report.
+- Work through [BATCHES.md](BATCHES.md), starting with the highest-priority **unblocked** item. Make the smallest complete independently designed update; cite the NP IDs in the batch commit/report. **Use `developer` as the rolling integration branch:** implement/commit each finished batch on a short-lived branch, then preserve those commits when fast-forwarding into `developer` at the next reviewed CI checkpoint. Do not squash or push every intermediate commit.
 - No reuse of Notein's proprietary code, reverse-engineered implementations, artwork, fonts, database schema, branding or credentials. Reimplement behaviors independently using the existing NotesTaking stack and original assets.
 - Keep NotesTaking **offline-first**, usable without an account. Do not add mandatory sign-in, network sync, analytics, paid subscriptions or remote AI calls. Optional modules stay behind an explicit user/product decision.
 - Preserve existing `.xnote`, `.xcanvas`, `.xtemplate`, source PDFs, existing settings, file permissions and prior stored notes. Never silently convert a native note to a PDF. Avoid destructive migration.

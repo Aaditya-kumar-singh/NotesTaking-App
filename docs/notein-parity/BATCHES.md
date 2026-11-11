@@ -9,9 +9,21 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md). **Do not wo
 3. Implement the smallest complete behavior. Update only target source/resources/tests; keep native note formats, annotations and storage backward-compatible.
 4. Run **source-only** Python project checker, backup/privacy checker if relevant, resource checks and staged `git diff --check`. Never locally run Gradle, Kotlin tests, lint, native builds, APK installs on Windows.
 5. Commit locally, update exact SHA, NP IDs, checks and status in [PROGRESS.md](PROGRESS.md). **Do not push each commit.**
-6. When the previous published CI checkpoint is resolved, publish a coherent reviewed batch, verify remote exact SHA and GitHub Kotlin/unit/lint/APK/CodeQL where configured.
+6. When the previous published CI checkpoint is resolved, fast-forward each complete short-lived batch onto `developer` without squash and publish one reviewed development checkpoint. Verify remote exact SHA and GitHub Kotlin/unit/lint/APK/CodeQL where configured. Each batch's original commit remains visible even if several are published together.
 7. For any gesture/UI/export/data safety change, complete applicable [TEST_PLAN.md](TEST_PLAN.md) tests on an Android phone **and** S Pen tablet. A source check is not a device pass. Record binary hash, OS/device, test artifacts and observed output.
 8. Only then mark requirements **VERIFIED**, merge following repository review policy, and update the matrix to avoid repeatedly implementing existing work.
+
+## Other remote branches not yet reconciled into developer (2026-11-11)
+
+Git reports remote branches outside `developer` ancestry. **Do not assume they are all missing features:** release branches, old fixes, Dependabot upgrades and historical branch structures are mixed together. After B08–B12's combined development CI, review the latest `origin/main`/`origin/master` code differences and bring over **only still-missing, safe changes** as their own reviewed batch(es). The most relevant known candidates are:
+
+- Tablet PDF finger handwriting: `origin/fix/tablet-pdf-finger-inking` (`65d67a6`), also present in current `main`/`master` ancestry.
+- Area eraser live ink flicker: `origin/fix/area-eraser-ink-flicker` (`2235d9f`), also present in current `main`/`master` ancestry.
+- Reliability and native import/clipboard/Trash improvements: `origin/fix/audit-reliability-batch-2026-10-30` and current `origin/main` (review the code and tests before cherry-picking).
+- Main → master promotion/release workflows and some native/ABI CI changes: already in current `origin/main`/`origin/master`; **do not** blindly merge release automation into a development workflow.
+- Dependabot/library updates and old feature branches: audit separately; count neither an unmerged Git ref nor a shared SHA as evidence of a user-visible missing feature.
+
+Do not mark the 110 feature requirements complete from branch counts or a merge alone.
 
 ## Ordered work packages
 
