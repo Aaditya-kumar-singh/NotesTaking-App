@@ -120,7 +120,7 @@ Evidence and NotesTaking targets: N18, N26, N28, N30, N33 · `ui/PageExportDialo
 | NP-078 | P2 | Export strokes/images/text inclusion toggle | GAP | Add independently tested render flags | Chosen categories excluded without source mutation |
 | NP-079 | P2 | Extra page margins inclusion option | GAP | Define geometry and output page size independent of stored page | PDF page boxes and overlay positions match choice |
 | NP-080 | P3 | Watermark text/image for exported PDF | GAP | Add optional previewed watermark only with verified PDF path | Correct watermark at all page sizes, no source alteration |
-| NP-081 | P0 | SAF Save As/Share URI, MIME and write completion | SOURCE | Check CreateDocument/OpenDocumentTree and retry outcomes | Only report success after durable, complete bytes |
+| NP-081 | P0 | SAF Save As/Share URI, MIME and write completion | PARTIAL | B21 `26ae143` locally rejects null provider streams for shared note creation; remaining provider retries, MIME and completion checks open | Only report success after durable, complete bytes |
 | NP-082 | P0 | Export progress, cancel and temporary file cleanup | SOURCE | Test cancellation and provider exceptions | No corrupt output or abandoned large staging files |
 | NP-083 | P0 | Safe native ZIP import and resource limits | SOURCE | BoundedZipInputStream exists; execute malformed/traversal/bomb fixtures in CI | Traversal rejected; original/staging untouched |
 | NP-084 | P0 | Atomic local save and document recovery | PARTIAL | B18 adds overwrite retry/session fallback regression tests; force-stop and low-storage checks remain | Old valid note survives interrupted write |
