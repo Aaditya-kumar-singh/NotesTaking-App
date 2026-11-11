@@ -6,16 +6,17 @@
 |---|---|---|---|---|---|
 | B01–B07 | NP-009–010, NP-033–035, NP-057–060, NP-072, NP-089–090 (partial) | `developer` `ac0508d` | Implemented and pushed | Prior Android CI passed | **Pending** tablet/phone QA |
 | B08 | NP-029, NP-066 | `feature/pdf-reading-annotation-ux-b08` `5633d01` | Pushed | **Passed** full Android CI on exact SHA; [run #42962656473](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42962656473), completed 2026-11-11 | Pending S Pen tablet/device QA |
-| B09 | NP-022 | `feature/stylus-eraser-scrollbar-b09` `5072725` | Locally committed; source checks passed | **Not run** for B09 | Pending real S Pen/finger/scrollbar |
+| B09 | NP-022 | `feature/stylus-eraser-scrollbar-b09` `5072725` | **Pushed**, remote SHA verified; source checks passed | [CI #42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) **in progress** at 2026-11-11 checkpoint | Pending S Pen/finger/scrollbar device QA |
 | B10 | NP-032 | `feature/saved-pen-styles-b10` `65d1aaa` | Locally committed; source checks passed | **Not run** for B10 | Pending settings roundtrip/gesture |
-| **B11 / G01** | NP-073 (PDF/native export clarity) | `feature/notein-parity-master-plan-b11` | **In progress** — see entry below after local commit | Not run for B11 | Pending |
+| **B11 / G01** | NP-073 (PDF/native export clarity) | `feature/notein-parity-master-plan-b11` `29daa41` (implementation and tracker baseline) | **Committed locally**; 110 NP/79 NT IDs, resource and privacy checks passed | **Not run** for B11 | Pending phone/TalkBack export copy review |
 | G02–G12 | Remaining NP tasks, refer to [BATCHES.md](BATCHES.md) | Not started | Planned / needs evidence | Not run | Pending |
 
 ## Evidence collected this turn
 
 - Located and re-read 11 previous Notein reverse-engineering phase reports in `E:\Notein_ReverseEngineering\`; confirmed source APK SHA-256 matches exact published report.
 - Checked current NotesTaking source, previous B01–B10 engineering documents, local branches and standing `AGENTS.md`/CI rules.
-- Created the 110-item [FEATURE_MATRIX.md](FEATURE_MATRIX.md), evidence mapping, ordered work packages and acceptance tests in this folder.
+- Created the 110-item [FEATURE_MATRIX.md](FEATURE_MATRIX.md), evidence mapping, ordered work packages and 79 acceptance tests in this folder. Committed the tracker plus EN/zh-Hans export copy correction as `29daa41` on local B11.
+- Published the separately reviewed B09 `5072725` after B08 CI completed successfully; verified GitHub remote SHA and [CI run #42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) started. This does not establish a passing B09 build.
 - Scope decisions: use prior source as behavioral evidence only, no proprietary code/assets; keep note files and privacy intact; no mandatory accounts/remote AI.
 - The existing `docs/audit/xnotes-problems-master.xlsx` historical audit remains separate and **open**; this tracker does not close any of its findings.
 

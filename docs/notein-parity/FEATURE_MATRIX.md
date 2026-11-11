@@ -40,7 +40,7 @@ Evidence and NotesTaking targets: N13, N21, N26, N29, N32, N33 · `canvas/Intera
 |---|---|---|---|---|---|
 | NP-020 | P0 | Stylus takes exclusive ink ownership | SOURCE | Verify full pen-down→up route with pen, palm, second finger | No stroke broken by incidental touch or pinch |
 | NP-021 | P0 | Finger-first then stylus-first mixed pointer handoff | SOURCE | Review pointer-ID history and cancel cases across canvases | Stylus starts/finishes normally with resting finger |
-| NP-022 | P0 | Stylus/eraser tip bypasses page scrollbar drag | LOCAL | B09 committed `5072725`; pending CI and tablet QA | Pen and eraser draw beside scrollbar; finger scrolling still works |
+| NP-022 | P0 | Stylus/eraser tip bypasses page scrollbar drag | PUBLISHED | B09 `5072725` pushed; CI [#42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) running, tablet QA pending | Pen and eraser draw beside scrollbar; finger scrolling still works |
 | NP-023 | P0 | Pressure-sensitive pen strokes | SOURCE | Profile pressure values and low/high-pressure continuity | Pressure affects resulting stroke at 25–400% zoom |
 | NP-024 | P2 | Tilt/orientation brush response | INVESTIGATE | Confirm raw axis handling before adding tilt curve UI | Supported tablet responds; unsupported device degrades safely |
 | NP-025 | P1 | Smooth in-progress ink with commit on pen-up | SOURCE | Test front buffer cancellation/flush and no double frame | No disappearing ink, doubling or late commit |

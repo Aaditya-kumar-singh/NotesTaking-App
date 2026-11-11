@@ -35,9 +35,9 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md). **Do not wo
 
 - B01–B07 toolbar, floating toolbar, favorites, library/home, new note, PDF page panel and export dialog are **already** on developer ancestry.
 - **B08** `feature/pdf-reading-annotation-ux-b08` at `5633d01` was pushed; Android CI run #42962656473 passed on the exact SHA. Tablet stylus and PDF UI/device acceptance remains pending.
-- **B09** `feature/stylus-eraser-scrollbar-b09` at `5072725` is committed **locally**; it already prevents stylus/eraser tips from starting a page-scrollbar drag. It is not the full palm/eraser solution.
+- **B09** `feature/stylus-eraser-scrollbar-b09` at `5072725` was **published** after B08 CI passed. [B09 CI #42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) started; real tablet acceptance is pending. This is not the full palm/eraser solution.
 - **B10** `feature/saved-pen-styles-b10` at `65d1aaa` is committed **locally**; three actual presets per stroke tool, shared by paged/infinite editors. Kotlin/device tests pending.
-- **B11** starts on top of B10; do not relabel history or treat B09/B10 as CI-passed because B08 is green.
+- **B11** `feature/notein-parity-master-plan-b11` locally committed at `29daa41` on top of B10 (Notein tracker plus honest shareable PDF copy). Do not treat B09/B10/B11 as CI-passed because B08 is green.
 
 ## What not to build just because the reference APK contains it
 
