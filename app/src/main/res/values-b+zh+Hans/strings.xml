@@ -9,6 +9,10 @@
     <string name="pen_style_limit">已保存三个样式。请先删除一个，再保存新样式。</string>
     <string name="pdf_reader_tools">PDF 阅读与批注</string>
     <string name="pdf_read_mode">阅读（平移）</string>
+    <string name="pdf_finger_inking_enabled">手指书写已开启</string>
+    <string name="pdf_finger_inking_disabled">手指书写已关闭</string>
+    <string name="pdf_finger_inking_enable">开启手指书写</string>
+    <string name="pdf_finger_inking_disable">关闭手指书写</string>
     <string name="pdf_annotate_mode">批注</string>
     <string name="pdf_search_text">搜索 PDF 文本</string>
     <string name="pdf_reading_active">正在阅读 PDF，点击切换至批注</string>

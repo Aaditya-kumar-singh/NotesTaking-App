@@ -77,6 +77,10 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN) {
                     dismiss(); editor.setPdfReadingMode(false)
                 }
+                QuickActionRow(stringResource(if (editor.preferences.fingerDraws)
+                    R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable)) {
+                    dismiss(); editor.toggleFingerDrawing()
+                }
                 QuickActionRow(stringResource(R.string.tool_markup)) { dismiss(); editor.selectTool(Tool.MARKUP) }
                 QuickActionRow(stringResource(R.string.pdf_search_text)) { dismiss(); editor.openSearch() }
                 QuickActionRow(stringResource(R.string.title_go_to_page)) { dismiss(); pageJumpOpen = true }
@@ -171,8 +175,9 @@ private fun PinnedFingerDrawing(editor: Editor) {
     val enabled = remember(revision) { editor.preferences.fingerDraws }
     ToolbarIcon(
         NotesTakingIcons.edit,
-        stringResource(R.string.pref_finger_draws),
+        stringResource(if (enabled) R.string.pdf_finger_inking_enabled else R.string.pdf_finger_inking_disabled),
         active = enabled,
+        hint = stringResource(if (enabled) R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable),
     ) { editor.toggleFingerDrawing() }
 }
 

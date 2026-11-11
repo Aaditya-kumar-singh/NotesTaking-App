@@ -13,6 +13,10 @@
     <string name="pen_style_limit">Three styles saved. Remove one to save another.</string>
     <string name="pdf_reader_tools">PDF reading and annotation</string>
     <string name="pdf_read_mode">Read (Pan)</string>
+    <string name="pdf_finger_inking_enabled">Finger writing on</string>
+    <string name="pdf_finger_inking_disabled">Finger writing off</string>
+    <string name="pdf_finger_inking_enable">Enable finger writing</string>
+    <string name="pdf_finger_inking_disable">Disable finger writing</string>
     <string name="pdf_annotate_mode">Annotate</string>
     <string name="pdf_search_text">Search PDF text</string>
     <string name="pdf_reading_active">Reading PDF — tap to annotate</string>
