@@ -54,6 +54,8 @@ Never mark the 45 historical Excel audit items `Closed` based only on source com
 
 ## 5. Prioritized task queue
 
+**Current active program (2026-11-11):** Follow the [Notein → NotesTaking master feature matrix](../notein-parity/FEATURE_MATRIX.md), [batch sequence](../notein-parity/BATCHES.md) and [evidence ledger](../notein-parity/PROGRESS.md). That matrix covers 110 items recovered from the 2026-11-10 Notein APK research; use its highest-priority **unblocked** NP item on each `next`. The older rows below are an October 29 historical snapshot and must not override the newer tracker. The same local-only/CI/device gates above still apply.
+
 This is a **snapshot**, not a background monitor. Refresh statuses when starting each user turn; keep unverified results pending.
 
 | Priority | Task and scope | Track | State / next action |

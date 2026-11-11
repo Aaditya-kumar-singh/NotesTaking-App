@@ -16,9 +16,9 @@
     <string name="page_export_title">导出页面</string>
     <string name="page_export_open">导出页面</string>
     <string name="page_export_format">文件格式</string>
-    <string name="page_export_pdf">PDF 文档</string>
+    <string name="page_export_pdf">可分享的 PDF</string>
     <string name="page_export_png">PNG 图片</string>
-    <string name="page_export_pdf_hint">合并为一个 PDF；支持时保留清晰的文字和绘图。</string>
+    <string name="page_export_pdf_hint">生成一个用于查看和分享的 PDF。笔迹会显示在页面中，但不能在 PDF 阅读器里作为 NotesTaking 原生笔迹编辑。请保留原始 .xnote 文件，以便继续编辑。</string>
     <string name="page_export_png_hint">每页生成一张 PNG；保存多张图片时需要选择文件夹。</string>
     <string name="page_export_pages">选择页面</string>
     <string name="page_export_this_page">第 %1$d 页</string>
