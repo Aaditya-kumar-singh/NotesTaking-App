@@ -29,7 +29,8 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 - **B31 CI passed:** `developer` at `5639c7f` passed [Android CI #43211899857](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43211899857), including Kotlin unit tests, lint and APK; device QA pending.
 - **B32 CI passed:** `developer` at `96356f7` passed [Android CI #43214443501](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43214443501), including Kotlin tests/lint/APK; real malformed-PDF QA pending.
 - **B33 CI passed:** `developer` at `9858f44` passed [Android CI #43242272480](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43242272480), including Kotlin tests/lint/APK; physical provider QA pending.
-- **B34 local fix `e122b8e`:** Insert PDF now refuses missing/malformed page geometry with the same validator as full import, closes native PDF sources on all exits and deletes failed staging/partial join files. Added insert-specific JVM assertions; GitHub CI and real-device QA pending.
+- **B34 CI passed:** `developer` at `8a404c3` passed [Android CI #43245830585](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43245830585) for PDF insertion validation and cleanup, including Kotlin tests, lint and APK. Real device QA pending.
+- **B35 local fix `df59587`:** shared PDF page-size reads now reject invalid/over-5,000 counts before allocation and enforce exact slice sizes, including the final remainder. Three JVM regressions for chunk boundaries and missing/extra slices; GitHub CI and 200/5,000-page hardware memory QA pending.
 - **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)
