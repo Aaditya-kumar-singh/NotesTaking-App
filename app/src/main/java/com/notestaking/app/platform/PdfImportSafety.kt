@@ -14,6 +14,7 @@ import java.io.InputStream
 internal object PdfImportSafety {
     const val MAX_PDF_BYTES = 256L * 1024L * 1024L
     const val MAX_PDF_PAGES = 5_000
+    enum class StageFailure { UNREADABLE, INVALID_PDF, TOO_LARGE, CANCELLED }
     private const val HEADER_SCAN_BYTES = 1_024
     private val SIGNATURE = "%PDF-".toByteArray(Charsets.US_ASCII)
 
@@ -36,12 +37,17 @@ internal object PdfImportSafety {
         directory: File,
         isCancelled: () -> Boolean = { false },
         maxBytes: Long = MAX_PDF_BYTES,
+        onFailure: (StageFailure) -> Unit = {},
     ): File? {
         require(maxBytes > 0)
         var staged: File? = null
         var completed = false
+        var failure = StageFailure.UNREADABLE
         try {
-            if (!directory.isDirectory && !directory.mkdirs()) return null
+            if (!directory.isDirectory && !directory.mkdirs()) {
+                onFailure(failure)
+                return null
+            }
             staged = File.createTempFile("pdf-import-", ".pdf", directory)
             val header = ByteArray(HEADER_SCAN_BYTES)
             var prefixSize = 0
@@ -50,7 +56,10 @@ internal object PdfImportSafety {
             var zeroReads = 0
             FileOutputStream(staged).use { output ->
                 while (true) {
-                    if (isCancelled()) throw IOException("PDF import cancelled")
+                    if (isCancelled()) {
+                        failure = StageFailure.CANCELLED
+                        throw IOException("PDF import cancelled")
+                    }
                     val read = input.read(buffer)
                     if (read < 0) break
                     if (read == 0) {
@@ -58,7 +67,10 @@ internal object PdfImportSafety {
                         continue
                     }
                     zeroReads = 0
-                    if (read.toLong() > maxBytes - total) throw IOException("PDF exceeds import budget")
+                    if (read.toLong() > maxBytes - total) {
+                        failure = StageFailure.TOO_LARGE
+                        throw IOException("PDF exceeds import budget")
+                    }
                     val needed = (HEADER_SCAN_BYTES - prefixSize).coerceAtMost(read)
                     if (needed > 0) {
                         buffer.copyInto(header, destinationOffset = prefixSize, startIndex = 0, endIndex = needed)
@@ -67,15 +79,19 @@ internal object PdfImportSafety {
                     output.write(buffer, 0, read)
                     total += read
                 }
-                if (isCancelled() || !hasPdfHeader(header, prefixSize))
+                if (isCancelled() || !hasPdfHeader(header, prefixSize)) {
+                    failure = if (isCancelled()) StageFailure.CANCELLED else StageFailure.INVALID_PDF
                     throw IOException("Missing PDF signature or import cancelled")
+                }
                 output.fd.sync()
             }
             completed = true
             return staged
         } catch (_: IOException) {
+            onFailure(failure)
             return null
         } catch (_: SecurityException) {
+            onFailure(failure)
             return null
         } finally {
             runCatching { input.close() }

@@ -599,6 +599,9 @@
     <string name="create">Create</string>
     <string name="err_save_that_note">Couldn’t save that note.</string>
     <string name="err_pdf_password">That PDF is password-protected, which NotesTaking App can’t open.</string>
+    <string name="err_pdf_import_unreadable">Couldn’t read that PDF. Check access to the file and available device storage, then try again.</string>
+    <string name="err_pdf_import_invalid">That PDF is damaged, unsupported or has invalid pages. Choose a different file.</string>
+    <string name="err_pdf_import_too_large">That PDF exceeds the 256 MB import limit. Choose a smaller file.</string>
     <string name="err_create_folder">Couldn’t create that folder.</string>
     <string name="err_create_canvas">Couldn’t create the canvas.</string>
     <string name="err_create_note">Couldn’t create the note.</string>

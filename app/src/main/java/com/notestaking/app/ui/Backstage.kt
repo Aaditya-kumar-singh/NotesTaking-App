@@ -129,6 +129,7 @@ import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.platform.PdfOpenError
+import com.notestaking.app.platform.PdfImportSafety
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.ui.platform.LocalContext
@@ -1969,9 +1970,15 @@ private fun ExplorerSection(
                         val uri = editor.commitImportAsync(root, currentDocId, n)
                         when {
                             uri != null -> refreshKey++
-                            editor.pendingImport != null -> fieldError = resources.getString( // genuine failure; keep the prompt
-                                if (editor.lastImportError == PdfOpenError.PASSWORD) R.string.err_pdf_password else R.string.err_save_that_note,
-                            )
+                            editor.pendingImport != null -> fieldError = resources.getString(when {
+                                editor.lastImportError == PdfOpenError.PASSWORD -> R.string.err_pdf_password
+                                editor.lastImportStageFailure == PdfImportSafety.StageFailure.TOO_LARGE -> R.string.err_pdf_import_too_large
+                                editor.lastImportStageFailure == PdfImportSafety.StageFailure.INVALID_PDF ||
+                                    editor.lastImportError == PdfOpenError.FORMAT -> R.string.err_pdf_import_invalid
+                                editor.lastImportStageFailure == PdfImportSafety.StageFailure.UNREADABLE ||
+                                    editor.lastImportError != null -> R.string.err_pdf_import_unreadable
+                                else -> R.string.err_save_that_note
+                            })
                             // else: cancelled — the prompt already dismissed (pendingImport cleared)
                         }
                     }

@@ -4502,13 +4502,18 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         } catch (e: java.util.concurrent.CancellationException) {
             throw e
         } catch (_: Exception) {
+            lastImportError = com.notestaking.app.platform.PdfOpenError.FILE
             return null
         }
+        var parsed = false
         return try {
             lastImportError = source.openError
-            if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(source.pageCount)) null
-            else {
+            if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(source.pageCount)) {
+                if (lastImportError == null) lastImportError = com.notestaking.app.platform.PdfOpenError.FORMAT
+                null
+            } else {
                 val doc = com.notestaking.app.platform.PdfImporter.import(source, state.document.dpi)
+                parsed = true
                 stampNewNoteDefaults(doc)
                 doc.created = System.currentTimeMillis()
                 val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
@@ -4517,6 +4522,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         } catch (e: java.util.concurrent.CancellationException) {
             throw e
         } catch (_: Exception) {
+            if (!parsed && lastImportError == null) lastImportError = com.notestaking.app.platform.PdfOpenError.FORMAT
             null // Import failed: no completed note was published; the source remains available for retry.
         } finally {
             runCatching { source.close() }
@@ -4569,12 +4575,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Why the last PDF given to [createPdfNoteFile] or [insertPdfAfter] did not open, null when it did. */
     var lastImportError: com.notestaking.app.platform.PdfOpenError? = null
         private set
+    internal var lastImportStageFailure: com.notestaking.app.platform.PdfImportSafety.StageFailure? = null
+        private set
 
     /** Streams [input] to a private temp file for a pending import; returns it, or null. The caller
      *  owns the file (it's handed to [requestImport]). Copies in small buffers so a large pick never
      *  loads into RAM. IO — call off the main thread. */
-    private fun stageImport(input: InputStream): java.io.File? =
-        com.notestaking.app.platform.PdfImportSafety.stage(input, pdfDir, isCancelled = { importCancelled.get() })
+    private fun stageImport(
+        input: InputStream,
+        onFailure: (com.notestaking.app.platform.PdfImportSafety.StageFailure) -> Unit = {},
+    ): java.io.File? =
+        com.notestaking.app.platform.PdfImportSafety.stage(
+            input, pdfDir, isCancelled = { importCancelled.get() }, onFailure = onFailure,
+        )
 
     /** Copies [input] to [out] in small buffers, polling [isCancelled] so a long copy can abort
      *  (throwing [DocumentCodec.WriteCancelled], which [createNoteFile] turns into a discarded file). */
@@ -4607,6 +4620,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun commitImport(treeUri: String, parentDocId: String, rawName: String): String? {
         val pending = pendingImport ?: return null
         lastImportError = null
+        lastImportStageFailure = null
         if (importCancelled.get()) {
             pendingImport = null
             return null
@@ -4615,9 +4629,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             readMarkdown(pending.uri)?.let { createMarkdownNoteFile(treeUri, parentDocId, rawName, it) }
         } else {
             val staged = runCatching {
-                appContext.contentResolver.openInputStream(android.net.Uri.parse(pending.uri))?.let { stageImport(it) }
+                appContext.contentResolver.openInputStream(android.net.Uri.parse(pending.uri))?.let {
+                    stageImport(it) { reason -> lastImportStageFailure = reason }
+                }
             }.getOrNull()
-            if (staged == null) null else try {
+            if (staged == null) {
+                if (!importCancelled.get() && lastImportStageFailure == null) {
+                    lastImportStageFailure = com.notestaking.app.platform.PdfImportSafety.StageFailure.UNREADABLE
+                }
+                null
+            } else try {
                 createPdfNoteFile(treeUri, parentDocId, rawName, staged)
             } finally {
                 staged.delete()

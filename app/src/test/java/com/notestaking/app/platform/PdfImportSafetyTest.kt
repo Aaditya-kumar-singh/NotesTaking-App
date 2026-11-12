@@ -89,6 +89,42 @@ class PdfImportSafetyTest {
         assertTrue(dir.listFiles()!!.isEmpty())
     }
 
+    @Test fun stagingFailuresReportCorrectReasonsAndCleanUp() = withDirectory { dir ->
+        val reasons = mutableListOf<PdfImportSafety.StageFailure>()
+        fun record(failure: PdfImportSafety.StageFailure) { reasons += failure }
+
+        assertNull(PdfImportSafety.stage(
+            ByteArrayInputStream("not a PDF".toByteArray()), dir, onFailure = ::record,
+        ))
+        assertNull(PdfImportSafety.stage(
+            ByteArrayInputStream(pdf(4097)), dir, maxBytes = 4096, onFailure = ::record,
+        ))
+        val broken = object : ByteArrayInputStream(pdf(4096)) {
+            override fun read(b: ByteArray, off: Int, len: Int): Int = throw IOException("Provider disconnected")
+        }
+        assertNull(PdfImportSafety.stage(broken, dir, onFailure = ::record))
+        assertNull(PdfImportSafety.stage(
+            ByteArrayInputStream(pdf(4096)), dir, isCancelled = { true }, onFailure = ::record,
+        ))
+        assertEquals(listOf(
+            PdfImportSafety.StageFailure.INVALID_PDF,
+            PdfImportSafety.StageFailure.TOO_LARGE,
+            PdfImportSafety.StageFailure.UNREADABLE,
+            PdfImportSafety.StageFailure.CANCELLED,
+        ), reasons)
+        assertTrue(dir.listFiles()!!.isEmpty())
+    }
+
+    @Test fun successfulStagingReportsNoFailure() = withDirectory { dir ->
+        val failures = mutableListOf<PdfImportSafety.StageFailure>()
+        val staged = PdfImportSafety.stage(
+            ByteArrayInputStream(pdf(4096)), dir, onFailure = { failures += it },
+        )
+        assertTrue(staged != null)
+        assertTrue(failures.isEmpty())
+        staged?.delete()
+    }
+
     @Test fun missingOrIncompletePdfPageSizesNeverCreateBlankReplacementNotes() {
         assertNull(PdfImportSafety.completePageSizes(2, null))
         assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf()))
