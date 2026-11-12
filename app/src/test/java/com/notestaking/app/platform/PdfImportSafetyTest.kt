@@ -147,6 +147,15 @@ class PdfImportSafetyTest {
         assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(0f, 842f, 612f, 792f)))
     }
 
+    @Test fun insertingPdfPagesRequiresCompleteValidGeometry() {
+        val valid = floatArrayOf(595f, 842f, 612f, 792f)
+        assertArrayEquals(valid, PdfImportSafety.completePageSizes(2, valid)!!, 0f)
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 612f, 792f, 1f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 612f, Float.NaN)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 0f, 792f)))
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))

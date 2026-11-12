@@ -6946,21 +6946,29 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val staged = runCatching {
             appContext.contentResolver.openInputStream(android.net.Uri.parse(uri))?.let { stageImport(it) }
         }.getOrNull() ?: return null
-        val extra = com.notestaking.app.platform.PdfSource.open(staged)
-        val sizes = if (com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(extra.pageCount))
-            extra.allPageSizePoints()?.takeIf { it.isNotEmpty() }
-        else null
-        lastImportError = extra.openError
-        extra.close()
-        if (sizes == null) {
-            staged.delete()
-            return null
-        }
-        if (base == null) return JoinedPdf(staged, 0, sizes) // a plain note takes the PDF as it is
+        var keepStaged = false
         try {
+            val extra = com.notestaking.app.platform.PdfSource.open(staged)
+            val sizes = try {
+                lastImportError = extra.openError
+                val count = extra.pageCount
+                if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(count)) null
+                else com.notestaking.app.platform.PdfImportSafety.completePageSizes(count, extra.allPageSizePoints())
+            } finally {
+                runCatching { extra.close() }
+            } ?: return null
+            if (importCancelled.get()) return null
+            if (base == null) {
+                keepStaged = true
+                return JoinedPdf(staged, 0, sizes)
+            }
             return joinFile(staged, sizes, base, baseSource)
+        } catch (e: java.util.concurrent.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return null
         } finally {
-            staged.delete()
+            if (!keepStaged) staged.delete()
         }
     }
 
@@ -6971,17 +6979,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      */
     private fun joinFile(extra: java.io.File, sizes: FloatArray, base: java.io.File?, baseSource: com.notestaking.app.platform.PdfSource?): JoinedPdf? {
         val out = runCatching { java.io.File.createTempFile("source", ".pdf", pdfDir) }.getOrNull() ?: return null
-        if (base == null) {
-            if (runCatching { extra.copyTo(out, overwrite = true) }.isSuccess) return JoinedPdf(out, 0, sizes)
-            out.delete()
+        var completed = false
+        try {
+            if (base == null) {
+                extra.copyTo(out, overwrite = true)
+                completed = true
+                return JoinedPdf(out, 0, sizes)
+            }
+            val baseSizes = baseSource?.takeIf { it.file == base }?.allPageSizePoints()
+            if (baseSizes != null && com.notestaking.app.platform.PdfJoin.append(appContext, base, extra, out, baseSizes, sizes) { importCancelled.get() }) {
+                completed = true
+                return JoinedPdf(out, baseSizes.size / 2, sizes)
+            }
             return null
+        } finally {
+            if (!completed) out.delete()
         }
-        val baseSizes = baseSource?.takeIf { it.file == base }?.allPageSizePoints()
-        if (baseSizes != null && com.notestaking.app.platform.PdfJoin.append(appContext, base, extra, out, baseSizes, sizes) { importCancelled.get() }) {
-            return JoinedPdf(out, baseSizes.size / 2, sizes)
-        }
-        out.delete()
-        return null
     }
 
     /**
