@@ -23,7 +23,7 @@ internal object ProviderImageBatch {
             } catch (_: Exception) {
                 null
             }
-            if (png.isNullOrEmpty()) continue
+            if (png == null || png.isEmpty()) continue
 
             val destination = try {
                 create(page)
