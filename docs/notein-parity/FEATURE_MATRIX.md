@@ -85,8 +85,8 @@ Evidence and NotesTaking targets: N18, N21, N29, N30, N33 · `platform/Pdf.kt`, 
 
 | ID | Priority | Reference feature / requirement | State | Next implementation or audit | Acceptance gate |
 |---|---|---|---|---|---|
-| NP-053 | P0 | Import PDF with Android Storage Access Framework | PARTIAL | B29 locally rejects missing/incomplete PDF page-size reads and closes native resources; test local/cloud provider URI and cancellation | Import preserves original source and can reopen |
-| NP-054 | P1 | Protected or malformed PDF failure handling | PARTIAL | B29 locally treats missing/truncated PDF page geometry as failed import, not blank note; verify password/provider errors on device | Wrong password/invalid file never corrupts note |
+| NP-053 | P0 | Import PDF with Android Storage Access Framework | PARTIAL | B29 CI passed for page-size validation and resource cleanup; B30 locally fixes multi-import progress and outcome accuracy; test local/cloud provider URI and cancellation | Import preserves original source and can reopen |
+| NP-054 | P1 | Protected or malformed PDF failure handling | PARTIAL | B29 CI passed incomplete geometry rejection; B30 locally distinguishes successful, failed and cancelled batch imports; verify password/provider errors on device | Wrong password/invalid file never corrupts note |
 | NP-055 | P0 | PDF page overlay coordinates at any zoom/rotation | SOURCE | Reproduce crop/rotation/margin cases with landmark ink | Ink stays on landmark at 50–400% zoom/reopen/export |
 | NP-056 | P1 | Vector-backed PDF background render | SOURCE | Keep source PDF vector and bounded memory; measure on device | Text stays sharp, no 200-page OOM |
 | NP-057 | P1 | Single/multi-page thumbnail navigation | SOURCE | B06 page manager improved; verify page index after reorder | Thumbnail jumps correctly with stable cover handling |
