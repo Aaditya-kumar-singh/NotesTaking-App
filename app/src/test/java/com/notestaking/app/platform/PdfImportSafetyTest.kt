@@ -156,6 +156,36 @@ class PdfImportSafetyTest {
         assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 0f, 792f)))
     }
 
+    @Test fun pdfPageSizesAreReadInBoundedExactSlices() {
+        val requests = mutableListOf<Pair<Int, Int>>()
+        val sizes = PdfImportSafety.readPageSizes(5, 2) { from, count ->
+            requests += from to count
+            FloatArray(2 * count) { index -> (from + index / 2) * 100f + index % 2 }
+        }
+        assertEquals(listOf(0 to 2, 2 to 2, 4 to 1), requests)
+        assertArrayEquals(
+            floatArrayOf(0f, 1f, 100f, 101f, 200f, 201f, 300f, 301f, 400f, 401f),
+            sizes!!, 0f,
+        )
+    }
+
+    @Test fun incompleteOrOversizedNativePageSlicesAreRejected() {
+        assertNull(PdfImportSafety.readPageSizes(3, 2) { from, _ ->
+            if (from == 0) FloatArray(4) else FloatArray(1)
+        })
+        assertNull(PdfImportSafety.readPageSizes(3, 2) { from, _ ->
+            if (from == 0) FloatArray(4) else FloatArray(4)
+        })
+        assertNull(PdfImportSafety.readPageSizes(3, 2) { from, _ ->
+            if (from == 0) FloatArray(4) else null
+        })
+    }
+
+    @Test fun untrustedPageCountIsRejectedBeforeNativeReads() {
+        assertNull(PdfImportSafety.readPageSizes(0, 128) { _, _ -> error("must not read") })
+        assertNull(PdfImportSafety.readPageSizes(5_001, 128) { _, _ -> error("must not read") })
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))

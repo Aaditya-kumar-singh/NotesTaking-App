@@ -113,16 +113,10 @@ class PdfSource private constructor(
 
     /** Every page's size in points, width then height, for importing a whole PDF. Read in slices, so
      *  renders get their turn. */
-    fun allPageSizePoints(): FloatArray? {
-        val n = pageCount
-        val out = FloatArray(2 * n)
-        for (from in 0 until n step SIZES_PER_READ) {
-            if (closed) return null
-            val part = pdf.pageSizes(from, SIZES_PER_READ, priority()) ?: return null
-            part.copyInto(out, 2 * from)
+    fun allPageSizePoints(): FloatArray? =
+        PdfImportSafety.readPageSizes(pageCount, SIZES_PER_READ) { from, count ->
+            if (closed) null else pdf.pageSizes(from, count, priority())
         }
-        return out
-    }
 
     /** The whole page [index] fitted to [widthPx] × [heightPx], with [markups] on it. */
     fun renderPage(

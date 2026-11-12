@@ -20,6 +20,20 @@ internal object PdfImportSafety {
 
     fun acceptsPageCount(pageCount: Int): Boolean = pageCount in 1..MAX_PDF_PAGES
 
+    /** Never allocate from an untrusted page count or accept incomplete native geometry slices. */
+    fun readPageSizes(pageCount: Int, pagesPerRead: Int, read: (Int, Int) -> FloatArray?): FloatArray? {
+        if (!acceptsPageCount(pageCount)) return null
+        require(pagesPerRead > 0)
+        val sizes = FloatArray(2 * pageCount)
+        for (from in 0 until pageCount step pagesPerRead) {
+            val count = minOf(pagesPerRead, pageCount - from)
+            val part = read(from, count) ?: return null
+            if (part.size != 2 * count) return null
+            part.copyInto(sizes, destinationOffset = 2 * from)
+        }
+        return sizes
+    }
+
     /** A full import must never replace malformed PDF pages with blank note pages. */
     fun completePageSizes(pageCount: Int, sizes: FloatArray?): FloatArray? =
         sizes?.takeIf { data ->
