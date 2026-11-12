@@ -92,7 +92,7 @@
 | NT-057 | P1 | Tablet | NP-074 | Create PDF with independent annotation objects when supported | Acrobat/Xodo can select/edit annotations individually |
 | NT-058 | P2 | Phone | NP-075 | Export JPEG at two quality settings when implemented | Actual JPEG bytes, color and filenames correct |
 | NT-059 | P2 | Phone | NP-076–NP-080 | Toggle background, bookmark, item, margin and watermark settings | Each output changes as claimed; native document untouched |
-| NT-060 | P0 | Phone | NP-081 | Cancel SAF picker; simulate null output, slow cloud provider, revoked URI, failed multi-PNG write, and selecting an already-populated target for single/ZIP PDF | No false success; image counts accurate; partial output removed or warned about; old PDF target hash unchanged when provider returns existing content |
+| NT-060 | P0 | Phone | NP-081 | Cancel SAF picker; simulate null output, slow cloud provider, revoked URI, failed multi-PNG write, and existing or unknown-size targets for native copy/PDF/PNG and ZIP | No false success; image counts accurate; partial output removed or warned; occupied targets stay byte-identical, unreadable targets are denied without write/delete |
 | NT-061 | P0 | Phone | NP-082 | Cancel export during 200-page render, repeat then save | No leaking temp files, correct final bytes |
 | NT-062 | P0 | Phone | NP-083 | Import malformed ZIP, duplicates, traversal and oversized assets | Controlled error, no data escape or unrelated note damage |
 | NT-063 | P0 | Phone | NP-084 | Force-stop during Save As, simulate low storage | Old valid note stays valid, destination not falsely reported saved |

@@ -22,7 +22,8 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 - **B24 CI passed:** `developer` at `2870f59` passed [Android CI #43009071252](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43009071252), including Kotlin tests, lint and APK. Real provider QA pending.
 - **B25 CI passed:** `developer` at `3723f93` passed [Android CI #43174700715](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43174700715) (Kotlin tests, lint and APK). Real provider QA pending.
 - **B26 CI passed:** `developer` at `35718de` passed [Android CI #43179688881](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43179688881) after the nullable PNG check correction `86a416d`; real phone/tablet acceptance pending.
-- **B27 local fix `dafc01b`:** batch PDF/ZIP export refuses an already-occupied SAF destination, avoiding overwrite or deletion of pre-existing content; two JVM tests check zero writes and unchanged bytes. Source checks passed, GitHub/device acceptance pending.
+- **B27 CI passed:** `developer` at `82ccf7d` passed [Android CI #43193305719](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43193305719); physical SAF acceptance still pending.
+- **B28 local fix `9e42561`:** all picker-based Save As paths refuse destinations that contain data or cannot be inspected; one-byte probe when size metadata is missing; no destination mutation on denial. Five regression cases cover positive/zero/unknown size, unreadable providers and byte-preservation guard semantics. CI/device acceptance pending.
 - **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)
