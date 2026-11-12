@@ -25,7 +25,8 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 - **B27 CI passed:** `developer` at `82ccf7d` passed [Android CI #43193305719](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43193305719); physical SAF acceptance still pending.
 - **B28 CI passed:** `developer` at `55f4e2c` passed [Android CI #43200542583](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43200542583), including Kotlin tests/lint/APK; provider acceptance pending.
 - **B29 CI passed:** `developer` at `d1f8155` passed [Android CI #43205675656](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43205675656), including Kotlin unit tests/lint/APK. Physical malformed PDF and cloud provider QA remain pending.
-- **B30 local fix `d1e78f6`:** PDF multi-import progress advances for every processed file, even failures, and completion distinguishes all success, partial success, total failure and cancellation. Completed notes remain; later PDFs continue after recoverable failures; 6 JVM regression tests. GitHub/device QA pending.
+- **B30 CI passed:** `developer` at `5e7cdd0` passed [Android CI #43209554300](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43209554300) (Kotlin tests, lint, APK). Device acceptance pending.
+- **B31 local fix `6eda9c3`:** single-PDF import no longer resets the Cancel flag inside the delayed IO worker, rejects a cancelled request before opening the provider, and clears stale PDF password errors on staging retries. One new JVM staging regression test; GitHub/device acceptance pending.
 - **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)
