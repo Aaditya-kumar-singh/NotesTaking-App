@@ -94,7 +94,7 @@ Evidence and NotesTaking targets: N18, N21, N29, N30, N33 · `platform/Pdf.kt`, 
 | NP-059 | P2 | Duplicate, move, rotate and delete page | SOURCE | Check undo and protected cover action | Correct order, stable annotations and source copy |
 | NP-060 | P2 | Multi-select page operations | SOURCE | Verify Save As, copy/delete actions and clear selection | Selected pages only affected; undo works |
 | NP-061 | P2 | Page manager annotation list/tab | INVESTIGATE | Notein has All Pages/Annotations; audit NotesTaking sidebar coverage | Annotation list navigates and filters by page |
-| NP-062 | P1 | Save selected page(s) as a new editable note | PARTIAL | PDF/PNG selected-page save exists; separate native note creation needs implementation | New note independent; original unchanged |
+| NP-062 | P1 | Save selected page(s) as a new editable note | SOURCE | Existing Extract to new note menu supports single/multi-page native `.xnote`; B37 locally guards cancellation and adds embedded-asset roundtrip tests; real provider QA pending | New note independent; original unchanged |
 | NP-063 | P2 | Page Bookmarks, contents and outline navigation | SOURCE | Verify row state after insertion and PDF bookmark import | Jump uses correct page and survives reopen |
 | NP-064 | P2 | PDF text highlighting, underline, strikeout | SOURCE | Check actual markup geometry and export semantics | Markup aligns after rotations and undo |
 | NP-065 | P1 | PDF text search and search-result jump | SOURCE | Verify PDFium text with non-Latin and rotated pages | Next/previous jumps to correct visible hit |
@@ -110,7 +110,7 @@ Evidence and NotesTaking targets: N18, N26, N28, N30, N33 · `ui/PageExportDialo
 
 | ID | Priority | Reference feature / requirement | State | Next implementation or audit | Acceptance gate |
 |---|---|---|---|---|---|
-| NP-071 | P0 | Native .xnote/.xcanvas saves preserve editable strokes | SOURCE | Retain current native format, test roundtrip and old fixtures | Sample/pressure/page content identical after reopen |
+| NP-071 | P0 | Native .xnote/.xcanvas saves preserve editable strokes | SOURCE | Retain current native format; B37 adds extracted `.xnote` ink/asset roundtrip regression; still test old fixtures and `.xcanvas` on device | Sample/pressure/page content identical after reopen |
 | NP-072 | P1 | Export this/selected/all/custom page ranges | PARTIAL | B07 scope selector; B26 CI-verified truthful multi-PNG counts on partial provider failure; verify page order, invalid inputs and device output | Exact PDF/PNG page count, no partial range export |
 | NP-073 | P1 | PDF vs editable native-note explanation | LOCAL | B11: shareable PDF copy now explains native stroke editability; pending CI and phone review | User understands what can be edited after saving |
 | NP-074 | P1 | Separate truly editable PDF annotation export | GAP | Research PDFBox annotation mapping and Acrobat/Xodo interoperability | Exported annotations independently editable in other readers |
@@ -124,7 +124,7 @@ Evidence and NotesTaking targets: N18, N26, N28, N30, N33 · `ui/PageExportDialo
 | NP-082 | P0 | Export progress, cancel and temporary file cleanup | PARTIAL | B25 passed CI for staged PDF cleanup; B26 passed CI for failed PNG cleanup and bitmap release; verify provider cancellation, disk-full and hardware behavior | No corrupt output or abandoned large staging files |
 | NP-083 | P0 | Safe native ZIP import and resource limits | SOURCE | BoundedZipInputStream exists; execute malformed/traversal/bomb fixtures in CI | Traversal rejected; original/staging untouched |
 | NP-084 | P0 | Atomic local save and document recovery | PARTIAL | B18 adds overwrite retry/session fallback tests; B27 passed CI for protecting occupied batch PDF targets; B28 locally protects other SAF picker targets, including unknown-size providers; force-stop and low-storage checks remain | Old valid note survives interrupted write |
-| NP-085 | P1 | Save Page As creates independent native note | PARTIAL | Verify page-cargo copy vs new-note path and asset ownership | New page note is editable; source remains unchanged |
+| NP-085 | P1 | Save Page As creates independent native note | SOURCE | Existing `extractPages`/`writeCargoNote` uses PageCargo and native DocumentCodec; B37 locally checks Cancel and attachment independence; phone/tablet save and Move QA pending | New page note is editable; source remains unchanged |
 | NP-086 | P2 | Version history/recovery snapshot UI | GAP | Design local version snapshots with quotas and restore preview | Restore past version without touching unrelated notes |
 | NP-087 | P2 | Local backup, settings restore and conflict resolution | PARTIAL | B12 `a8647c5` locally hardens settings ZIP read/skip budgets; native note-level backup/restore and provider QA remain open | Restore into test folder, no silent overwrite |
 | NP-088 | P3 | Optional cloud backup/sync | OPTIONAL | Needs separate secure backend, consent, E2E policy and conflict model | Offline remains fully functional; sync opt-in only |

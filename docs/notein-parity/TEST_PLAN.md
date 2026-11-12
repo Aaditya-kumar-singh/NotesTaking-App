@@ -75,7 +75,7 @@
 | NT-045 | P0 | Tablet | NP-055–NP-056 | Repeat with 0/90/180/270 rotation and crop/media boxes | Overlay and eraser hit-test use same page transform |
 | NT-046 | P1 | Tablet | NP-057–NP-060 | Insert/duplicate/move/delete selected pages including cover | Correct order, undo, thumbnails and source page pointers |
 | NT-047 | P2 | Tablet | NP-061 | Open annotations tab/list when implemented and jump to item | Correct highlight/page selected |
-| NT-048 | P1 | Phone + Tablet | NP-062 | Save selected pages as an independent native editable note | Original unchanged, new note reopens with correct dependencies |
+| NT-048 | P1 | Phone + Tablet | NP-062, NP-085 | Extract a single page and multiple non-adjacent pages to `.xnote`; include editable ink, image/audio, templates, bookmarks and PDF backgrounds; close original and reopen extracted note; cancel during large asset copy; retry Move | Original unchanged on Extract or failed/cancelled Move; new note reopens with editable strokes and independent embedded assets, accurate page order; no abandoned partial note |
 | NT-049 | P1 | Tablet | NP-063–NP-065 | Use bookmarks, outline, PDF text search and markups | Targets highlighted and persisted after reorder |
 | NT-050 | P1 | Tablet | NP-066 | Switch Read/Annotate and fit page width/full page | No re-open/reset of PDF viewport or incomplete stroke |
 | NT-051 | P1 | Tablet | NP-067 | Two notes in split vertical and horizontal orientation | Correct pen pane focus, independent undo and saved positions |
