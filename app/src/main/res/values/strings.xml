@@ -689,7 +689,7 @@
         <item quantity="other">Exported %d PDFs.</item>
     </plurals>
     <string name="err_export_pdf">Could not export to PDF.</string>
-    <string name="err_export_existing_file">That file already contains data. Choose a new filename to keep the existing file safe.</string>
+    <string name="err_export_existing_file">Could not confirm that the destination is empty. Choose a new filename or folder to protect existing files.</string>
     <string name="err_export_pdf_leftover">PDF export failed. An incomplete file may remain at the destination; please delete it.</string>
     <string name="err_save_copy">Could not save a copy.</string>
     <string name="err_save_copy_leftover">Copy failed. An empty or incomplete file may remain at the destination; please delete it.</string>

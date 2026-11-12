@@ -413,7 +413,8 @@ private fun EditorScreen(
             if (uri == null) temp.delete()
             else scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 val result = try {
-                    com.notestaking.app.platform.ProviderCopy.save(
+                    if (!com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(resolver, uri)) null
+                    else com.notestaking.app.platform.ProviderCopy.save(
                         { temp.inputStream() },
                         { resolver.openOutputStream(uri) },
                         { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
@@ -423,6 +424,7 @@ private fun EditorScreen(
                 }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     editor.message = resources.getString(when (result) {
+                        null -> R.string.err_export_existing_file
                         com.notestaking.app.platform.ProviderCopy.Result.SAVED -> R.string.exported_pdf
                         com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED -> R.string.err_export_pdf
                         com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER -> R.string.err_export_pdf_leftover
@@ -466,13 +468,15 @@ private fun EditorScreen(
             } else {
                 scope.launch {
                     val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        com.notestaking.app.platform.ProviderCopy.save(
+                        if (!com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(resolver, uri)) null
+                        else com.notestaking.app.platform.ProviderCopy.save(
                             { resolver.openInputStream(Uri.parse(src)) },
                             { resolver.openOutputStream(uri) },
                             { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
                         )
                     }
                     when (result) {
+                        null -> editor.message = resources.getString(R.string.err_export_existing_file)
                         com.notestaking.app.platform.ProviderCopy.Result.SAVED -> Unit
                         com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED ->
                             editor.message = resources.getString(R.string.err_save_copy)
@@ -492,13 +496,15 @@ private fun EditorScreen(
         val index = pending?.pages?.firstOrNull()
         if (uri != null && pending != null && index != null) {
             scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                val result = com.notestaking.app.platform.ProviderCopy.save(
-                    { pending.editor.pageImagePng(index)?.inputStream() },
-                    { resolver.openOutputStream(uri) },
-                    { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
-                )
+                val result = if (!com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(resolver, uri)) null
+                    else com.notestaking.app.platform.ProviderCopy.save(
+                        { pending.editor.pageImagePng(index)?.inputStream() },
+                        { resolver.openOutputStream(uri) },
+                        { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
+                    )
                 if (result != com.notestaking.app.platform.ProviderCopy.Result.SAVED) {
                     val message = when (result) {
+                        null -> R.string.err_export_existing_file
                         com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER -> R.string.err_save_image_leftover
                         else -> R.string.err_save_image
                     }

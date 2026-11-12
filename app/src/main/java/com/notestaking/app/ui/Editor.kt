@@ -6317,10 +6317,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         private val u = android.net.Uri.parse(uri)
         private val resolver = appContext.contentResolver
 
-        // A provider may return an occupied document; refuse to open it so a failed export cannot destroy its bytes.
-        override val existingContent = runCatching {
-            resolver.query(u, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)?.use { c -> c.moveToFirst() && c.getLong(0) > 0 }
-        }.getOrNull() == true
+        // An occupied or unreadable SAF destination must not be opened or discarded.
+        override val existingContent = !com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(resolver, u)
 
         override fun open(): OutputStream {
             if (existingContent) throw java.io.IOException("Refusing to overwrite an existing document")
