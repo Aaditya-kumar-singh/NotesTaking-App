@@ -70,7 +70,7 @@
 
 | Test | Priority | Environment | NP IDs | Steps | Pass condition |
 |---|---|---|---|---|---|
-| NT-043 | P0 | Tablet | NP-053–NP-054, NP-058 | Import local/cloud PDFs; batch good/malformed/disconnected PDFs; cancel/retry import; insert malformed/short-page-geometry PDF into existing note, then retry valid PDF; inspect 200-page and 5,000-page PDFs and reject 5,001-page source | Original PDF and notes unchanged on failure; no missing/extra page geometry accepted or excessive array allocation; invalid pages never inserted as blank pages; no staged/partial join files remain; successful PDF inserts, saves and reopens |
+| NT-043 | P0 | Tablet | NP-053–NP-054, NP-058 | Import local/cloud PDFs; batch good/malformed/disconnected PDFs; cancel/retry import; insert malformed/short-page-geometry PDF into existing note, then retry valid PDF; inspect 200-page and 5,000-page PDFs and reject 5,001-page source; append to a 4,999-page PDF once and then attempt another append; reject empty or 5,001-page extraction | Original PDF and notes unchanged on failure; combined page budget never exceeded; no missing/extra geometry or excessive PDFBox work; invalid pages never inserted as blank pages; no staged/partial join files remain; valid PDF inserts, saves and reopens |
 | NT-044 | P0 | Tablet | NP-055 | Anchor ink dot at image landmark; zoom 50→400→100% | Ink remains on landmark, including export |
 | NT-045 | P0 | Tablet | NP-055–NP-056 | Repeat with 0/90/180/270 rotation and crop/media boxes | Overlay and eraser hit-test use same page transform |
 | NT-046 | P1 | Tablet | NP-057–NP-060 | Insert/duplicate/move/delete selected pages including cover | Correct order, undo, thumbnails and source page pointers |
