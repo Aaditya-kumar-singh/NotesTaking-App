@@ -75,7 +75,7 @@
 | NT-045 | P0 | Tablet | NP-055–NP-056 | Repeat with 0/90/180/270 rotation and crop/media boxes | Overlay and eraser hit-test use same page transform |
 | NT-046 | P1 | Tablet | NP-057–NP-060 | Insert/duplicate/move/delete selected pages including cover | Correct order, undo, thumbnails and source page pointers |
 | NT-047 | P2 | Tablet | NP-061 | Open annotations tab/list when implemented and jump to item | Correct highlight/page selected |
-| NT-048 | P1 | Phone + Tablet | NP-062, NP-085 | Extract a single page and multiple non-adjacent pages to `.xnote`; include editable ink, image/audio, templates, bookmarks and PDF backgrounds; close original and reopen extracted note; cancel during large asset copy; retry Move | Original unchanged on Extract or failed/cancelled Move; new note reopens with editable strokes and independent embedded assets, accurate page order; no abandoned partial note |
+| NT-048 | P1 | Phone + Tablet | NP-062, NP-085 | Extract a single page and multiple non-adjacent pages to `.xnote`; include editable ink, image/audio, templates, bookmarks and PDF backgrounds; close original and reopen extracted note; cancel immediately after Extract/Move starts and midway through large image/audio asset copy; retry Move | Original unchanged on Extract or failed/cancelled Move; no duplicate destination or abandoned partial note; new note reopens with editable strokes and independent embedded assets in correct page order |
 | NT-049 | P1 | Tablet | NP-063–NP-065 | Use bookmarks, outline, PDF text search and markups | Targets highlighted and persisted after reorder |
 | NT-050 | P1 | Tablet | NP-066 | Switch Read/Annotate and fit page width/full page | No re-open/reset of PDF viewport or incomplete stroke |
 | NT-051 | P1 | Tablet | NP-067 | Two notes in split vertical and horizontal orientation | Correct pen pane focus, independent undo and saved positions |
@@ -96,7 +96,7 @@
 | NT-061 | P0 | Phone | NP-082 | Cancel export during 200-page render, repeat then save | No leaking temp files, correct final bytes |
 | NT-062 | P0 | Phone | NP-083 | Import malformed ZIP, duplicates, traversal and oversized assets | Controlled error, no data escape or unrelated note damage |
 | NT-063 | P0 | Phone | NP-084 | Force-stop during Save As, simulate low storage | Old valid note stays valid, destination not falsely reported saved |
-| NT-064 | P1 | Phone | NP-085 | Duplicate 20 selected pages to another native note | All new IDs/assets independent and editable |
+| NT-064 | P1 | Phone | NP-085 | Extract 20 selected pages to a new native note, cancel a large Merge before/while writing, then retry | All new IDs/assets independent and editable; Cancel creates no false success, source note remains unchanged and no incomplete new file remains |
 | NT-065 | P2 | Phone | NP-086–NP-087 | Restore older note version and settings backup when implemented | Preview and confirmation; unrelated notes unchanged |
 | NT-066 | P3 | Phone offline | NP-088 | Disable network when optional cloud sync enabled | Offline editing remains possible; queued action explicit |
 
