@@ -70,7 +70,7 @@
 
 | Test | Priority | Environment | NP IDs | Steps | Pass condition |
 |---|---|---|---|---|---|
-| NT-043 | P0 | Tablet | NP-053 | Import 1-page PDF from local SAF and 200-page PDF from provider | Original PDF unchanged; all pages indexed |
+| NT-043 | P0 | Tablet | NP-053–NP-054 | Import 1-page PDF from local SAF, a 200-page PDF from provider, and malformed/partial-page-metadata PDF; retry after failure | Original PDF unchanged; every valid page indexed; malformed import creates no blank note; retry works without leaked PDF resources |
 | NT-044 | P0 | Tablet | NP-055 | Anchor ink dot at image landmark; zoom 50→400→100% | Ink remains on landmark, including export |
 | NT-045 | P0 | Tablet | NP-055–NP-056 | Repeat with 0/90/180/270 rotation and crop/media boxes | Overlay and eraser hit-test use same page transform |
 | NT-046 | P1 | Tablet | NP-057–NP-060 | Insert/duplicate/move/delete selected pages including cover | Correct order, undo, thumbnails and source page pointers |
