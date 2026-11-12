@@ -398,6 +398,27 @@ class DocumentCodecTest {
         }
     }
 
+    @Test fun cancellingWhileStreamingAnAssetStopsNativeSaveWithoutChangingSource() {
+        val payload = ByteArray(256 * 1024) { (it % 251).toByte() }
+        val source = imageFile(payload)
+        val doc = Document.blank(count = 1)
+        doc.pages[0].items += ImageItem(ImageData(source, 2, 2), Rect(0.0, 0.0, 10.0, 10.0))
+        var cancelled = false
+        val out = object : ByteArrayOutputStream() {
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                super.write(b, off, len)
+                if (size() >= 96 * 1024) cancelled = true
+            }
+        }
+
+        assertThrows(DocumentCodec.WriteCancelled::class.java) {
+            codec.write(doc, out, isCancelled = { cancelled })
+        }
+        assertTrue(cancelled)
+        assertTrue(out.size() < payload.size)
+        assertArrayEquals(payload, source.readBytes())
+    }
+
     @Test fun pdfFileRoundTrip() {
         val srcDir = java.nio.file.Files.createTempDirectory("xnote-src").toFile()
         val outDir = java.nio.file.Files.createTempDirectory("xnote-out").toFile()

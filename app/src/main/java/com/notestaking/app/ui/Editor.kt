@@ -7139,6 +7139,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * step. This note stays open, and a message names the new one with a button to open it.
      */
     fun extractPages(indices: List<Int>, name: String, move: Boolean) {
+        if (importing) return
         val root = browseRoot ?: run { message = appContext.getString(R.string.err_extract_pages); return }
         val doc = state.document
         val picked = indices.filter { it in doc.pages.indices }.distinct().sorted()
@@ -7152,10 +7153,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         // A name of its own for the PDF, which a note switched away from meanwhile would delete.
         val sourcePdf = doc.pdfFile?.takeIf { cargo.pdfIndices.isNotEmpty() }?.let { keepPdf(it) }
         val parentId = currentUri?.takeIf { isUnderTree(it, root) }?.let { parentDocIdOf(it) } ?: browseRootDocId(root)
+        importCancelled.set(false)
+        busyWith = R.string.making_note
+        importing = true
         autosaveScope.launch {
-            importCancelled.set(false)
-            busyWith = R.string.making_note
-            importing = true
             val made = try {
                 withContext(Dispatchers.IO) {
                     writeCargoNote(root, parentId, name, doc, cargo, sourcePdf)?.also { made ->
@@ -7213,11 +7214,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         note.bookmarks.addAll(cargo.bookmarks.map { Bookmark(it.page, it.label) })
         if (importCancelled.get()) return null
         val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val uri = createNoteFile(root, parentId, name) {
-            if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
-            codec.write(note, it, isCancelled = { importCancelled.get() })
-            if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
-        } ?: return null
+        val uri = createNoteFile(root, parentId, name) { writeCancellableNote(note, it) } ?: return null
         return MadeFile(uri, name)
     }
 
@@ -7228,12 +7225,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * can cancel it; [onDone] gets the new note, or null.
      */
     fun mergeNotes(uris: List<String>, rawName: String, onDone: (MadeFile?) -> Unit) {
+        if (importing) return onDone(null)
         val root = browseRoot ?: return onDone(null)
         val parentId = parentDocIdOf(uris.first()) ?: browseRootDocId(root)
+        importCancelled.set(false)
+        busyWith = R.string.merging_notes
+        importing = true
         autosaveScope.launch {
-            importCancelled.set(false)
-            busyWith = R.string.merging_notes
-            importing = true
             val made = try {
                 withContext(Dispatchers.IO) {
                     writeMergedNote(root, parentId, rawName, uris)?.also { made ->
@@ -7251,6 +7249,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             else viewStates.get(documentKey(uris.first()))?.let { v -> viewStates.put(documentKey(made.uri), v.zoom, v.scrollX, v.scrollY, v.overrides) }
             onDone(made)
         }
+    }
+
+    /** Both Extract and Merge must stop writing the native bundle when Cancel is pressed. */
+    private fun writeCancellableNote(doc: Document, output: OutputStream) {
+        if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
+        codec.write(doc, output, isCancelled = { importCancelled.get() })
+        if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
     }
 
     /** [writeMergedNote]'s work, reading each note afresh and dropping its temp files after. IO. */
@@ -7301,7 +7306,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             merged.pdfFile = pdf
             if (importCancelled.get()) return null
             val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-            val uri = createNoteFile(root, parentId, name) { codec.write(merged, it) } ?: return null
+            val uri = createNoteFile(root, parentId, name) { writeCancellableNote(merged, it) } ?: return null
             return MadeFile(uri, name)
         } finally {
             for (file in temps) file.delete()
