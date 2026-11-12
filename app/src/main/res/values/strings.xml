@@ -693,7 +693,10 @@
     <string name="err_save_copy">Could not save a copy.</string>
     <string name="err_save_copy_leftover">Copy failed. An empty or incomplete file may remain at the destination; please delete it.</string>
     <string name="err_save_image">Could not save the image.</string>
+    <string name="err_save_image_leftover">Image save failed. An incomplete file may remain at the destination; please delete it.</string>
     <string name="err_save_images">Could not save the images.</string>
+    <string name="saved_some_images">Saved %1$d of %2$d images. Some images could not be saved.</string>
+    <string name="err_save_images_leftover">Saved %1$d of %2$d images. Incomplete files may remain in the selected folder; please delete them.</string>
     <string name="err_read_image">Could not read the image.</string>
     <string name="err_read_file">Could not read the file.</string>
     <string name="err_insert_pdf">Could not insert that PDF.</string>

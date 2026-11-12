@@ -491,11 +491,20 @@ private fun EditorScreen(
         val index = pending?.pages?.firstOrNull()
         if (uri != null && pending != null && index != null) {
             scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                val ok = runCatching {
-                    val png = pending.editor.pageImagePng(index) ?: return@runCatching false
-                    resolver.openOutputStream(uri)?.use { it.write(png) } != null
-                }.getOrDefault(false)
-                if (!ok) editor.message = resources.getString(R.string.err_save_image)
+                val result = com.notestaking.app.platform.ProviderCopy.save(
+                    { pending.editor.pageImagePng(index)?.inputStream() },
+                    { resolver.openOutputStream(uri) },
+                    { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
+                )
+                if (result != com.notestaking.app.platform.ProviderCopy.Result.SAVED) {
+                    val message = when (result) {
+                        com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER -> R.string.err_save_image_leftover
+                        else -> R.string.err_save_image
+                    }
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        editor.message = resources.getString(message)
+                    }
+                }
             }
         }
     }
@@ -508,21 +517,31 @@ private fun EditorScreen(
         if (treeUri != null && pending != null && pending.pages.isNotEmpty()) {
             scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 val stem = pending.editor.title
-                val saved = runCatching {
-                    val parent = android.provider.DocumentsContract.buildDocumentUriUsingTree(
+                val parent = runCatching {
+                    android.provider.DocumentsContract.buildDocumentUriUsingTree(
                         treeUri, android.provider.DocumentsContract.getTreeDocumentId(treeUri),
                     )
-                    var n = 0
-                    for (index in pending.pages) {
-                        val png = pending.editor.pageImagePng(index) ?: continue
+                }.getOrNull()
+                val result = if (parent == null) com.notestaking.app.platform.ProviderImageBatch.Result(0, false) else com.notestaking.app.platform.ProviderImageBatch.save(
+                    pending.pages,
+                    { index -> pending.editor.pageImagePng(index) },
+                    { index ->
                         val name = "%s-p%02d.png".format(stem, index + 1)
-                        val file = android.provider.DocumentsContract.createDocument(resolver, parent, "image/png", name) ?: continue
-                        resolver.openOutputStream(file)?.use { it.write(png) }
-                        n++
-                    }
-                    n
-                }.getOrDefault(0)
-                editor.message = if (saved > 0) resources.getQuantityString(R.plurals.saved_images, saved, saved) else resources.getString(R.string.err_save_images)
+                        android.provider.DocumentsContract.createDocument(resolver, parent, "image/png", name)?.let { file ->
+                            com.notestaking.app.platform.ProviderImageBatch.Destination(
+                                { resolver.openOutputStream(file) },
+                                { android.provider.DocumentsContract.deleteDocument(resolver, file) },
+                            )
+                        }
+                    },
+                )
+                val message = when {
+                    result.saved == 0 && !result.leftovers -> resources.getString(R.string.err_save_images)
+                    result.leftovers -> resources.getString(R.string.err_save_images_leftover, result.saved, pending.pages.size)
+                    result.saved < pending.pages.size -> resources.getString(R.string.saved_some_images, result.saved, pending.pages.size)
+                    else -> resources.getQuantityString(R.plurals.saved_images, result.saved, result.saved)
+                }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { editor.message = message }
             }
         }
     }

@@ -7480,10 +7480,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** PNG bytes for page [index], rendered at full page resolution (paper + background + items), or null. */
     fun pageImagePng(index: Int): ByteArray? {
         val page = pageAt(index) ?: return null
-        val bmp = renderThumbnail(page, state.outerW(page).toInt().coerceAtLeast(1), forExport = true) ?: return null
-        return java.io.ByteArrayOutputStream().use { out ->
-            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-            out.toByteArray()
+        val bmp = try {
+            renderThumbnail(page, state.outerW(page).toInt().coerceAtLeast(1), forExport = true)
+        } catch (_: OutOfMemoryError) {
+            null
+        } ?: return null
+        return try {
+            java.io.ByteArrayOutputStream().use { out ->
+                if (bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)) out.toByteArray() else null
+            }
+        } catch (_: OutOfMemoryError) {
+            null
+        } finally {
+            bmp.recycle()
         }
     }
 
