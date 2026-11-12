@@ -44,6 +44,7 @@ object PdfJoin {
         extraSizes: FloatArray,
         isCancelled: () -> Boolean,
     ): Boolean {
+        if (isCancelled() || !PdfImportSafety.canAppendPageSizes(baseSizes, extraSizes)) return false
         PDFBoxResourceLoader.init(context.applicationContext)
         val mem = MemoryUsageSetting.setupMixed(SCRATCH_MAIN_MEM_BYTES).setTempDir(context.cacheDir)
         val written = runCatching {
@@ -65,6 +66,7 @@ object PdfJoin {
      * that open one of them. True when PDFium reads [out] back with that many pages. IO.
      */
     fun subset(context: Context, source: File, indices: List<Int>, out: File): Boolean {
+        if (!PdfImportSafety.acceptsPageCount(indices.size)) return false
         PDFBoxResourceLoader.init(context.applicationContext)
         val mem = MemoryUsageSetting.setupMixed(SCRATCH_MAIN_MEM_BYTES).setTempDir(context.cacheDir)
         val written = runCatching {

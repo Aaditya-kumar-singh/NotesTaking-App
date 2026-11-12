@@ -20,6 +20,17 @@ internal object PdfImportSafety {
 
     fun acceptsPageCount(pageCount: Int): Boolean = pageCount in 1..MAX_PDF_PAGES
 
+    /** Reject impossible joins before PDFBox loads or writes either document. */
+    fun canAppendPageSizes(baseSizes: FloatArray, extraSizes: FloatArray): Boolean {
+        if (baseSizes.size % 2 != 0 || extraSizes.size % 2 != 0) return false
+        val baseCount = baseSizes.size / 2
+        val extraCount = extraSizes.size / 2
+        if (!acceptsPageCount(baseCount) || !acceptsPageCount(extraCount)) return false
+        if (baseCount > MAX_PDF_PAGES - extraCount) return false
+        return completePageSizes(baseCount, baseSizes) != null &&
+            completePageSizes(extraCount, extraSizes) != null
+    }
+
     /** Never allocate from an untrusted page count or accept incomplete native geometry slices. */
     fun readPageSizes(pageCount: Int, pagesPerRead: Int, read: (Int, Int) -> FloatArray?): FloatArray? {
         if (!acceptsPageCount(pageCount)) return null

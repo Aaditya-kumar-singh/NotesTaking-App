@@ -186,6 +186,31 @@ class PdfImportSafetyTest {
         assertNull(PdfImportSafety.readPageSizes(5_001, 128) { _, _ -> error("must not read") })
     }
 
+    @Test fun pdfJoinPreflightAllowsValidPagesWithinTheLimit() {
+        val one = floatArrayOf(595f, 842f)
+        assertTrue(PdfImportSafety.canAppendPageSizes(one, one))
+        val base = FloatArray(2 * 4_999) { if (it % 2 == 0) 595f else 842f }
+        assertTrue(PdfImportSafety.canAppendPageSizes(base, one))
+    }
+
+    @Test fun pdfJoinPreflightRejectsCombinedPageOverflow() {
+        val one = floatArrayOf(595f, 842f)
+        val base = FloatArray(2 * 4_999) { if (it % 2 == 0) 595f else 842f }
+        assertFalse(PdfImportSafety.canAppendPageSizes(base, one + one))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one + base, one))
+    }
+
+    @Test fun pdfJoinPreflightRejectsMissingOrMalformedPageDimensions() {
+        val one = floatArrayOf(595f, 842f)
+        assertFalse(PdfImportSafety.canAppendPageSizes(floatArrayOf(), one))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one, floatArrayOf()))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one + floatArrayOf(612f), one))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one, floatArrayOf(612f)))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one, floatArrayOf(0f, 842f)))
+        assertFalse(PdfImportSafety.canAppendPageSizes(one, floatArrayOf(Float.NaN, 842f)))
+        assertFalse(PdfImportSafety.canAppendPageSizes(floatArrayOf(595f, Float.POSITIVE_INFINITY), one))
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))
