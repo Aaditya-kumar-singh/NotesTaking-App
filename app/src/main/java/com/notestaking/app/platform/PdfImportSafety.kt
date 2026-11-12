@@ -19,9 +19,12 @@ internal object PdfImportSafety {
 
     fun acceptsPageCount(pageCount: Int): Boolean = pageCount in 1..MAX_PDF_PAGES
 
-    /** Never turn a failed or truncated PDFium page-size read into a successful blank import. */
+    /** A full import must never replace malformed PDF pages with blank note pages. */
     fun completePageSizes(pageCount: Int, sizes: FloatArray?): FloatArray? =
-        sizes?.takeIf { acceptsPageCount(pageCount) && it.size == 2 * pageCount }
+        sizes?.takeIf { data ->
+            acceptsPageCount(pageCount) && data.size == 2 * pageCount &&
+                data.indices.step(2).all { i -> validPagePoints(data[i], data[i + 1]) }
+        }
 
     /** Reject malformed, non-finite or implausibly huge PDF MediaBoxes before creating a Page. */
     fun validPagePoints(width: Float, height: Float): Boolean =

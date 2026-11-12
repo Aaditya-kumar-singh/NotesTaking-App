@@ -100,6 +100,17 @@ class PdfImportSafetyTest {
         assertArrayEquals(complete, PdfImportSafety.completePageSizes(2, complete)!!, 0f)
     }
 
+    @Test fun fullPdfImportRejectsInvalidPageGeometryWithoutBlankPageFallback() {
+        val valid = floatArrayOf(595f, 842f, 612f, 792f)
+        assertArrayEquals(valid, PdfImportSafety.completePageSizes(2, valid)!!, 0f)
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 0f, 792f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, -1f, 792f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, Float.NaN, 792f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 612f, Float.POSITIVE_INFINITY)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f, 14_401f, 792f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(0f, 842f, 612f, 792f)))
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))
