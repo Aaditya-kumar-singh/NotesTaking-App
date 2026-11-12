@@ -4606,9 +4606,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      *  failure so the user can retry the name. IO — call off-thread. */
     fun commitImport(treeUri: String, parentDocId: String, rawName: String): String? {
         val pending = pendingImport ?: return null
-        importCancelled.set(false)
+        lastImportError = null
+        if (importCancelled.get()) {
+            pendingImport = null
+            return null
+        }
         val uri = if (pending.markdown) {
-            lastImportError = null
             readMarkdown(pending.uri)?.let { createMarkdownNoteFile(treeUri, parentDocId, rawName, it) }
         } else {
             val staged = runCatching {
@@ -4631,6 +4634,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      *  is cleared (dialog dismisses); on a genuine failure it's kept so the caller can show an error
      *  and let the user retry. */
     suspend fun commitImportAsync(treeUri: String, parentDocId: String, rawName: String): String? {
+        importCancelled.set(false) // Reset before showing Cancel; the IO worker must never clear a user's cancellation.
         importing = true
         return try {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

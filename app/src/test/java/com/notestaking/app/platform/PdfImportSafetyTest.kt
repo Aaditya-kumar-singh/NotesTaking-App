@@ -48,6 +48,22 @@ class PdfImportSafetyTest {
         staged.delete()
     }
 
+    @Test fun cancellationBeforeProviderReadNeverConsumesSource() = withDirectory { dir ->
+        val input = object : ByteArrayInputStream(pdf(4096)) {
+            var closed = false
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                throw AssertionError("Cancelled import must not read the provider")
+            }
+            override fun close() {
+                closed = true
+                super.close()
+            }
+        }
+        assertNull(PdfImportSafety.stage(input, dir, isCancelled = { true }))
+        assertTrue(input.closed)
+        assertTrue(dir.listFiles()!!.isEmpty())
+    }
+
     @Test fun cancellationDoesNotPublishPartialStagedFile() = withDirectory { dir ->
         var cancel = false
         val input = object : ByteArrayInputStream(pdf(8192)) {
