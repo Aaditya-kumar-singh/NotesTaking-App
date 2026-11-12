@@ -28,7 +28,7 @@ class PdfBatchTest {
     }
 
     /** The picked file, in memory: what was written, and whether it was thrown away. */
-    private class Sink(private val failAfter: Int = Int.MAX_VALUE) : PdfBatch.Destination {
+    private class Sink(private val failAfter: Int = Int.MAX_VALUE, override val existingContent: Boolean = false) : PdfBatch.Destination {
         val bytes = ByteArrayOutputStream()
         var opened = 0
         var closed = false
@@ -151,6 +151,35 @@ class PdfBatchTest {
         assertFalse(result.kept)
         assertEquals(0, sink.opened)
         assertTrue(sink.discarded)
+    }
+
+    @Test
+    fun `an occupied zip destination keeps the old bytes without rendering`() {
+        val sink = Sink(existingContent = true)
+        val original = "existing report".toByteArray()
+        sink.bytes.write(original)
+        val result = batch { _, _, _, _ -> throw AssertionError("must not render") }.zip(plan, sink)
+        assertTrue(result.blockedExisting)
+        assertFalse(result.kept)
+        assertEquals(0, result.written)
+        assertEquals(0, sink.opened)
+        assertFalse(sink.discarded)
+        assertArrayEquals(original, sink.bytes.toByteArray())
+        assertTrue(scratchDir.listFiles()!!.isEmpty())
+    }
+
+    @Test
+    fun `an occupied single PDF destination is never opened or discarded`() {
+        val sink = Sink(existingContent = true)
+        val original = "previous notes".toByteArray()
+        sink.bytes.write(original)
+        val result = batch { _, _, _, _ -> throw AssertionError("must not render") }
+            .single("a", "Algebra.xnote", sink)
+        assertTrue(result.blockedExisting)
+        assertFalse(result.kept)
+        assertEquals(0, sink.opened)
+        assertFalse(sink.discarded)
+        assertArrayEquals(original, sink.bytes.toByteArray())
     }
 
     @Test

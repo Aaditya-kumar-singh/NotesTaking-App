@@ -42,6 +42,7 @@ class PdfBatch(
 ) {
     /** The picked file: opened once a document is ready for it, and thrown away when the export does not keep it. */
     interface Destination {
+        val existingContent: Boolean get() = false
         fun open(): OutputStream
         fun discard()
     }
@@ -66,11 +67,12 @@ class PdfBatch(
     }
 
     /** How a batch ended: of the [found] documents, [written] made it into the destination, and [kept] says whether it was kept. */
-    class Result(val found: Int, val written: Int, val cancelled: Boolean, val kept: Boolean)
+    class Result(val found: Int, val written: Int, val cancelled: Boolean, val kept: Boolean, val blockedExisting: Boolean = false)
 
     /** Every document of [entries] as a PDF in a zip written to [dest], with the folders between them. */
     fun zip(entries: List<ExportZip.Entry>, dest: Destination): Result {
         val count = entries.count { it.source != null }
+        if (dest.existingContent) return Result(count, 0, isCancelled(), false, blockedExisting = true)
         var written = 0
         var kept = false
         var scratch: File? = null
@@ -119,6 +121,7 @@ class PdfBatch(
 
     /** The document [source], called [name], as a lone PDF written to [dest]. */
     fun single(source: String, name: String, dest: Destination): Result {
+        if (dest.existingContent) return Result(1, 0, isCancelled(), false, blockedExisting = true)
         var kept = false
         var scratch: File? = null
         try {

@@ -6317,19 +6317,18 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         private val u = android.net.Uri.parse(uri)
         private val resolver = appContext.contentResolver
 
-        // The picker can hand back an existing file the user chose to overwrite; untouched, it stays as it was.
-        private val existed = runCatching {
+        // A provider may return an occupied document; refuse to open it so a failed export cannot destroy its bytes.
+        override val existingContent = runCatching {
             resolver.query(u, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)?.use { c -> c.moveToFirst() && c.getLong(0) > 0 }
         }.getOrNull() == true
-        private var opened = false
 
         override fun open(): OutputStream {
-            opened = true
+            if (existingContent) throw java.io.IOException("Refusing to overwrite an existing document")
             return resolver.openOutputStream(u) ?: throw java.io.FileNotFoundException(uri)
         }
 
         override fun discard() {
-            if (existed && !opened) return
+            if (existingContent) return
             val gone = runCatching { android.provider.DocumentsContract.deleteDocument(resolver, u) }.getOrDefault(false)
             if (!gone) runCatching { resolver.openOutputStream(u, "wt")?.close() }
         }

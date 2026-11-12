@@ -444,6 +444,7 @@ private fun EditorScreen(
             when {
                 r.cancelled -> null
                 r.found == 0 -> resources.getString(R.string.no_notes_to_export)
+                r.blockedExisting -> resources.getString(R.string.err_export_existing_file)
                 !r.kept -> resources.getString(R.string.err_export_pdf)
                 com.notestaking.app.ui.lonePdf(pending.picked) != null -> resources.getString(R.string.exported_pdf)
                 r.written < r.found -> resources.getString(R.string.exported_some_pdfs, r.written, r.found)

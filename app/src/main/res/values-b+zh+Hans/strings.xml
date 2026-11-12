@@ -581,6 +581,7 @@
         <item quantity="other">已导出 %d 个 PDF。</item>
     </plurals>
     <string name="err_export_pdf">无法导出为 PDF。</string>
+    <string name="err_export_existing_file">该文件已有内容。请选择新文件名，以免覆盖现有文件。</string>
     <string name="err_export_pdf_leftover">PDF 导出失败。目标位置可能留有不完整文件，请手动删除。</string>
     <string name="err_save_copy">无法保存副本。</string>
     <string name="err_save_copy_leftover">保存副本失败。目标位置可能留有空文件或不完整文件，请手动删除。</string>
