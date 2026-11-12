@@ -410,11 +410,25 @@ private fun EditorScreen(
     ) { uri ->
         val temp = pendingExportTemp; pendingExportTemp = null
         if (temp != null) {
-            if (uri != null) {
-                val ok = runCatching { resolver.openOutputStream(uri)?.use { o -> temp.inputStream().use { it.copyTo(o) } } != null }.getOrDefault(false)
-                editor.message = if (ok) resources.getString(R.string.exported_pdf) else resources.getString(R.string.err_export_pdf)
+            if (uri == null) temp.delete()
+            else scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                val result = try {
+                    com.notestaking.app.platform.ProviderCopy.save(
+                        { temp.inputStream() },
+                        { resolver.openOutputStream(uri) },
+                        { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
+                    )
+                } finally {
+                    temp.delete()
+                }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    editor.message = resources.getString(when (result) {
+                        com.notestaking.app.platform.ProviderCopy.Result.SAVED -> R.string.exported_pdf
+                        com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED -> R.string.err_export_pdf
+                        com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER -> R.string.err_export_pdf_leftover
+                    })
+                }
             }
-            temp.delete() // discard the temp whether saved or the picker was dismissed
         }
     }
 

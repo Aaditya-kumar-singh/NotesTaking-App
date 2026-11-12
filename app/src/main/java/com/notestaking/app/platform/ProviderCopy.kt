@@ -5,7 +5,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.CancellationException
 
-/** A failed SAF copy must not leave a silently usable-looking native note. */
+/** A failed SAF copy must not leave a silently usable-looking document. */
 internal object ProviderCopy {
     enum class Result { SAVED, FAILED_REMOVED, FAILED_LEFTOVER }
 
@@ -17,7 +17,7 @@ internal object ProviderCopy {
         try {
             ProviderInput.read(openSource()) { input ->
                 ProviderOutput.write(openDestination()) { output ->
-                    if (input.copyTo(output) == 0L) throw EOFException("Source note is empty")
+                    if (input.copyTo(output) == 0L) throw EOFException("Source document is empty")
                 }
             }
             return Result.SAVED

@@ -113,4 +113,50 @@ class ProviderCopyTest {
         }
         assertTrue(removed)
     }
+
+    @Test fun pdfDestinationCloseFailureIsNotReportedAsSaved() {
+        val output = object : ByteArrayOutputStream() {
+            override fun close() {
+                super.close()
+                throw IOException("provider could not finish the PDF")
+            }
+        }
+        var removed = false
+        val result = ProviderCopy.save(
+            { ByteArrayInputStream("%PDF-1.7 test document".toByteArray()) },
+            { output },
+            { removed = true; true },
+        )
+        assertEquals(ProviderCopy.Result.FAILED_REMOVED, result)
+        assertTrue(output.size() > 0)
+        assertTrue(removed)
+    }
+
+    @Test fun interruptedPdfSourceReadRemovesIncompleteDestination() {
+        val source = object : ByteArrayInputStream("%PDF-1.7 test document".toByteArray()) {
+            var readCalls = 0
+            var closed = false
+
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (readCalls++ > 0) throw IOException("source read interrupted")
+                return super.read(b, off, 1)
+            }
+
+            override fun close() {
+                closed = true
+                super.close()
+            }
+        }
+        val output = ByteArrayOutputStream()
+        var removed = false
+        val result = ProviderCopy.save(
+            { source },
+            { output },
+            { removed = true; true },
+        )
+        assertEquals(ProviderCopy.Result.FAILED_REMOVED, result)
+        assertTrue(source.closed)
+        assertTrue(output.size() > 0)
+        assertTrue(removed)
+    }
 }
