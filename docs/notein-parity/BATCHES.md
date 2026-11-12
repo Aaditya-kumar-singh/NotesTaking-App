@@ -28,7 +28,8 @@ This is the action order for [FEATURE_MATRIX.md](FEATURE_MATRIX.md) and the user
 - **B30 CI passed:** `developer` at `5e7cdd0` passed [Android CI #43209554300](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43209554300) (Kotlin tests, lint, APK). Device acceptance pending.
 - **B31 CI passed:** `developer` at `5639c7f` passed [Android CI #43211899857](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43211899857), including Kotlin unit tests, lint and APK; device QA pending.
 - **B32 CI passed:** `developer` at `96356f7` passed [Android CI #43214443501](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43214443501), including Kotlin tests/lint/APK; real malformed-PDF QA pending.
-- **B33 local fix `b36389e`:** staging failures now distinguish invalid PDF, unavailable/disconnected provider, oversized PDF and cancellation. Single-import UI shows accurate retry messages and preserves password/native-save feedback. Two JVM tests cover staging failure classification, successful staging and no leftover temp files; GitHub/device QA pending.
+- **B33 CI passed:** `developer` at `9858f44` passed [Android CI #43242272480](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43242272480), including Kotlin tests/lint/APK; physical provider QA pending.
+- **B34 local fix `e122b8e`:** Insert PDF now refuses missing/malformed page geometry with the same validator as full import, closes native PDF sources on all exits and deletes failed staging/partial join files. Added insert-specific JVM assertions; GitHub CI and real-device QA pending.
 - **Master replacement is future work**, after all in-scope backlog items are implemented and non-device verification passes; preserve master rollback and release workflow, no blind force-push. See [HYBRID_PRODUCT_CONTRACT.md](HYBRID_PRODUCT_CONTRACT.md).
 
 ## Other remote branches not yet reconciled into developer (2026-11-11)

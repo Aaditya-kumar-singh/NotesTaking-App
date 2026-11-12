@@ -70,7 +70,7 @@
 
 | Test | Priority | Environment | NP IDs | Steps | Pass condition |
 |---|---|---|---|---|---|
-| NT-043 | P0 | Tablet | NP-053–NP-054 | Import local and 200-page cloud PDFs; batch good/malformed/disconnected PDFs; cancel mid-batch; cancel single import immediately before IO starts; retry provider failure after password-protected PDF; import a PDF with one zero/NaN/oversized MediaBox; retry single import after provider disconnection, invalid signature, password-protected and over-256 MB sources | Original unchanged; accurate provider/format/size/password feedback; early Cancel opens no provider or new note; invalid geometry creates no blank page; retries and counts accurate; no leaked staging |
+| NT-043 | P0 | Tablet | NP-053–NP-054, NP-058 | Import local/cloud PDFs; batch good/malformed/disconnected PDFs; cancel/retry import; insert malformed/short-page-geometry PDF into existing note, then retry valid PDF | Original PDF and notes unchanged on failure; invalid pages never inserted as blank pages; no staged/partial join files remain; successful PDF inserts, saves and reopens with correct page order |
 | NT-044 | P0 | Tablet | NP-055 | Anchor ink dot at image landmark; zoom 50→400→100% | Ink remains on landmark, including export |
 | NT-045 | P0 | Tablet | NP-055–NP-056 | Repeat with 0/90/180/270 rotation and crop/media boxes | Overlay and eraser hit-test use same page transform |
 | NT-046 | P1 | Tablet | NP-057–NP-060 | Insert/duplicate/move/delete selected pages including cover | Correct order, undo, thumbnails and source page pointers |
