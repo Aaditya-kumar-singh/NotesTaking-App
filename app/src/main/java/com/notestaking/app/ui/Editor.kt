@@ -7194,6 +7194,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         root: String, parentId: String, rawName: String, from: Document,
         cargo: com.notestaking.app.core.model.PageCargo, sourcePdf: java.io.File?,
     ): MadeFile? {
+        if (importCancelled.get()) return null
         val note = Document(dpi = cargo.dpi, created = System.currentTimeMillis())
         note.style = from.style
         note.margins = from.margins
@@ -7204,14 +7205,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         }
         (settings.newNoteFlow ?: factoryFlow).applyTo(note.flow)
         val pdf = cargoPdf(cargo, sourcePdf)
-        if (cargo.pdfIndices.isNotEmpty() && pdf == null) return null
+        if (importCancelled.get() || (cargo.pdfIndices.isNotEmpty() && pdf == null)) return null
         note.pdfFile = pdf
         val pages = cargo.unpack(note, if (pdf != null) 0 else null, textMeasurer)
         if (cargo.cover) pages.firstOrNull()?.cover = true
         note.pages.addAll(pages)
         note.bookmarks.addAll(cargo.bookmarks.map { Bookmark(it.page, it.label) })
+        if (importCancelled.get()) return null
         val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val uri = createNoteFile(root, parentId, name) { codec.write(note, it) } ?: return null
+        val uri = createNoteFile(root, parentId, name) {
+            if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
+            codec.write(note, it, isCancelled = { importCancelled.get() })
+            if (importCancelled.get()) throw DocumentCodec.WriteCancelled()
+        } ?: return null
         return MadeFile(uri, name)
     }
 

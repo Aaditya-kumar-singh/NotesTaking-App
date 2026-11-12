@@ -340,6 +340,64 @@ class DocumentCodecTest {
         assertTrue(doc.pages[0].items[0] is TextItem)
     }
 
+    @Test fun extractedPagesReopenAsIndependentEditableNoteWithAssets() {
+        val dir = Files.createTempDirectory("xnote-extract").toFile()
+        try {
+            val image = File(dir, "image.png").apply { writeBytes(byteArrayOf(1, 2, 3, 4)) }
+            val audio = File(dir, "recording.m4a").apply { writeBytes(byteArrayOf(9, 8, 7, 6)) }
+            val pdf = File(dir, "selected.pdf").apply { writeBytes("%PDF".toByteArray()) }
+            val measurer = FakeTextMeasurer()
+            val ink = Stroke(Tool.PEN, ToolConfig(), mutableListOf(Sample(10.0, 20.0, 0.7)))
+            val source = Document(dpi = 150, pdfFile = pdf)
+            source.pages += Page(200.0, 300.0)
+            source.pages += Page(
+                200.0, 300.0, pdfPage = 4,
+                items = mutableListOf(
+                    ink,
+                    ImageItem(ImageData(image, 2, 2), Rect(0.0, 0.0, 20.0, 20.0)),
+                    AudioItem(AudioData(audio, "m4a", 1200, byteArrayOf(7)), Rect(0.0, 30.0, 100.0, 20.0), "recording", 3, measurer),
+                ),
+                style = PageStyle(template = "0123456789abcdef"),
+            )
+            source.pages += Page(200.0, 300.0, pdfPage = 7)
+            source.bookmarks += Bookmark(1, "Selected")
+            source.templates = mapOf("0123456789abcdef" to "<a/>")
+            val cargo = com.notestaking.app.core.model.PageCargo.pack(source, listOf(1, 2), measurer)
+            val extracted = Document(dpi = cargo.dpi, pdfFile = pdf)
+            extracted.pages.addAll(cargo.unpack(extracted, pdfBase = 0, measurer = measurer))
+            extracted.bookmarks.addAll(cargo.bookmarks)
+            val bytes = ByteArrayOutputStream().also { codec.write(extracted, it) }.toByteArray()
+
+            // No embedded asset in the saved note may depend on the source note remaining open.
+            image.delete()
+            audio.delete()
+            pdf.delete()
+            val reopened = codec.read(ByteArrayInputStream(bytes), pdfDir = dir, imageDir = dir)
+            assertEquals(2, reopened.pages.size)
+            assertEquals(listOf(0, 1), reopened.pages.map { it.pdfPage })
+            assertArrayEquals("%PDF".toByteArray(), reopened.pdfFile!!.readBytes())
+            assertEquals(listOf(Bookmark(0, "Selected")), reopened.bookmarks)
+            assertEquals("<a/>", reopened.templates["0123456789abcdef"])
+            val assets = reopened.pages[0].items
+            assertEquals(10.0, (assets[0] as Stroke).sampleAt(0).x, 1e-6)
+            assertArrayEquals(byteArrayOf(1, 2, 3, 4), (assets[1] as ImageItem).image.file.readBytes())
+            assertArrayEquals(byteArrayOf(9, 8, 7, 6), (assets[2] as AudioItem).audio.file.readBytes())
+            (assets[0] as Stroke).setSamples(listOf(Sample(90.0, 90.0, 0.7)))
+            assertEquals(10.0, ink.sampleAt(0).x, 1e-6)
+            assertEquals(3, source.pages.size)
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test fun cancellingExtractedNoteAssetWriteStopsStreaming() {
+        val doc = Document.blank(count = 1)
+        doc.pages[0].items.add(ImageItem(ImageData(imageFile(), 2, 2), Rect(0.0, 0.0, 10.0, 10.0)))
+        assertThrows(DocumentCodec.WriteCancelled::class.java) {
+            codec.write(doc, ByteArrayOutputStream(), isCancelled = { true })
+        }
+    }
+
     @Test fun pdfFileRoundTrip() {
         val srcDir = java.nio.file.Files.createTempDirectory("xnote-src").toFile()
         val outDir = java.nio.file.Files.createTempDirectory("xnote-out").toFile()
