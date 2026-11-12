@@ -4496,19 +4496,31 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Imports the PDF at [pdfFile] into a new `.xnote` under [parentDocId] (named after [rawName]);
      *  returns its URI, or null. The PDF is streamed straight into the bundle, never held in RAM. IO. */
     fun createPdfNoteFile(treeUri: String, parentDocId: String, rawName: String, pdfFile: java.io.File): String? {
-        val source = com.notestaking.app.platform.PdfSource.open(pdfFile)
-        lastImportError = source.openError
-        if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(source.pageCount)) {
-            source.close()
+        lastImportError = null
+        val source = try {
+            com.notestaking.app.platform.PdfSource.open(pdfFile)
+        } catch (e: java.util.concurrent.CancellationException) {
+            throw e
+        } catch (_: Exception) {
             return null
         }
-        val doc = com.notestaking.app.platform.PdfImporter.import(source, state.document.dpi) // doc.pdfFile = pdfFile
-        stampNewNoteDefaults(doc)
-        doc.created = System.currentTimeMillis()
-        val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val uri = createNoteFile(treeUri, parentDocId, name) { codec.write(doc, it) { importCancelled.get() } }
-        source.close()
-        return uri
+        return try {
+            lastImportError = source.openError
+            if (!com.notestaking.app.platform.PdfImportSafety.acceptsPageCount(source.pageCount)) null
+            else {
+                val doc = com.notestaking.app.platform.PdfImporter.import(source, state.document.dpi)
+                stampNewNoteDefaults(doc)
+                doc.created = System.currentTimeMillis()
+                val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
+                createNoteFile(treeUri, parentDocId, name) { codec.write(doc, it) { importCancelled.get() } }
+            }
+        } catch (e: java.util.concurrent.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null // Import failed: no completed note was published; the source remains available for retry.
+        } finally {
+            runCatching { source.close() }
+        }
     }
 
     /**

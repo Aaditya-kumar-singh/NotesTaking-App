@@ -50,10 +50,13 @@ import kotlin.math.roundToInt
 /** Turns a loaded [PdfSource] into a paged note to annotate (spec 08 §5). */
 object PdfImporter {
     fun import(source: PdfSource, dpi: Int = PageSize.DEFAULT_DPI): Document {
+        val pageCount = source.pageCount
+        if (!PdfImportSafety.acceptsPageCount(pageCount)) throw java.io.IOException("Unsupported PDF page count")
+        val sizes = PdfImportSafety.completePageSizes(pageCount, source.allPageSizePoints())
+            ?: throw java.io.IOException("PDF page sizes could not be read completely")
         val doc = Document(dpi = dpi)
         doc.pdfFile = source.file
-        doc.pages.addAll(pages(source.allPageSizePoints() ?: FloatArray(0), 0, dpi, null))
-        if (doc.pages.isEmpty()) doc.pages.add(Page.blank(PageSize.A4, com.notestaking.app.core.model.Orientation.PORTRAIT, dpi))
+        doc.pages.addAll(pages(sizes, 0, dpi, null))
         return doc
     }
 

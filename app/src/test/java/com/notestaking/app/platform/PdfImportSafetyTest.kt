@@ -73,6 +73,17 @@ class PdfImportSafetyTest {
         assertTrue(dir.listFiles()!!.isEmpty())
     }
 
+    @Test fun missingOrIncompletePdfPageSizesNeverCreateBlankReplacementNotes() {
+        assertNull(PdfImportSafety.completePageSizes(2, null))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf()))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(595f, 842f)))
+        assertNull(PdfImportSafety.completePageSizes(2, FloatArray(6)))
+        assertNull(PdfImportSafety.completePageSizes(0, FloatArray(0)))
+        assertNull(PdfImportSafety.completePageSizes(5_001, FloatArray(10_002)))
+        val complete = floatArrayOf(595f, 842f, 612f, 792f)
+        assertArrayEquals(complete, PdfImportSafety.completePageSizes(2, complete)!!, 0f)
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))
