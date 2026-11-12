@@ -759,7 +759,10 @@
     <string name="drag_to_reorder">Drag to reorder</string>
     <string name="err_paste_pages">Couldn’t paste the pages.</string>
     <string name="importing_markdown">Importing Markdown…</string>
-    <string name="import_progress">%1$d of %2$d imported</string>
+    <string name="import_progress">Processed %1$d of %2$d PDFs</string>
+    <string name="imported_some_pdfs">Imported %1$d of %2$d PDFs. Some could not be imported.</string>
+    <string name="err_import_all_pdfs">Could not import any of the %1$d selected PDFs.</string>
+    <string name="import_batch_cancelled">Import stopped. Imported %1$d of %2$d PDFs.</string>
     <plurals name="imported_pdfs">
         <item quantity="one">Imported %d PDF</item>
         <item quantity="other">Imported %d PDFs</item>

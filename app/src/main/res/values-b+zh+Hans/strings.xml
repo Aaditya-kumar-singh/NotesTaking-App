@@ -1144,9 +1144,12 @@
     <string name="pick_cover_hint">Pick a design to start the note with a cover.</string>
     <string name="page_size_mm">%1$s × %2$s mm</string>
     <string name="custom_size_range">Each side between %1$s and %2$s mm</string>
-    <string name="importing_pdfs">Importing PDFs…</string>
+    <string name="importing_pdfs">正在导入 PDF…</string>
     <string name="importing_markdown">Importing Markdown…</string>
-    <string name="import_progress">%1$d of %2$d imported</string>
+    <string name="import_progress">已处理 %1$d / %2$d 个 PDF</string>
+    <string name="imported_some_pdfs">已导入 %1$d / %2$d 个 PDF。部分文件导入失败。</string>
+    <string name="err_import_all_pdfs">所选的 %1$d 个 PDF 均未能导入。</string>
+    <string name="import_batch_cancelled">导入已停止。已导入 %1$d / %2$d 个 PDF。</string>
     <string name="err_share_image">Couldn’t share the image.</string>
     <string name="err_no_camera">No camera app to take a photo with.</string>
     <string name="pref_volume_keys_turn_pages">Volume keys turn pages</string>

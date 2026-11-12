@@ -197,7 +197,7 @@ class RecentEntry(val entry: BrowseEntry, val opened: Long, val where: String?)
 /** A picked PDF awaiting a name before it's imported into the explorer's current folder. */
 data class PendingImport(val defaultName: String, val uri: String, val markdown: Boolean = false)
 
-/** How far a multi-file PDF import has got; drives the count in the import dialog. */
+/** Files attempted in a PDF batch; successful imports are counted separately in its result. */
 data class ImportProgress(val done: Int, val total: Int)
 
 /** Per-folder colour sidecar: a hidden ".xnote" dir holding "colors.json" (item name -> hex). */
@@ -4646,35 +4646,32 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         pendingImports = items
     }
 
-    /** Imports every queued PDF into [parentDocId] one at a time; returns how many landed. Each file
-     *  is staged to its own temp, written into its `.xnote`, then dropped before the next is opened,
-     *  so a batch costs the same memory as a single import however long the list is. Names come from
-     *  the source files. Cancel stops after the file in flight, discarding only that one; whatever
-     *  already landed stays. [importProgress] drives the dialog's count. IO — runs off-thread. */
-    suspend fun commitImportsAsync(treeUri: String, parentDocId: String): Int {
+    /** Imports each queued PDF with bounded staging. Progress counts attempted files, not only
+     *  successes, and the result distinguishes partial failure from cancellation. IO — off-thread. */
+    internal suspend fun commitImportsAsync(treeUri: String, parentDocId: String): com.notestaking.app.platform.PdfImportBatch.Result {
         val items = pendingImports
-        if (items.isEmpty()) return 0
+        if (items.isEmpty()) return com.notestaking.app.platform.PdfImportBatch.Result(0, 0, 0, false)
         importCancelled.set(false)
         importing = true
         importProgress = ImportProgress(0, items.size)
         return try {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                var done = 0
-                for (item in items) {
-                    if (importCancelled.get()) break
-                    val staged = runCatching {
-                        appContext.contentResolver.openInputStream(android.net.Uri.parse(item.uri))?.let { stageImport(it) }
-                    }.getOrNull()
-                    if (staged != null) {
-                        try {
-                            if (createPdfNoteFile(treeUri, parentDocId, item.defaultName, staged) != null) done++
+                com.notestaking.app.platform.PdfImportBatch.run(
+                    items.size,
+                    { importCancelled.get() },
+                    { index ->
+                        val item = items[index]
+                        val staged = runCatching {
+                            appContext.contentResolver.openInputStream(android.net.Uri.parse(item.uri))?.let { stageImport(it) }
+                        }.getOrNull()
+                        if (staged == null) false else try {
+                            createPdfNoteFile(treeUri, parentDocId, item.defaultName, staged) != null
                         } finally {
                             staged.delete()
                         }
-                    }
-                    importProgress = ImportProgress(done, items.size)
-                }
-                done
+                    },
+                    { processed -> importProgress = ImportProgress(processed, items.size) },
+                )
             }
         } finally {
             pendingImports = emptyList()

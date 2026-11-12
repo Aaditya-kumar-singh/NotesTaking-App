@@ -1892,9 +1892,18 @@ private fun ExplorerSection(
     val pendingImports = editor.pendingImports
     LaunchedEffect(pendingImports) {
         if (pendingImports.isNotEmpty()) {
-            val n = editor.commitImportsAsync(root, currentDocId)
+            val result = editor.commitImportsAsync(root, currentDocId)
             refreshKey++
-            if (n > 0) editor.message = resources.getQuantityString(R.plurals.imported_pdfs, n, n)
+            editor.message = when {
+                result.imported == result.total ->
+                    resources.getQuantityString(R.plurals.imported_pdfs, result.imported, result.imported)
+                result.cancelled ->
+                    resources.getString(R.string.import_batch_cancelled, result.imported, result.total)
+                result.imported == 0 ->
+                    resources.getString(R.string.err_import_all_pdfs, result.total)
+                else ->
+                    resources.getString(R.string.imported_some_pdfs, result.imported, result.total)
+            }
         }
     }
 

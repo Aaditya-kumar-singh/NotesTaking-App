@@ -1910,7 +1910,7 @@ private fun PdfImportDialog(label: Int, onCancel: () -> Unit) = SpinnerDialog(st
 
 /**
  * Determinate "Importing PDFs…" dialog for a multi-file import: a ring filled by files finished plus
- * a running "%d of %d imported" line, so the count stays visible for the whole batch. Cancel stops
+ * a running "%d of %d processed" line, so failed files still advance progress. Cancel stops
  * after the file in flight and keeps the ones already imported. Styled to match [PdfExportDialog].
  */
 @Composable
