@@ -1,13 +1,13 @@
 # Chat B — G08 toolbar accessibility handoff
 
-- **Assigned:** G08 / P1 NP-089, NP-090, NP-092 (toolbar subset); this commit addresses **NP-090 / NT-068 only**.
+- **Assigned:** G08 / P1 NP-089, NP-090, NP-092 (toolbar subset). Source-only checkpoints: NP-090 / NT-068 and NP-089 / NT-067 (paged toolbar text actions only).
 - **Branch:** `agent/chat-b-g08-toolbar-accessibility`
 - **Worktree:** `.agent-worktrees/chat-b` (separate from coordinator, Chat A, and Gemini).
 - **Baseline:** coordinator worktree, derived from B38 `b2e38f37cc0518c3886f3712951715a4b0d04c84`.
 - **State:** LOCAL IMPLEMENTATION VERIFIED BY SOURCE-ONLY CHECKS; GitHub Kotlin CI and device/TalkBack QA **NOT RUN**.
 - **Push / merge / PR:** NONE. Chat A is the sole integrator.
 
-## Confirmed defect and bounded fix
+## First checkpoint — NP-090 selected-state announcements
 
 `ToolbarIcon` formerly set Compose `selected` semantics only when `glideKey != null`, so regular and pinned toggles looked selected without announcing their active state to TalkBack. Pen/gliding tools and swatches were already handled; regular icon hit areas are at least 48dp via `BarMetrics`.
 
@@ -44,11 +44,39 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 5. With a stylus, confirm pen tool selection, second tap for configuration, hover tooltips, stroke drawing, erasing, swatch drag-to-canvas, floating grip drag and split-pane close still behave as before.
 6. After Chat A integrates, require GitHub Kotlin/JUnit tests, Compose compilation, lint and phone/tablet TalkBack and stylus acceptance on the exact integrated SHA before declaring NP-090 accepted.
 
-## Remaining risks and handoff
+## Remaining risks recorded at the first NP-090 checkpoint
 
-- **NP-089:** text-only clickable page counter, zoom percentage and title require a separate 48dp touch-target audit; this patch does not alter them.
+- **NP-089 (at this checkpoint):** text-only clickable page counter, zoom percentage and title required a separate 48dp audit. Addressed in the later NP-089 source checkpoint below; hardware validation is still pending.
 - **NP-092:** large-font layout, keyboard focus and Back navigation still need separate work/device evidence.
 - **NP-090:** source semantics wiring is implemented, but screen reader announcements and focus order are not yet device-verified.
 - No off-limits files were edited. Do not update shared parity trackers until Chat A reviews and integrates this work.
 - **Code/test commit:** `8f8c877d44cdaae0586f6e87b5c91f656037fdf1`.
-- **Status/handoff commit:** this STATUS-only follow-up commit (see branch HEAD). Chat A must cherry-pick code/test and status commits in order, using the coordinator checkout.
+- **Status/handoff commit:** `79137c8588a4c143eb45dfef9c9ece707935721a`.
+
+## Second checkpoint — NP-089 / NT-067 paged toolbar text hit areas (2026-11-13)
+
+**Confirmed defect:** `Toolbar.kt` contained three clickable text controls with no minimum interactive dimensions: the note-title rename action, the page-counter jump action, and the zoom-percentage menu. Their hit bounds followed text intrinsic sizes, even though adjacent icons already use `BarMetrics.button >= 48.dp` with 4dp spacing on either side.
+
+**Bounded implementation:** `Toolbar.kt` now routes these three actions through one `Modifier.toolbarTextAction` helper. It uses `LocalBar.current.button` as both minimum width and minimum height, preserves horizontal/vertical spacing, centers label content, exposes `Role.Button`, and labels activation using existing translated resources (`rename_note`, `title_go_to_page`, `title_zoom`). The actual callbacks and page/zoom dialogs are unchanged, as are pen/stylus gestures, canvas and persistent storage.
+
+**Touched files:**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt` — shared 48dp text-action modifier and three call sites.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarMetricsTest.kt` — `iconAndTextActionTargetsMeetMinimumInBothToolbarOrientations` now checks each available toolbar size with horizontal and vertical BarMetrics and the 8dp surrounding thickness.
+
+**Validation executed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS (6 owned changed paths since coordinator baseline).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin source, 227 test source, 22 XML, 39 PNG, 0 problems).
+- `python tools/ci/check_backup_privacy.py` — PASS (privacy exclusions).
+- Focused `python -c` static assertion — PASS: all three text actions call the helper, which uses minimum dimensions and Button/onClickLabel semantics.
+- `git diff --check` — PASS (exit 0). No Kotlin/Gradle tests, lint, Android build, or device installation executed locally.
+
+**Manual acceptance (not run):**
+1. On a ~320dp phone and tablet, open a paged note with a short and long title. Tap each edge of the title, current page/count and zoom percentage. Verify the full 48dp control area is tappable without triggering adjacent controls, and the original rename/jump/zoom dialogs still open.
+2. Repeat with toolbar docked top, bottom, left and right; page counter stacks in vertical rails. Repeat with floating toolbar expanded. Ensure no clipped buttons or unintended canvas strokes during toolbar taps.
+3. Enable TalkBack, swipe through the three controls: check note title/current page/zoom value is readable, Button role and action label describe rename/go to page/zoom, and focus order matches visual order.
+4. Repeat at 1.3x and 2.0x font and with large page counts (e.g. 100+ pages); record overflow/clipping separately under NP-092. Confirm pressure/hover, selected tool, swatch dragging and eraser settings remain unchanged.
+5. After Chat A reviews, run GitHub Kotlin/JUnit + lint/Android build on the **integrated** SHA and physical phone/tablet QA before marking NT-067 or NP-089 accepted.
+
+**Pending:** This is an owned toolbar subset of NP-089, not a full-app touch-target audit. NP-092 large-font layout/Back/keyboard and first checkpoint NP-090 TalkBack acceptance are still pending. No shared resources, tracking sheets, external worktrees or Chat A/Gemini files were changed.
+
+**NP-089 source/test commit:** `cb5077de0f79ace8ae5c4fd71f0e0d95f33269ed`. **Status-only follow-up commit:** this document at branch HEAD. Chat A should cherry-pick first checkpoint commits, then this code/test commit and status-only commit in ascending order. **PUSH / PR / MERGE: NO.**
