@@ -212,4 +212,29 @@ No other files or resources changed; visual layout, targets, callbacks, popups, 
 
 **Pending risks:** TalkBack spoken text priority, screen-reader focus merging, 320dp clipping, keyboard/Back interactions, and regression tests on an actual Android build are unverified. NP-089/090/092 remain open pending integrated CI and hardware evidence, not accepted based on source checks alone.
 
-**Seventh code commit:** `c62eb14565bb4b02c1dbd0d99a21efb55090f574`. **Seventh status-only commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after all previous G08 commits in Git order, without editing Chat A's storage branch from this worktree. **PUSH: NO / MERGE: NO / PR: NO.**
+**Seventh code commit:** `c62eb14565bb4b02c1dbd0d99a21efb55090f574`. **Seventh status-only commit:** `a03717369497a715b19675e30639e481fc94e540`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Eighth checkpoint — NP-092 visible keyboard focus on toolbar customizer chips (2026-11-13)
+
+**Confirmed source defect:** NP-092's previous keyboard activation checkpoint made `ToolbarCustomizer.kt:ChipCell` focusable with Enter/Space support, but did not draw a focus indicator. In Settings → Toolbar customizer, a hardware-keyboard user tabbing across the toolbar item chips had no visual cue to distinguish keyboard focus from the existing visibility (checked/unchecked) state.
+
+**Bounded implementation:** In owned `app/src/main/java/com/notestaking/app/ui/ToolbarCustomizer.kt`, each interactive `ChipCell` now tracks `onFocusChanged` in `remember(item)` state and overlays a 2dp accent-color border when focused. The border modifier is outside the `ChipFace` hidden-state opacity layer, so the focus outline stays visible even when the chip is toggled off. Unfocused chips and the noninteractive section drag ghost preserve their original appearance. The 48dp minimum chip size, checkbox TalkBack semantics, key activation, tap, long-press drag, section controls, and all editors remain untouched.
+
+**Focused regression evidence:** A Python source assertion executed in the Chat B worktree checked that (1) focus state and 2dp accent border belong only to interactive `ChipCell`, (2) `onFocusChanged` precedes `.focusable()`, (3) the border is applied outside the dimmed `ChipFace`, and (4) existing checkbox semantics plus Enter/Space and pointer drag/click handlers are still present. **PASS**. No extra JVM test was added for this presentation-only focus outline; the existing `ToolbarCustomizerKeyboardTest.kt` remains source-only and requires GitHub CI execution.
+
+**Permitted validation run:**
+- `python tools/agents/check_lane.py` — PASS (12 Chat B-owned changed paths since baseline).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin source files, 229 Kotlin test sources, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — PASS (private app data excluded from backup).
+- `git diff --check` and staged diff check — PASS.
+- No local Kotlin/JUnit execution, Gradle, lint, Android build, APK install, CI, or device test performed.
+
+**Manual phone/tablet acceptance for Chat A (NOT RUN):**
+1. With hardware keyboard, open Settings → Toolbar customization, Tab through visible/hidden chips; the focused chip must show a distinct accent outline, including when unchecked/dimmed. Verify moving focus removes the old outline, and Tab/Shift+Tab do not toggle visibility.
+2. Press Enter, numpad Enter and Space on the focused chip; each toggles the existing checkbox state once, and keyboard focus remains visible. Check the focus ring does not accidentally make unchecked chips appear checked.
+3. Repeat on 320dp phone and tablet at font scales 1.0, 1.3 and 2.0, including wrapped chip layouts and both xnote/xcanvas tabs. Confirm no clipping or overlapping focus rings.
+4. With TalkBack, verify spoken label + checkbox checked/unchecked + double-tap action, and with finger/stylus verify ordinary tap, long-press to drag within/across sections and drop animations remain intact. Run Kotlin/JUnit and Compose compilation/lint in GitHub Actions on the exact integrated SHA.
+
+**Risks and ownership:** Focus visibility still requires actual Android keyboard/TalkBack QA; no Compose screenshot or automated UI test ran. Full keyboard section reordering requires coordinator-owned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating grip arrow-key routing conflicts with parent preview handlers in coordinator-owned `MainActivity.kt` and Chat A-owned `Editor.kt`. No unowned file was edited; shared acceptance trackers remain for Chat A.
+
+**Eighth code commit:** `58c6386dfe7b841f27a58f001f6b11589b320a83`. **Eighth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick in Git order after all earlier G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
