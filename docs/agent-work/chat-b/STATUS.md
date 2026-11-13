@@ -445,4 +445,30 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** Android text line-breaking around '+' and other shortcut symbols may not wrap as expected; this is source-verified only. Full G08 NP-089/NP-090/NP-092 still needs GitHub CI and real phone/tablet testing. Keyboard-driven section reorder depends on coordinator-owned `ui/PreferencesPane.kt`; floating-grip arrow movement depends on parent preview key handling in coordinator-owned `MainActivity.kt` and Chat A-owned `ui/Editor.kt`. No changes were made to those paths, shared trackers, storage or other agent worktrees.
 
-**Seventeenth implementation commit:** `d62c1a0efbf839949e70d118da2f50b43e92a310`. **Seventeenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should cherry-pick both in Git order after the earlier sixteen G08 checkpoint pairs. **PUSH: NO / MERGE: NO / PR: NO.**
+**Seventeenth implementation commit:** `d62c1a0efbf839949e70d118da2f50b43e92a310`. **Seventeenth status-only handoff commit:** `712748e09bb2e72538db16cc1bc0d37bc55f2ca1`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Eighteenth checkpoint — NP-090 PDF mode and finger-writing TalkBack action labels (2026-11-13)
+
+**Confirmed source issue:** The previous shared `ToolbarIcon` fix exposes hover hints as TalkBack click-action labels only while `active = true`, which is correct for configurable tools like an inactive Eraser (its hint describes a second-tap settings popup). But PDF Reading/Annotating and Finger Writing are real two-way toggles. Their existing hints accurately describe the next action **in both states**, while TalkBack still received a generic activation label when the toggle was off.
+
+**Bounded implementation in Chat B-owned paths:**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: Added optional `actionLabel: String? = null` to shared `ToolbarIcon`; pure `toolbarActionLabel(active, hint, explicitLabel)` gives priority to an explicitly supplied next-action label, otherwise keeps the prior selected-tool rule `hint.takeIf { active }`. Existing tooltip text, Button/selected semantics, size, focus, click callback, keyboard and pointer behavior stay unchanged. Callers without the new parameter keep identical behavior.
+- `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`: `PdfModeButton` and `PinnedFingerDrawing` each reuse their already localized, state-dependent hover hint as explicit `actionLabel`. TalkBack now has the correct action for both mode states (Read/Annotate and Enable/Disable finger writing) while the button's existing state label and selected semantics stay intact. Pinned Eraser continues using the armed-only settings hint, so inactive Eraser still announces its normal selection action.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt`: Added two JUnit cases **not run locally**: `armedToolHintsAreActionsOnlyWhileSelected` and `explicitToggleActionsAreNamedWhenOnOrOff`, covering both-state toggles, armed settings, and generic fallback.
+
+**Checks actually executed from isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (15 owned changed paths relative to original baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin sources, 232 test sources, 22 XML files, 39 PNGs, 0 problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (no private data backup exposure).
+- `git diff --check` and `git diff --cached --check` — **PASS**.
+- Focused Python source assertion — **PASS**: existing Android localized resources, optional action label and safe fallback, both PDF toggle callers, existing pinned Eraser behavior, unchanged callbacks, and two new test cases confirmed.
+- **Not performed:** local Gradle/Kotlin/JUnit execution, Compose compiler, lint, Android build, APK/device install, GitHub Actions, TalkBack or stylus QA.
+
+**Chat A phone/tablet acceptance script (NOT RUN):**
+1. Open a PDF with TalkBack enabled. In PDF Read/Pan mode, focus the mode toggle and verify it describes `Annotate` as the next action; activate once and verify annotation mode, then the action changes to `Read (Pan)` when off. The spoken current state/selected value should stay accurate and not be confused with the action.
+2. Disable Finger Writing and focus its toolbar control: it should announce `Enable finger writing`; activate once, verify it becomes enabled and action updates to `Disable finger writing`; repeat. Confirm two-finger pan and stylus writing still work and that only one toggle occurs per activation.
+3. With Eraser unselected, ensure no `Tap again for eraser size and mode` activation is incorrectly advertised. Select Eraser, verify settings action becomes available, then activate again to open popup. Verify docked/floating modes, narrow 320dp phones, split screen, 1.3×/2× fonts and hardware keyboard. Run exact integrated SHA in GitHub Kotlin/JUnit, Compose, lint and Android CI before accepting NP-090.
+
+**Risks and remaining gates:** Compose/TalkBack wording and focus refresh after state changes are unverified until device QA. The existing source tests were not executed. Keyboard section reordering remains blocked by coordinator-owned `ui/PreferencesPane.kt`, and floating grip arrow movement needs coordination across `MainActivity.kt` and Chat A-owned `ui/Editor.kt`; no protected file or shared tracker changed. NP-089/NP-090/NP-092 remain open until integrated CI and device evidence.
+
+**Eighteenth implementation+tests commit:** `852f65a7ed927908f96c89f2688066712558f6b5`. **Eighteenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A must review and cherry-pick in Git order after the prior seventeen G08 checkpoint pairs. **PUSH: NO / MERGE: NO / PR: NO.**
