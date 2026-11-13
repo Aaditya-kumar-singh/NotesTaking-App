@@ -575,4 +575,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Risk and remaining gates:** Whether Material3 merges `selected` semantics into the TalkBack node correctly remains device-dependent; no runtime or UI acceptance evidence has been gathered. Parent pane keyboard preview consumes arrow keys for page navigation/infinite pan; implementing keyboard movement of the floating grip needs coordinator/Chat A cooperation (read-only `MainActivity.kt` and `Editor.kt`). Keyboard section reorder similarly requires coordinator-owned `PreferencesPane.kt`. NP-089/090/092 remain open until integrated CI and device QA. No unowned files or other agents' branches were modified.
 
-**Twenty-third implementation commit:** `cfab0d232ece0cc0c6056bcb1f6c0503ac9a4f0d`. **Twenty-third status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the prior twenty-two G08 checkpoint pairs in order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-third implementation commit:** `cfab0d232ece0cc0c6056bcb1f6c0503ac9a4f0d`. **Twenty-third status-only handoff commit:** `521452e3316daabbf2f89d6998946759d44f7f45`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-fourth checkpoint — NP-092 visible selected indicator for All Tools menu (2026-11-13)
+
+**Confirmed source issue:** Checkpoints 20 and 23 added TalkBack `selected` semantics for active drawing tools and Wand/Ruler/Minimap/Markup rows in `CanvasQuickAccess.kt`. Yet the Material3 `QuickActionRow` visuals were identical whether `isSelected` was true, false or absent. Sighted users, including those needing visual rather than spoken state cues, could not tell which tool or persistent toggle was active when opening the All Tools overflow.
+
+**Smallest owned fix:** In `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`, import Compose `Icon` and `Modifier.size` and give the existing `DropdownMenuItem` a decorative `trailingIcon` only when `isSelected == true`. The icon uses the existing `NotesTakingIcons.check` at 18dp with `contentDescription = null` because the row already provides spoken selected semantics. `isSelected = false` and unspecified action rows get no checkmark, preserving the existing text, enabled state, hit targets, semantics, click callbacks and menu dismissal. Applies to paged and infinite All Tools rows with no additional caller changes, new resources or dependencies. Only this file plus Chat B's status file changed.
+
+**Investigation avoided unrelated work:** Suspected malformed saved floating toolbar coordinates, but read-only inspection of `settings/Preferences.kt` found finite/0..1 validation on both saved fractions and `ui/Editor.kt:placeFloatingToolbar` also clamps writes. No unsupported floating-position patch was made.
+
+**Permitted checks performed locally:**
+- `python tools/agents/check_lane.py` — **PASS**, 16 Chat B-owned paths changed since original baseline.
+- `python tools/ci/check_project.py` — **PASS**, 388 Kotlin source, 233 test source, 22 XML, 39 PNG, zero problems.
+- `python tools/ci/check_backup_privacy.py` — **PASS**, private note backups unchanged.
+- `git diff --check` and `git diff --cached --check` — **PASS**.
+- Focused Python source regression assertions — **PASS**, selected-only checkmark, decorative icon, retained selected semantics, menu enabled/click handlers, current tool and toggle selections, and Undo/Redo default action behavior. No new JUnit test for this declarative visual binding.
+- **NOT RUN:** local Gradle/Kotlin/JUnit, Compose compiler, lint, APK, GitHub Actions, real device UI/TalkBack/stylus testing.
+
+**Chat A acceptance steps (NOT RUN):** On a phone/tablet open paged and infinite All Tools menus: verify a visible trailing checkmark appears on the currently selected tool only, and moves after selecting another tool. Turn on/off Wand, Ruler (paged) and Minimap (infinite); after reopening All Tools, confirm the checkmark appears/disappears in sync with the same selected state TalkBack announces. On a PDF, verify the extra Markup row is marked only while active. Check that Page Insertion, Settings, Undo/Redo, Fit, image import and other one-shot rows have no checkmark and still activate exactly once. Repeat at 180/240/320dp multi-window widths and 1.0×/1.3×/2.0× font scale, docked/floating toolbars, mouse/stylus, TalkBack and hardware keyboard; ensure the trailing icon does not clip longer translated row text. Run GitHub-hosted Kotlin/JUnit, Compose compilation, lint and APK CI on Chat A's **exact integrated SHA**.
+
+**Risks and remaining gates:** Decorative checkmark may reduce available text width in very narrow Material3 menus; visual QA needed. Screen-reader semantics merging also remains device-unverified. The lane did not change shared resource, editor, preferences, note storage, Gemini or Chat A files; G08 NP-089/NP-090/NP-092 remain open pending integrated CI and phone/tablet acceptance.
+
+**Twenty-fourth implementation commit:** `8a502a7f3897361df9c3e483e088a39936ea91a5`. **Twenty-fourth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the previous twenty-three G08 checkpoint pairs, in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
