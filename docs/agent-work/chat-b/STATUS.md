@@ -160,4 +160,30 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 
 **Remaining risk:** This source guard does not solve panes narrower than the grip + expand + insets (about 128dp for 48dp buttons or 136dp for 56dp buttons); those still need device design/acceptance. NP-092 keyboard focus restoration/system Back and global 320dp large-font checks remain pending. NP-089 and NP-090 need phone/tablet hardware acceptance. No changes to settings, FavoriteToolDock, MainActivity, resources, drawing/storage or other agents' paths.
 
-**Fifth source/test commit:** `b431c60ca08738e87198f320c0936d50c61112d1`. **Fifth status-only handoff commit:** this status file at branch HEAD. Chat A should cherry-pick it **after** the previous eight G08 commits, keeping Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Fifth source/test commit:** `b431c60ca08738e87198f320c0936d50c61112d1`. **Fifth status-only handoff commit:** `2ad2e10d343b6f07efead4fdf4ac09e1d232c442`. Chat A must keep Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Sixth checkpoint — NP-092 toolbar customization keyboard activation (2026-11-13)
+
+**Confirmed source defect:** `ToolbarCustomizer.kt:ChipCell` used a `pointerInput` tap recognizer and long-press drag recognizer; it had TalkBack `Checkbox` semantics and a semantic `onClick` action but was not focusable by hardware keyboard and did not listen for activation keys. Users navigating Preferences with Tab could not reliably toggle toolbar chip visibility using Enter/Space.
+
+**Bounded fix:**
+- `app/src/main/java/com/notestaking/app/ui/ToolbarCustomizer.kt` — made the existing show/hide `ChipCell` keyboard-focusable and added `onKeyEvent` support for Enter, numpad Enter and Space on **KeyUp only**. It invokes the existing latest-state `tap()` callback, preserving toggle logic, TalkBack checkbox `On/Off` semantics, and original `detectTapGestures` / `detectDragGesturesAfterLongPress` pointer/stylus interactions.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarCustomizerKeyboardTest.kt` — two new JUnit cases (source present, **not locally executed**): `enterNumpadEnterAndSpaceActivateOnceOnKeyRelease`; `tabArrowsAndEscapeRemainAvailableForNavigation`. The tests cover non-activation on KeyDown, Enter/NumpadEnter/Space on KeyUp, and Tab/arrow/Escape pass-through.
+
+**Permitted checks performed inside Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS**, only 12 owned paths changed since coordinator baseline.
+- `python tools/ci/check_project.py` — **PASS**, 388 Kotlin source files, 229 test files, 22 XML, 39 PNG, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — **PASS**, private app backup exclusions intact.
+- `git diff --check` and `git diff --cached --check` — **PASS**, whitespace clean.
+- Focused Python source assertions — **PASS**, keyboard handler and focusability wired, existing pointer tap/long-press drag unchanged, two regression test cases present.
+- No local Gradle/Kotlin/JUnit execution, lint, Android build, APK/device install, GitHub CI, or hardware test.
+
+**Device/CI acceptance for coordinator (NOT performed):**
+1. Attach a hardware keyboard to a phone/tablet, open Settings → Toolbar customization, and Tab through each chip. The keyboard focus indicator should be visible, and Enter, numpad Enter and Space should toggle its visibility exactly once. Tab/arrow/Escape should not toggle a chip.
+2. With TalkBack, navigate each chip, verify spoken name, checkbox checked/unchecked state and action; double-tap should toggle as before. Repeat with 1.3x and 2.0x fonts on a 320dp screen and tablet.
+3. Drag a chip within/across sections by long-press/touch and stylus, and ensure tap still toggles. Section-card long-press reordering, deletion and add-section actions should be unaffected.
+4. After integration into the coordinator branch, run the Kotlin JUnit tests, Compose compiler/lint/Android CI and device QA against the **exact integrated SHA**.
+
+**Pending risks and ownership:** The new test is source only; keyboard focus highlights and key event propagation must be verified on device. Section drag-strip reorder is still pointer-only. Full keyboard/TalkBack move-up/down would require a callback from `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`, which is **outside Chat B's ownership**; no edits were made to that file. System Back, other large-text dialog layouts and broad NP-089/NP-090 hardware acceptance remain pending. No storage, editor state, resources, or another agent's files changed.
+
+**Sixth source/test commit:** `b554957ee22e227063a78ff8371da6c3101bde05`. **Sixth STATUS-only commit:** this document at branch HEAD. Chat A must review and cherry-pick both commits in Git order after all prior G08 checkpoints. **PUSH: NO / MERGE: NO / PR: NO.**
