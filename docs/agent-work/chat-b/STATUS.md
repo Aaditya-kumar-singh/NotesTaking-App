@@ -493,4 +493,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Known limitations:** This measures the Android app window, not a narrower in-app split pane; menus may overlap adjacent panes while remaining inside the Android window. Material3 may impose a minimum popup width in extreme sub-112dp windows; the pure helper's 1dp floor does not establish rendered popup fit there. UI appearance and wrap behavior at 2× fonts remain unverified until physical-device acceptance. NP-089/090/092 remain open in shared trackers. No protected shared resources, coordinator/Chat A/Gemini paths or note storage changed.
 
-**Nineteenth code/test commit:** `72efd7d5d82fe49609cbfdfce1e5e56637681300`. **Nineteenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after the preceding eighteen G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Nineteenth code/test commit:** `72efd7d5d82fe49609cbfdfce1e5e56637681300`. **Nineteenth status-only handoff commit:** `cacbbf680e0a7feab8e6e5cfe0d9607ab3bfa3e7`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twentieth checkpoint — NP-090 active tool announcement in All Tools overflow (2026-11-13)
+
+**Confirmed source gap:** `CanvasQuickAccess.kt:CanvasAllTools` shows every available tool as a plain `QuickActionRow` (Material3 DropdownMenuItem), despite already receiving `selected: Tool`. The current tool was not conveyed in menu-row semantics, preventing TalkBack users from knowing which pen/eraser/etc. is armed while navigating the All Tools overflow. The paged and infinite main toolbar icons already expose selected state.
+
+**Bounded implementation:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt` only, `CanvasAllTools` supplies `isSelected = tool == selected` on the tool rows. `QuickActionRow` now accepts optional `isSelected: Boolean? = null` and sets Compose `selected` semantics on its Material3 menu modifier only when the caller opts in. Other quick actions (page insertion, PDF actions, Undo/Redo, settings, image, waypoints, etc.) get no selected-state semantics. Existing labels, menu widths, click callbacks, filtering, order, dismissal, keyboard handling, stylus, and note/drawing behavior are unchanged. One source file plus this status file; no new resources or dependencies.
+
+**Checks performed locally (no Android build):**
+- `python tools/agents/check_lane.py` — **PASS**, 16 Chat B-owned changed paths since original coordination baseline.
+- `python tools/ci/check_project.py` — **PASS**, 388 Kotlin sources, 233 test sources, 22 XML files, 39 PNGs, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — **PASS**, private notes excluded from cloud/device backup.
+- `git diff --check` and `git diff --cached --check` — **PASS**.
+- Focused Python static assertion — **PASS**: selected state applied only to tool rows; all other quick actions keep default absent semantics, callbacks/Undo/Redo remain untouched. No new JVM tests for this declarative semantics binding.
+- **NOT performed:** Kotlin/JUnit execution, Gradle, Compose compilation, Android lint/APK, GitHub CI, phone/tablet TalkBack or stylus testing.
+
+**Manual acceptance for Chat A (NOT RUN):** Open paged and infinite canvases with TalkBack. Select a Pen from the main toolbar, open the pinned All Tools overflow, navigate its tool rows, and verify only Pen announces selected. Select Eraser from the overflow, reopen it, and verify Eraser is selected and Pen is not. Repeat with another drawing tool and with paged-only PDF Markup filtering. Check Undo/Redo and settings rows have no misleading selected state. Confirm every row still activates exactly once and closes the menu, with page actions, drawing, and stylus unchanged. Repeat on 320dp/240dp split-screen phone/tablet, floating/docked toolbars and 1.3×/2× text. Run exact integrated SHA through GitHub Kotlin/JUnit, Compose compile, lint and Android CI before NP-090 acceptance.
+
+**Remaining risks:** Actual Material3 DropdownMenuItem semantics merge and TalkBack wording are not proven without a physical device; source-only checks do not prove compilation or accessibility tree behavior. Keyboard section drag/reorder requires the coordinator-owned `ui/PreferencesPane.kt`; floating-grip keyboard arrow handling requires coordinator/Chat A-owned key handlers. Shared NP trackers remain open; no restricted files, other-agent worktrees, remote branches or storage changed.
+
+**Twentieth implementation commit:** `d091b852aea922a1ef62aedaaa948fe8ede6206d`. **Twentieth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after prior nineteen G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
