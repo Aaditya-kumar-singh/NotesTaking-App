@@ -50,3 +50,16 @@ No local Gradle/JVM tests, Android lint/build, device install or instrumentation
 - **Validation:** Chat A ownership guard passed; source checker passed (388 Kotlin source / 226 test files, 0 problems); backup privacy check passed; `git diff --check` and pre-commit guard passed. **Kotlin test execution, Android build, and device performance measurements have not run.**
 - **Handoff:** This B41 fix is a new independent local commit after the old B39 handoff on Chat A's existing guarded branch. Integrate **only `cd55fef` and its B41 status follow-up**, after the prior CI gates and B40 integration are resolved. Do not re-cherry-pick B39 commits `04b1613` or `29c1b14` (already integrated).
 - **State:** B41 LOCAL READY after scoped review, **not pushed**, no CI/device success claimed.
+
+## B42 — SAF provider stalled-read recovery (local-only)
+
+- **Assignment:** NP-081 / NP-082: avoid endless copy loops and orphaned exports when a cloud/document provider repeatedly returns zero bytes without EOF.
+- **Source evidence:** `ProviderCopy.save()` used `InputStream.copyTo()`, which has no explicit consecutive-zero-read safeguard. The existing first-party `BoundedCopy.copy()` already fails after 16 consecutive zero-length reads and accepts intermittent non-empty reads.
+- **Fix:** Reuse `BoundedCopy.copy(input, output, Long.MAX_VALUE)` in `ProviderCopy.save()`, retaining the existing nonempty-output check, exception handling, destination cleanup, and no new export size limit.
+- **Local fix commit:** `203eadcdb3527c1c82a829195920333aaea3ac46` — `fix(storage): stop stalled SAF source streams during copy`.
+- **Owned files:** `app/src/main/java/com/notestaking/app/platform/ProviderCopy.kt`; `app/src/test/java/com/notestaking/app/platform/ProviderCopyTest.kt`.
+- **Tests added (not executed locally):** `stalledProviderReadFailsAndCleansIncompleteDestination` and `intermittentEmptyReadsStillSaveExactProviderBytes` (128 KiB payload).
+- **Verification actually performed:** Lane guard PASS; source checks PASS (388 Kotlin main, 226 tests, 0 problems); privacy PASS; diff/staged diff check PASS; pre-commit guard PASS.
+- **Not verified:** Kotlin/JVM execution, Android build/lint, real SAF provider timeouts, device copy behavior and partial destination cleanup under revoked permissions.
+- **Integration order:** B40 CI must pass before publishing B41. Then B41's own CI must pass before separately cherry-picking **only B42 `203eadc` and this handoff commit** to a fresh coordinator integration branch. Never re-cherry-pick old B39/B41 commits, merge directly from Chat A's old baseline, or touch Chat B/Gemini.
+- **State:** B42 LOCAL READY, NOT PUSHED.
