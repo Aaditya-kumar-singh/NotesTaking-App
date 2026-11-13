@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
@@ -279,7 +281,7 @@ private fun CanvasAllTools(
             )
             HorizontalDivider()
             tools.forEach { tool ->
-                QuickActionRow(stringResource(tool.labelRes)) {
+                QuickActionRow(stringResource(tool.labelRes), isSelected = tool == selected) {
                     open = false
                     select(tool)
                 }
@@ -308,7 +310,13 @@ private fun CanvasAllTools(
 private fun QuickActionRow(
     label: String,
     enabled: Boolean = true,
+    isSelected: Boolean? = null,
     onClick: () -> Unit,
 ) {
-    DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = onClick)
+    DropdownMenuItem(
+        text = { Text(label) },
+        modifier = if (isSelected == null) Modifier else Modifier.semantics { selected = isSelected == true },
+        enabled = enabled,
+        onClick = onClick,
+    )
 }
