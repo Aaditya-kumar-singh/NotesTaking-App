@@ -293,4 +293,29 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Pending risks:** No actual TalkBack, keyboard, 320dp screenshot or Compose runtime testing. Keyboard section drag reordering still needs coordinator-owned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating-grip arrow routing needs coordinator/Chat A changes to `MainActivity.kt` / `ui/Editor.kt`. NP-089/090/092 stay open pending integrated CI and real-device acceptance.
 
-**Tenth code commit:** `0366719b0126005246ae8fced8ea808445e55100`. **Tenth status handoff:** this file at branch HEAD. Chat A should cherry-pick this pair after all previous Chat B commits in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Tenth code commit:** `0366719b0126005246ae8fced8ea808445e55100`. **Tenth status handoff:** `aff6e2b597d3ac2dd84ac3a9c29ffadbbe8a0a50`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Eleventh checkpoint — NP-090 floating grip available TalkBack move actions (2026-11-13)
+
+**Source defect:** In `FloatingToolbar.kt:MovableFloatingToolbar`, the floating grip always exposed TalkBack custom actions for Move Left/Right/Up/Down, even when there was no usable movement on an axis (0px travel) or the grip was at that edge. The existing `nudge` rejected these requests with `false`, leaving the screen reader with advertised actions that do nothing. On small split panes and at corners this made the accessibility action list misleading.
+
+**Bounded fix in Chat B-owned files:**
+- `app/src/main/java/com/notestaking/app/ui/FloatingToolbar.kt`: Added pure `floatingGripCanNudge(travel, fraction, step)` that checks nonzero travel and a nonzero clamped fraction change; offers only physically available directional `CustomAccessibilityAction` entries in the grip semantics. Retains the Reset Position action regardless of available directions. Existing actual `nudge`, normalized positioning, drag touch handler, callbacks, source colors/strings, and pen/canvas behavior unchanged.
+- `app/src/test/java/com/notestaking/app/ui/FloatingGripAccessibilityTest.kt`: Added three JUnit tests, **source-only and not run locally**:
+  - `edgesExposeOnlyMovementsBackIntoThePane`: at x=0 and x=1, only directions back inside are available.
+  - `noFreeSpaceExposesNoMovementOnThatAxis`: at 0 travel, movement is unavailable even mid-pane.
+  - `interiorAllowsBothDirectionsButZeroStepsAreNotActions`: midpoint travel in both directions; a 0 step unavailable.
+
+**Source checks performed from Chat B worktree (before local code commit):**
+- `python tools/agents/check_lane.py` — PASS (13 Chat B-owned changed paths since coordination baseline).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin source, 230 Kotlin test sources, 22 XML, 39 PNG, 0 problems).
+- `python tools/ci/check_backup_privacy.py` — PASS (private backup exclusions intact).
+- `git diff --check` and staged `git diff --cached --check` — PASS.
+- Focused Python source assertion — PASS (all four conditional direction actions, Reset Position still available, existing `detectDragGestures` and `commit`, three new JUnit test methods).
+- **Not executed:** Kotlin/JUnit tests, Gradle, Android lint, Compose compilation, APK, GitHub CI, emulator/device installation, TalkBack or stylus hardware verification.
+
+**Manual acceptance for Chat A (not run):** On a phone and tablet with TalkBack on, activate the floating toolbar grip's accessibility actions. At left edge, Move Left must be absent and Move Right available if horizontal travel exists; at right edge, the inverse. At top/bottom edges similarly test Up/Down. In a short/narrow split-pane that leaves no travel on one axis, that axis's actions should disappear. Move toward the pane middle, then confirm both directions are available. Reset Position must remain accessible. Verify actions update after drag and after toolbar expand/collapse or rotation. At 1.3x/2x font, check floating grip and controls stay reachable; use stylus to drag grip and draw/erase without regressions. Run GitHub-hosted Kotlin/JUnit and Android build/lint on the exact integrated SHA.
+
+**Pending risk:** Compose semantics refresh and TalkBack focus interaction require device verification; only source checks passed. No change to restricted `MainActivity.kt`, Chat A-owned `ui/Editor.kt`, `PreferencesPane.kt`, strings, storage, Gemini, or shared trackers. Keyboard arrow grip movement and section reordering remain coordinator-blocked. NP-089/NP-090/NP-092 cannot be marked accepted until integrated CI and real QA.
+
+**Eleventh code/test commit:** `a9596fc5c8181ba375e924bc5f4b559d4979c2d9`. **Eleventh status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in Git order after all previous G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
