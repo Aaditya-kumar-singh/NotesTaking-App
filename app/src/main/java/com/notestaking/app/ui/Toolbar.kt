@@ -203,7 +203,7 @@ private fun ToolbarItemView(
             )
         }
         ToolbarItem.SIDEBAR ->
-            ToolbarIcon(NotesTakingIcons.sidebar, stringResource(R.string.side_panel), active = editor.sidebarVisible, shortcut = Keys.SIDEBAR) { editor.toggleSidebar() }
+            ToolbarIcon(NotesTakingIcons.sidebar, stringResource(R.string.side_panel), active = editor.sidebarVisible, reportSelection = true, shortcut = Keys.SIDEBAR) { editor.toggleSidebar() }
 
         ToolbarItem.PEN, ToolbarItem.DASHED, ToolbarItem.CALLIGRAPHY, ToolbarItem.SPEED,
         ToolbarItem.TAPER, ToolbarItem.HIGHLIGHTER, ToolbarItem.ERASER, ToolbarItem.PAN,
@@ -218,9 +218,9 @@ private fun ToolbarItemView(
             if (editor.hasPdf) ToolButton(editor, Tool.MARKUP, toolIcons[Tool.MARKUP], configForTool, setConfigForTool)
 
         ToolbarItem.WAND ->
-            ToolbarIcon(NotesTakingIcons.magicWand, stringResource(R.string.tool_wand), active = editor.wandEnabled) { editor.toggleWand() }
+            ToolbarIcon(NotesTakingIcons.magicWand, stringResource(R.string.tool_wand), active = editor.wandEnabled, reportSelection = true) { editor.toggleWand() }
         ToolbarItem.RULER ->
-            ToolbarIcon(NotesTakingIcons.ruler, stringResource(R.string.tool_ruler), active = editor.rulerVisible) { editor.toggleRuler() }
+            ToolbarIcon(NotesTakingIcons.ruler, stringResource(R.string.tool_ruler), active = editor.rulerVisible, reportSelection = true) { editor.toggleRuler() }
 
         ToolbarItem.IMAGE -> NoteInsertMenu(editor, onInsertImage, onTakePhoto, onAddStickers, onInsertAudio, onRecordAudio)
 
@@ -269,6 +269,7 @@ private fun ToolbarItemView(
             if (editor.zoomLocked) NotesTakingIcons.lock else NotesTakingIcons.unlock,
             stringResource(if (editor.zoomLocked) R.string.unlock_zoom else R.string.lock_zoom),
             active = editor.zoomLocked,
+            reportSelection = true,
         ) { editor.toggleZoomLock() }
 
         ToolbarItem.FULLSCREEN -> ToolbarIcon(NotesTakingIcons.fullscreen, stringResource(R.string.toolbar_fullscreen), shortcut = Keys.FULLSCREEN) { onToggleFullscreen() }
@@ -484,6 +485,10 @@ private const val GLIDE_MS_PER_DP = 0.6f
 private const val GLIDE_BASE_MS = 80f
 private const val GLIDE_MAX_MS = 300
 
+/** Tools and persistent toggles announce selection; one-shot actions do not. */
+internal fun toolbarSelectionState(active: Boolean, glideKey: Any?, reportSelection: Boolean): Boolean? =
+    if (glideKey != null || reportSelection) active else null
+
 /**
  * A toolbar button, named by a tooltip when the pen hovers it. With a [glideKey] it is one of the
  * bar's tools and its selection is the bar's gliding circle; otherwise [active] fades in a circle
@@ -496,6 +501,7 @@ internal fun ToolbarIcon(
     active: Boolean = false,
     enabled: Boolean = true,
     glideKey: Any? = null,
+    reportSelection: Boolean = false,
     hint: String? = null,
     shortcut: String? = null,
     onClick: () -> Unit,
@@ -503,6 +509,7 @@ internal fun ToolbarIcon(
     val palette = LocalPalette.current
     val bar = LocalBar.current
     val glide = if (glideKey != null) LocalToolGlide.current else null
+    val selectionState = toolbarSelectionState(active, glideKey, reportSelection)
     val tint by animateColorAsState(
         when {
             !enabled -> palette.disabled.toComposeColor()
@@ -524,7 +531,7 @@ internal fun ToolbarIcon(
             Modifier
                 .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
                 .size(bar.button)
-                .then(if (glideKey != null) Modifier.semantics { selected = active } else Modifier)
+                .then(if (selectionState != null) Modifier.semantics { selected = selectionState } else Modifier)
                 .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
