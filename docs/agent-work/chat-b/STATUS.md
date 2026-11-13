@@ -107,4 +107,35 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 
 **Remaining NP-092:** full 320dp/large-text settings coverage, keyboard focus restoration and system Back behavior need hardware/CI verification or separate owned fixes. This checkpoint only improves tooltip labels when a hardware keyboard is connected. NP-089 and NP-090 acceptance still require physical touch/TalkBack coverage.
 
-**NP-092 code/test commit:** `7b0ce452f5de6fe728eb33aac41a4371bd0dc34e`. **Status-only handoff commit:** this STATUS.md change at branch HEAD. All four prior G08 commits plus this third checkpoint stay local for Chat A's serialized review/cherry-pick; **PUSH: NO / MERGE: NO / PR: NO**.
+**NP-092 tooltip code/test commit:** `7b0ce452f5de6fe728eb33aac41a4371bd0dc34e`. **Third status/handoff commit:** `8db06e8535c9f27bf838953dc7f0053784c2cd11`. All commits stay local for Chat A's serialized review/cherry-pick; **PUSH: NO / MERGE: NO / PR: NO**.
+
+## Fourth checkpoint — NP-092 narrow floating toolbar action reachability (2026-11-13)
+
+**Source issue:** `ToolbarFrame.kt` placed the quick-access `trailing` group after the horizontally/vertically scrollable tool strip even when the toolbar was floating. In a 320dp phone or narrow split pane, the floating drag grip, collapse button, fixed quick actions and the optional Close Pane button compete for limited space. Fixed quick actions can consume the remaining width/height, making some toolbar controls unreachable by scrolling.
+
+**Bounded fix:** Paged and infinite canvas callers now pass their quick actions separately from `ClosePaneButton` into `ToolbarFrame`. In docked mode the quick actions remain pinned as before. In floating expanded mode the quick actions are composed **inside** the scrollable `Row`/`Column`. The Close Pane action remains pinned **outside** the scrolling strip in both modes, preserving one-tap split-pane dismissal. No change to touch/pointer handlers, pen/eraser selection, tool popups, menu callbacks, settings persistence or drawing/storage.
+
+**Files changed:**
+- `app/src/main/java/com/notestaking/app/ui/ToolbarFrame.kt` — floating quick actions scroll, docked quick actions pin, dedicated always-pinned slot for Close Pane in both orientations; `toolbarScrollsTrailing` policy.
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt` — paged caller passes a distinct pinned close action and quick actions without duplicated close.
+- `app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt` — matching infinite canvas caller.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarMetricsTest.kt` — added JUnit `floatingQuickActionsScrollWhileDockedQuickActionsRemainPinned` (source added, **NOT executed locally**).
+
+**Source-only verification executed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS (9 owned changed paths since lane baseline at check time).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin source, 228 test source, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — PASS, app private backup exclusions intact.
+- `git diff --check` and staged diff whitespace check — PASS.
+- Focused Python static assertion — PASS, both horizontal/vertical scroll branches and both pinned slots present; each of paged and infinite callers passes `onClosePane` only into pinned slot; regression source exists.
+- No local Gradle, JUnit/Kotlin execution, Android build, lint, APK/device installs or hardware TalkBack QA.
+
+**Physical acceptance for Chat A (NOT run):**
+1. On a 320dp-wide Android phone and narrow split pane, expand floating toolbar (top/bottom). Scroll horizontally across customized tools and pinned-previous quick actions; confirm Eraser, + Page, All Tools and any PDF-specific actions remain reachable, while **Close Pane stays visible without scrolling**.
+2. Repeat on a short-height pane with floating left/right toolbar; scroll vertically through all quick actions. Verify Close Pane is still reachable; no clipped or overlapping drag grip, collapse button or menus.
+3. Switch to docked top/bottom/left/right and confirm the previous pinned quick-action behavior, long-strip scrolling and close action positioning are unchanged.
+4. With TalkBack and a stylus, verify focus names, selection state, scrollability, dropdown anchoring and pen/drawing/eraser gestures; repeat at 1.3x and 2.0x fonts.
+5. After coordinated integration, run GitHub Kotlin/JUnit, Compose compilation, lint and APK CI on the integrated SHA; do not treat this source-only checkpoint as device acceptance.
+
+**Pending risk:** At extremely constrained panes even the fixed grip, collapse and Close Pane buttons can exhaust the viewport. This patch prioritizes keeping those safety controls visible and makes other quick actions scrollable, but a real 320dp/split-pane device screenshot is required. NP-092 keyboard focus restoration and system Back behavior are outside this bounded change; NP-089/NP-090 still require hardware acceptance.
+
+**Fourth source/test commit:** `4e95fca50238e1eefe7097701debbd622153da09`. **Fourth status-only handoff commit:** this document at branch HEAD. Chat A must review and cherry-pick all earlier G08 commits before this pair, in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
