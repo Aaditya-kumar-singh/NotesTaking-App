@@ -38,3 +38,15 @@ No local Gradle/JVM tests, Android lint/build, device install or instrumentation
 5. Check staged-file cleanup after failure. Report actual device model, Android version, fixture hashes, results and screenshots in coordinator's common tracker.
 
 **Handoff to coordinator:** Review local `04b1613`, inspect all callers, then cherry-pick only the reviewed Chat A commits into the administrative coordination checkout after the preceding `developer` CI checkpoint is green. Update shared NP/NT trackers there, run checks, then push a single guarded fast-forward `developer` checkpoint. Do not publish directly from this worktree or touch Chat B / Gemini branches.
+
+## Subsequent status: B39 integration and B41 bulk-write performance follow-up
+
+- B39 original fix `04b1613` was reviewed and integrated on `developer` as `fc7298e`, with tracker commit `e6b73d8`. [B39 Android CI #43397349803](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43397349803) was still **running** at this check; device recovery QA remains pending.
+- **B41 assignment:** Address unnecessary per-byte writing in the existing atomic save stream wrapper, without touching save format, crash recovery, or any Chat B UI files.
+- **B41 local code commit:** `cd55fef3c45b25b89b272f184e369612533035c3` — `perf(storage): preserve bulk writes in atomic save wrapper`.
+- **Files changed:** `app/src/main/java/com/notestaking/app/platform/SafeFileWriter.kt`, `app/src/test/java/com/notestaking/app/platform/SafeFileWriterTest.kt`.
+- **Cause:** `FilterOutputStream.write(byte[],off,len)` otherwise sends bytes individually, adding overhead to large ZIP/native-note asset writes. `SafeFileWriter.nonClosingStream()` now forwards byte-array writes directly to the original stream, preserving its non-closing `close()` behavior.
+- **Regression added:** `borrowedStreamUsesBulkWriteAndLeavesDescriptorOpen`: a 256 KB payload must be passed in one bulk write, in original byte order, without closing the underlying destination.
+- **Validation:** Chat A ownership guard passed; source checker passed (388 Kotlin source / 226 test files, 0 problems); backup privacy check passed; `git diff --check` and pre-commit guard passed. **Kotlin test execution, Android build, and device performance measurements have not run.**
+- **Handoff:** This B41 fix is a new independent local commit after the old B39 handoff on Chat A's existing guarded branch. Integrate **only `cd55fef` and its B41 status follow-up**, after the prior CI gates and B40 integration are resolved. Do not re-cherry-pick B39 commits `04b1613` or `29c1b14` (already integrated).
+- **State:** B41 LOCAL READY after scoped review, **not pushed**, no CI/device success claimed.
