@@ -471,4 +471,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Risks and remaining gates:** Compose/TalkBack wording and focus refresh after state changes are unverified until device QA. The existing source tests were not executed. Keyboard section reordering remains blocked by coordinator-owned `ui/PreferencesPane.kt`, and floating grip arrow movement needs coordination across `MainActivity.kt` and Chat A-owned `ui/Editor.kt`; no protected file or shared tracker changed. NP-089/NP-090/NP-092 remain open until integrated CI and device evidence.
 
-**Eighteenth implementation+tests commit:** `852f65a7ed927908f96c89f2688066712558f6b5`. **Eighteenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A must review and cherry-pick in Git order after the prior seventeen G08 checkpoint pairs. **PUSH: NO / MERGE: NO / PR: NO.**
+**Eighteenth implementation+tests commit:** `852f65a7ed927908f96c89f2688066712558f6b5`. **Eighteenth status-only handoff commit:** `013c625de1c75c74cc9c77e66ae8cb062c8ec38f`. Chat A must preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Nineteenth checkpoint — NP-092 narrow-window canvas quick-access menus (2026-11-13)
+
+**Confirmed source issue:** `ui/CanvasQuickAccess.kt:PinnedPageInsertion` and `CanvasAllTools` used fixed `Modifier.width(224.dp)` and `Modifier.width(248.dp)` respectively. The app's own `ui/Popups.kt:DropdownMenu` forwards that modifier to Material3 without adjusting width. In a 180–240dp Android multi-window, either popup can be wider than the app window, risking horizontal clipping and unreachable actions; both menus hold essential access to page insertion and hidden tools.
+
+**Bounded implementation in Chat B-owned files:**
+- `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`: Added pure `quickAccessMenuWidth(windowWidthDp, preferredWidth)` using the Android window width minus 8dp padding on both sides, with 1dp floor. Both menus use `LocalConfiguration.current.screenWidthDp` and retain their original 224/248dp widths on normal screens. At 240dp: both cap at 224dp; at 180dp: both cap at 164dp. All page insertion actions, the All Tools list, enabled states, undo/redo, popup callbacks, and eraser/pen settings are unchanged. The shared Popup implementation and other agent-owned files are untouched.
+- `app/src/test/java/com/notestaking/app/ui/QuickAccessMenuWidthTest.kt`: Added three JUnit tests, **written but NOT locally executed**: `normalWindowsPreserveBothMenuWidths`, `narrowWindowsLeaveEightDpOnEachSide`, `tinyWindowsNeverProduceANonpositiveWidth`.
+
+**Checks actually run from Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (16 Chat B-owned changed paths relative to coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin sources, 233 test sources, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (private notes still excluded from backup).
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python source assertion — **PASS** (both menus use width helper, existing actions preserved, the shared menu forwards modifiers, and three new JUnit cases are present).
+- **NOT RUN:** local Kotlin/JUnit, Gradle, lint, Compose/Android build, APK installs, GitHub CI, physical TalkBack/stylus test.
+
+**Phone/tablet acceptance for Chat A (NOT RUN):** Open a document on Android in 320dp, 240dp and 180dp multi-window sizes; open pinned Add Page and All Tools overflow. At normal width retain familiar 224dp/248dp menus. At 240dp and 180dp, verify every row and its text remains reachable and readable, the popup remains on-screen, horizontal clipping is eliminated and vertical scrolling can reach bottom items. Repeat with 1.3× and 2× font scale, paged and infinite canvas, top/bottom/left/right/floating toolbar and physical keyboard/TalkBack. Verify page insertion, pen/eraser menus, undo/redo and stylus drawing all behave exactly as before. Run Kotlin/JUnit, Compose compilation, lint and Android CI on Chat A's exact integrated SHA before NP-092 acceptance.
+
+**Known limitations:** This measures the Android app window, not a narrower in-app split pane; menus may overlap adjacent panes while remaining inside the Android window. Material3 may impose a minimum popup width in extreme sub-112dp windows; the pure helper's 1dp floor does not establish rendered popup fit there. UI appearance and wrap behavior at 2× fonts remain unverified until physical-device acceptance. NP-089/090/092 remain open in shared trackers. No protected shared resources, coordinator/Chat A/Gemini paths or note storage changed.
+
+**Nineteenth code/test commit:** `72efd7d5d82fe49609cbfdfce1e5e56637681300`. **Nineteenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after the preceding eighteen G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
