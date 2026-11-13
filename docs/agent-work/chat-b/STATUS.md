@@ -383,4 +383,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** `CanvasState` zoom fields are not Compose state themselves, so boundary-button refresh must be verified after zoom gestures/settings changes through the existing editor view-state updates on device. Exact accessibility speech/focus for disabled toolbar buttons remains unverified. No coordinator/Chat A/Gemini file, translations, shared tracking document or storage was changed. NP-089/090/092 still require CI and hardware acceptance.
 
-**Fourteenth code/test commit:** `66798138e6edcad4d6971c8e16dd31b0cdcc4e71`. **Fourteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A must cherry-pick this pair in Git order after all prior G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
+**Fourteenth code/test commit:** `66798138e6edcad4d6971c8e16dd31b0cdcc4e71`. **Fourteenth status-only handoff commit:** `ece6ff687b54d6eacc4b0b09edb9c863fc9afaad`. Chat A must preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Fifteenth checkpoint — NP-090 selected toolbar tool accessibility action hints (2026-11-13)
+
+**Source issue:** `ToolbarIcon` already received `hint` strings such as "Tap for settings" for an armed/configurable pen or eraser, but these hints were only rendered in stylus/mouse hover tooltips. The icon's Compose `clickable` did not provide an `onClickLabel`, so TalkBack keyboard/screen-reader users were told only about generic activation even though tapping the selected tool opens its settings popup instead of reselecting it.
+
+**Bounded fix:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`, the shared `ToolbarIcon` supplies `onClickLabel = hint.takeIf { active }` to its existing `clickable`. For an active tool with a hint, TalkBack now has an action label explaining its second-tap behavior. Unselected tools and controls without a hint retain generic button activation; no selected-state, focus, target size, tooltip, keyboard shortcut, stylus gesture or callback changes. Shared callers were checked in `Toolbar.kt`, `InfiniteToolbar.kt` and `CanvasQuickAccess.kt` (including pinned Eraser, PDF mode and finger-inking toggles). No caller/resource signature changes required. Only the single source line and this status file changed.
+
+**Checks actually run:**
+- `python tools/agents/check_lane.py` — PASS, only 15 owned paths changed since original baseline.
+- `python tools/ci/check_project.py` — PASS (388 Kotlin sources, 232 test sources, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — PASS (private note backup exclusions unchanged).
+- `git diff --check` and staged diff whitespace check — PASS.
+- Focused Python source regression assertion — PASS, shared `onClickLabel` is conditional on `active`, existing configurable-tool and pinned-eraser hints/callbacks intact; no test source added for this declarative one-line semantics binding.
+- No local Gradle, Kotlin/JUnit execution, Compose compiler, lint, Android build, APK install, GitHub CI or hardware accessibility tests.
+
+**Manual acceptance for Chat A (NOT RUN):** On a TalkBack-enabled phone and tablet, swipe to a currently selected pen, highlighter or eraser in both paged/infinite toolbar modes and check the accessible action describes opening settings. Double-tap and confirm it opens the same settings popup once; select an unarmed pen and confirm the first tap still arms the tool without a misleading settings action label. Repeat for pinned eraser, PDF Read/Annotate and Finger Writing toggles to verify their spoken action text matches the current state. Test toolbar placement (all sides/floating), 320dp screens and 1.3x/2x font scale with stylus and hardware keyboard. Confirm no duplicate announcements or loss of selection state. Run GitHub Kotlin tests, Compose compilation, lint and APK CI on the exact integrated SHA before NP-090 acceptance.
+
+**Risk:** Android/TalkBack sometimes phrases `onClickLabel` alongside a role-specific instruction; the exact spoken result is unverified. Selected PDF toggle and finger-writing hints have state-specific strings; inactive ones deliberately retain generic action speech. Full NP-089/NP-090/NP-092 still require integrated CI and device QA; no protected files or shared trackers were edited.
+
+**Fifteenth implementation commit:** `2a23f5e6744da4305ed297403bbeabc130a97ef3`. **Fifteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in Git order after the prior fourteen G08 checkpoints. **PUSH: NO / MERGE: NO / PR: NO.**
