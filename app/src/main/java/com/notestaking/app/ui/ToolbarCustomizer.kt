@@ -446,16 +446,18 @@ fun SectionCardGhost(section: ToolbarSection, widthPx: Float) {
 @Composable
 private fun AddSectionChip(onClick: () -> Unit) {
     val palette = LocalPalette.current
+    var focused by remember { mutableStateOf(false) }
     Row(
         Modifier
             .heightIn(min = 48.dp)
+            .onFocusChanged { focused = it.isFocused }
             .clip(MaterialTheme.shapes.small)
-            .border(1.dp, palette.accent.toComposeColor(), MaterialTheme.shapes.small)
-            .clickable(onClick = onClick)
+            .border(if (focused) 2.dp else 1.dp, palette.accent.toComposeColor(), MaterialTheme.shapes.small)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(NotesTakingIcons.plus, stringResource(R.string.add_section), tint = palette.accent.toComposeColor(), modifier = Modifier.size(14.dp))
+        Icon(NotesTakingIcons.plus, contentDescription = null, tint = palette.accent.toComposeColor(), modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(4.dp))
         Text(stringResource(R.string.add_section), color = palette.accent.toComposeColor(), fontSize = 12.sp)
     }
