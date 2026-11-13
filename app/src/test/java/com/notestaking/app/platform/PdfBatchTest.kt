@@ -133,6 +133,46 @@ class PdfBatchTest {
     }
 
     @Test
+    fun `cancel while copying rendered PDF interrupts both zip and single output`() {
+        val payload = ByteArray(512 * 1024) { (it % 251).toByte() }
+        val render: (String, OutputStream, (Int, Int) -> Unit, () -> Boolean) -> Unit =
+            { _, out, _, _ -> out.write(payload) }
+
+        for (zip in listOf(true, false)) {
+            cancel.set(false)
+            var writtenBytes = 0
+            var closed = false
+            var discarded = false
+            val sink = object : PdfBatch.Destination {
+                override fun open(): OutputStream = object : OutputStream() {
+                    override fun write(b: Int) {
+                        writtenBytes++
+                        cancel.set(true)
+                    }
+                    override fun write(b: ByteArray, off: Int, len: Int) {
+                        writtenBytes += len
+                        cancel.set(true)
+                    }
+                    override fun close() { closed = true }
+                }
+                override fun discard() { discarded = true }
+            }
+            val result = if (zip) {
+                batch(render).zip(listOf(Entry("Large.pdf", "large", "Large.xnote")), sink)
+            } else {
+                batch(render).single("large", "Large.xnote", sink)
+            }
+            assertTrue("Cancel must interrupt the destination copy", result.cancelled)
+            assertFalse(result.kept)
+            assertEquals(0, result.written)
+            assertTrue(discarded)
+            assertTrue(closed)
+            assertTrue("Only an initial copy chunk may be written", writtenBytes in 1 until payload.size)
+            assertTrue(scratchDir.listFiles()!!.isEmpty())
+        }
+    }
+
+    @Test
     fun `folders without documents leave nothing behind`() {
         val sink = Sink()
         val result = batch(renderAll).zip(plan.filter { it.source == null }, sink)

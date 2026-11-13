@@ -96,9 +96,9 @@ class PdfBatch(
                     val z = zip ?: ZipOutputStream(BufferedOutputStream(dest.open().also { raw = it }, BUFFER)).also { zip = it }
                     folders.forEach { z.putNextEntry(stored(it, 0, 0)); z.closeEntry() }
                     folders.clear()
-                    // Not cancellable part-way: a zip can only be closed between entries, and one copy is quick.
+                    // A cancelled entry discards the entire destination; never publish a partial ZIP.
                     z.putNextEntry(stored(e.path, tmp.length(), crc))
-                    tmp.inputStream().use { it.copyTo(z, BUFFER) }
+                    tmp.inputStream().use { it.copyTo(CancellableOutputStream(z, isCancelled), BUFFER) }
                     z.closeEntry()
                     written++
                 }
@@ -128,7 +128,7 @@ class PdfBatch(
             scratchDir.mkdirs()
             val tmp = File.createTempFile("batch", ".pdf", scratchDir).also { scratch = it }
             if (renderTo(tmp, source, 0, 1, name) != null) {
-                dest.open().use { out -> tmp.inputStream().use { it.copyTo(out, BUFFER) } }
+                dest.open().use { out -> tmp.inputStream().use { it.copyTo(CancellableOutputStream(out, isCancelled), BUFFER) } }
                 kept = !isCancelled()
             }
         } catch (_: Throwable) {
