@@ -63,3 +63,17 @@ No local Gradle/JVM tests, Android lint/build, device install or instrumentation
 - **Not verified:** Kotlin/JVM execution, Android build/lint, real SAF provider timeouts, device copy behavior and partial destination cleanup under revoked permissions.
 - **Integration order:** B40 CI must pass before publishing B41. Then B41's own CI must pass before separately cherry-picking **only B42 `203eadc` and this handoff commit** to a fresh coordinator integration branch. Never re-cherry-pick old B39/B41 commits, merge directly from Chat A's old baseline, or touch Chat B/Gemini.
 - **State:** B42 LOCAL READY, NOT PUSHED.
+
+## B43 — verify zero-size SAF metadata before writing (local-only)
+
+- **Assignment:** NP-081: guard Save As destinations against faulty or stale provider size metadata.
+- **Cause:** `SafDestinationGuard.canWrite()` previously accepted any reported size of `0` without checking actual bytes. A provider returning an incorrect zero-size result for a nonempty document could expose existing content to overwrite or removal.
+- **Fix:** Continue rejecting any reported positive size immediately. For reported zero, negative, or unknown size, read exactly one byte and accept only EOF (`-1`). Unreadable or missing streams are rejected.
+- **Local fix commit:** `8cdfdf0398c26df86179860ce5ac1940e47ddac2` — `fix(storage): verify empty SAF destination despite zero size metadata`.
+- **Owned paths:** `app/src/main/java/com/notestaking/app/platform/SafDestinationGuard.kt` and `app/src/test/java/com/notestaking/app/platform/SafDestinationGuardTest.kt`.
+- **Tests updated/added (not locally run):** `reportedEmptyDestinationMustBeConfirmedEmpty` and `falseZeroMetadataOrUnreadableDestinationCannotDestroyExistingData`; other metadata and unknown-size tests retained.
+- **Callers audited:** `MainActivity` PDF/PNG/native copy destination checks and `Editor` batch PDF/ZIP destination check; no off-limits file changes.
+- **Validation:** Chat A ownership, source structure (388 main Kotlin/226 test Kotlin, 0 problems), privacy and diff/staged checks PASS. Android CI/device testing NOT RUN.
+- **Compatibility tradeoff:** A provider that reports zero size but denies opening an input stream will now be blocked even if writable. This is intentional fail-closed behavior but requires tests with real newly created SAF documents from local/cloud providers.
+- **Integration sequencing:** B43 remains independent from B42. Publish only after B41 and B42 exact-SHA CI gates pass; cherry-pick this code commit plus this status handoff commit into a fresh coordinator branch. Do not cherry-pick prior lane commits again.
+- **State:** B43 LOCAL READY, NOT PUSHED.
