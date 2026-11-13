@@ -179,6 +179,10 @@ fun Toolbar(
 internal fun pageNavigationEnabled(row: IntRange, pageCount: Int, forward: Boolean): Boolean =
     if (forward) row.last < pageCount - 1 else row.first > 0
 
+/** Match CanvasState's zoom clamp and tolerance so boundary buttons cannot offer no-op steps. */
+internal fun toolbarZoomStepEnabled(zoom: Double, minZoom: Double, maxZoom: Double, locked: Boolean, zoomIn: Boolean): Boolean =
+    !locked && (if (zoomIn) zoom < maxZoom - 1e-9 else zoom > minZoom + 1e-9)
+
 /** Renders one toolbar item by id, reusing the same controls/popups the bar has always used. */
 @Composable
 private fun ToolbarItemView(
@@ -271,7 +275,10 @@ private fun ToolbarItemView(
         ToolbarItem.VIEW -> ViewButton(editor)
 
         ToolbarItem.ZOOM -> {
-            ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) { editor.zoomOut() }
+            val zoom = editor.state.zoom
+            val zoomOutEnabled = toolbarZoomStepEnabled(zoom, editor.state.minZoom, editor.state.maxZoom, editor.zoomLocked, zoomIn = false)
+            val zoomInEnabled = toolbarZoomStepEnabled(zoom, editor.state.minZoom, editor.state.maxZoom, editor.zoomLocked, zoomIn = true)
+            ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = zoomOutEnabled, shortcut = Keys.ZOOM_OUT) { editor.zoomOut() }
             var zoomMenuOpen by remember { mutableStateOf(false) }
             Box {
                 val zoomLabel = stringResource(R.string.title_zoom)
@@ -285,7 +292,7 @@ private fun ToolbarItemView(
                 }
                 if (zoomMenuOpen) ZoomMenuPopup(editor) { zoomMenuOpen = false }
             }
-            ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_IN) { editor.zoomIn() }
+            ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = zoomInEnabled, shortcut = Keys.ZOOM_IN) { editor.zoomIn() }
         }
         ToolbarItem.FIT -> FitMenu(editor)
         ToolbarItem.ZOOM_LOCK -> ToolbarIcon(
