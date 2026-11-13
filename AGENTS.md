@@ -2,6 +2,8 @@
 
 Read [the local-first parallel workflow](docs/github/LOCAL_FIRST_PARALLEL_WORKFLOW.md) and [the batched CI policy](docs/github/BATCHED_CI_POLICY.md) before changing this repository.
 
+**Two-GPT LocalMCP collaboration:** When two ChatGPT conversations share LocalMCP, follow [the isolated dual-chat worktree plan](docs/github/DUAL_GPT_LOCALMCP.md). Each chat must use its assigned nested worktree and pass the ownership guard. The top-level checkout is reserved for serialized integration; never switch its branch or edit feature code from the worker chats.
+
 - **Never wait for GitHub CI to finish before starting the next independent local task.** CI gates publishing, merging, and releases; it is not a gate for source editing. Check CI briefly at the beginning/end of a turn, then do real local work.
 - Work in small, clearly scoped **local branches**, especially when a ready PR is currently building. Do not add unrelated commits to a branch under GitHub verification. A dependent branch may start at that PR's exact head; reconcile it onto `main` after the PR merges.
 - **Do not push every commit.** Commit useful local checkpoints. Push a coherent, reviewed batch once, normally after the prior GitHub CI checkpoint completes, and record the exact SHA. Do not trigger an extra expensive build just to measure progress. No direct unverified pushes to `main`.
