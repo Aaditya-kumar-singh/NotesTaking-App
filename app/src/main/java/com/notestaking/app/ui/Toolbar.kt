@@ -573,7 +573,7 @@ internal fun ToolbarIcon(
                 .size(bar.button)
                 .toolbarFocusOutline(CircleShape)
                 .then(if (selectionState != null) Modifier.semantics { selected = selectionState } else Modifier)
-                .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
+                .clickable(interaction, indication = null, enabled = enabled, onClickLabel = hint.takeIf { active }, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
