@@ -625,7 +625,7 @@ internal fun Swatch(
             .toolbarFocusOutline(CircleShape)
             .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
             .semantics { contentDescription = accessibleLabel; selected = active }
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(onClickLabel = if (active) stringResource(R.string.material_custom_colour) else null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(
