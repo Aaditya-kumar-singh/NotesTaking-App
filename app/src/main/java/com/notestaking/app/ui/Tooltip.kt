@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -244,6 +245,10 @@ private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: Strin
     }
 }
 
+/** Leave room for the popup shadow and screen edges before positioning the tooltip. */
+internal fun tooltipMaxWidth(screenWidth: Dp): Dp =
+    minOf(TIP_MAX_WIDTH, (screenWidth - (TIP_SHADOW_ROOM + 8.dp) * 2).coerceAtLeast(1.dp))
+
 /** At larger Android text scales, keep keyboard hints from squeezing the tooltip label. */
 internal fun tooltipStackShortcut(fontScale: Float): Boolean = fontScale >= 1.3f
 
@@ -254,11 +259,12 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
     val fg = m.inverseOnSurface.toComposeColor()
     val shape = MaterialTheme.shapes.small
     val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale)
+    val maxWidth = tooltipMaxWidth(LocalConfiguration.current.screenWidthDp.dp)
     Column(
         Modifier
             .shadow(TIP_ELEVATION, shape)
             .background(bg, shape)
-            .widthIn(max = TIP_MAX_WIDTH)
+            .widthIn(max = maxWidth)
             .padding(start = 10.dp, end = if (shortcut != null) 6.dp else 10.dp, top = 6.dp, bottom = 6.dp),
     ) {
         val name: @Composable (Modifier) -> Unit = { modifier ->
