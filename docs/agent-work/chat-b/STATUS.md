@@ -403,4 +403,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Risk:** Android/TalkBack sometimes phrases `onClickLabel` alongside a role-specific instruction; the exact spoken result is unverified. Selected PDF toggle and finger-writing hints have state-specific strings; inactive ones deliberately retain generic action speech. Full NP-089/NP-090/NP-092 still require integrated CI and device QA; no protected files or shared trackers were edited.
 
-**Fifteenth implementation commit:** `2a23f5e6744da4305ed297403bbeabc130a97ef3`. **Fifteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in Git order after the prior fourteen G08 checkpoints. **PUSH: NO / MERGE: NO / PR: NO.**
+**Fifteenth implementation commit:** `2a23f5e6744da4305ed297403bbeabc130a97ef3`. **Fifteenth status-only handoff commit:** `83a25a3bd0ea1971dae4fd17e21b3abaf9c13719`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Sixteenth checkpoint — NP-092 responsive toolbar tooltip width (2026-11-13)
+
+**Confirmed source issue:** `ui/Tooltip.kt:TipChip` capped tooltip width at `280.dp`, but did not account for actual Android window width. On narrow split-screen or multi-window layouts, `TipPlacement` clamps the popup's origin but cannot shrink a popup wider than the window, so long localized tooltip names, keyboard shortcut hints and action hints risk being clipped offscreen.
+
+**Bounded change in Chat B-owned files:**
+- `app/src/main/java/com/notestaking/app/ui/Tooltip.kt`: Added pure `tooltipMaxWidth(screenWidth: Dp)`, which retains the existing 280dp cap while reserving 8dp shadow and 8dp screen margin on each side (32dp total) for smaller windows; floor is 1dp for degenerate configurations. `TipChip` now uses the current Android `LocalConfiguration.current.screenWidthDp` to set `.widthIn(max = ...)`. Existing 1.3x/2x shortcut-stacking rule, anchored popup positioning, shadow, pointer hover handling, non-focusability, and all toolbar callers stay unchanged; no resources/dependencies changed.
+- `app/src/test/java/com/notestaking/app/ui/TooltipLayoutTest.kt`: Added two JUnit tests (**source only, not executed locally**): `tooltipWidthLeavesSpaceForWindowEdges` (280dp at window width 320/360, 208dp at 240, 148dp at 180) and `tinyWindowsStillProduceAPositiveWidth` (1dp fallback at width 24).
+
+**Source checks performed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS (15 Chat B-owned changed paths since coordination baseline).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin sources, 232 test sources, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — PASS (private backup exclusions unchanged).
+- `git diff --check` and staged whitespace check — PASS.
+- Focused Python static assertions — PASS (responsive width binding, existing max width/shadow values, 2 new JUnit cases and large-text stacking rule retained).
+- **NOT RUN:** local Gradle, Kotlin/JUnit execution, Compose/Android compilation, lint, APK installation, GitHub CI, real screen/stylus/TalkBack tests.
+
+**Manual acceptance for Chat A (NOT RUN):** On a 320dp phone and tablet in landscape/multi-window, hover a toolbar icon with a mouse/stylus. Confirm tooltip content and shadow fit without horizontal clipping; repeat at 240dp and 180dp window widths where the new max is 208dp and 148dp. Check top/bottom/left/right docked and floating toolbars, horizontal/vertical UI, names with long translated strings, and keyboard shortcuts at 1.0x/1.3x/2.0x font scale; the label must remain readable, keyboard hint should stack at large text, and popups must not steal touch or focus. Check that pen strokes, gestures, and press-to-dismiss hover timing still work. Run GitHub Kotlin/JUnit, Compose compile, lint and APK checks on the **exact integrated SHA**.
+
+**Known limits:** `screenWidthDp` reflects the Android app window, not a narrower in-app split-pane column. Tooltips may legitimately extend across an adjacent pane while remaining inside the app window. Very long unbreakable shortcut labels may still truncate in an extremely narrow window because they intentionally use one line; a later design decision is needed for that case. Pixel-level popup width and actual TalkBack/device behavior are unverified until integration QA. This checkpoint only modifies owned tooltip source/test and status, not `PreferencesPane.kt`, resources, editor/storage, shared trackers or other agents' files.
+
+**Sixteenth code/test commit:** `125d25a1a8bf8f562c86c7e2b36d6e5ca6cd4158`. **Sixteenth status-only handoff commit:** this file at branch HEAD. Chat A must review and cherry-pick both after earlier fifteen G08 checkpoints in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
