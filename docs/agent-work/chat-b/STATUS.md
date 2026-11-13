@@ -340,4 +340,25 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Pending:** The new regression cases are not yet executable evidence, and screen-reader/keyboard focus semantics require physical device acceptance. Kotlin/Compose compilation is unverified. NP-089/NP-090/NP-092 remain open in shared trackers until Chat A coordinates CI and hardware QA. No prohibited code, resources, storage, Gemini paths, Chat A files or shared tracking documents were modified.
 
-**Twelfth code/test commit:** `c557a9d3afaccffdb78cf2aa399d6a2f5885ea33`. **Twelfth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick this pair after all previous G08 commits in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twelfth code/test commit:** `c557a9d3afaccffdb78cf2aa399d6a2f5885ea33`. **Twelfth status-only handoff commit:** `36fbbffd0a3dab9038a7c0187dd57ca0a00f4409`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirteenth checkpoint — NP-090 infinite canvas zoom readout TalkBack context (2026-11-13)
+
+**Confirmed source gap:** `InfiniteToolbar.kt:ToolbarItem.ZOOM` used a plain noninteractive `Label` with only the numeric value (e.g. `100%`). The paged editor was already using `caption_value_percent` with `title_zoom` to announce the label and value. Without context, a TalkBack user navigating the infinite toolbar could hear only the bare percentage between Zoom Out and Zoom In.
+
+**Bounded change (one owned source):** `app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt` now builds the localized zoom context with existing `R.string.caption_value_percent` and `R.string.title_zoom`, feeding the current `editor.zoomPercent`, and applies it to the existing `Label` through `Modifier.semantics { contentDescription = zoomDescription }`. The readout stays nonclickable and visually identical; zoom in/out handlers, zoom lock, key shortcuts, other controls, pen/eraser input, and state persistence remain unchanged. No new resources or dependencies.
+
+**Focused static regression evidence:** A corrected Python source assertion confirmed both localized resource names exist in `values/strings.xml`, the infinite and paged zoom readouts both apply `zoomDescription` semantics, and the original infinite zoom button callbacks still exist. **PASS**. The first attempted additional assertion did not execute because of PowerShell quoting; it was corrected and rerun to PASS. No new JUnit test is needed for this declarative localized semantic label, but runtime TalkBack acceptance remains necessary.
+
+**Checks performed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS, 14 owned changed paths since original lane baseline.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin sources, 231 test sources, 22 XML, 39 PNG, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private backup exclusions.
+- `git diff --check` and staged whitespace checks — PASS.
+- Kotlin/JUnit tests, Gradle, Android/Compose compilation, lint, APK/device installs, GitHub CI, TalkBack/stylus physical tests — **NOT RUN** under policy.
+
+**Manual acceptance for Chat A (NOT performed):** Open an infinite canvas with TalkBack, navigate to the zoom percentage in a docked horizontal toolbar. It should announce the localized equivalent of `Zoom 100%` instead of a contextless percent. Increase/decrease zoom and confirm the announcement updates; locking zoom must leave the status readable while disabling controls. Repeat docked vertical, floating expanded, narrow ~320dp phone and tablet with 1.0x, 1.3x and 2.0x font scaling. Verify touch/stylus ink, swatch dragging, zoom buttons and keyboard shortcuts remain unchanged. Run GitHub Kotlin/JUnit, Compose compiler, lint and Android CI against the **exact integrated SHA**.
+
+**Remaining risks:** TalkBack may combine the value with adjacent semantic nodes depending on device/Compose behavior; only on-device testing can verify speech/focus. G08 NP-089/NP-090/NP-092 still need integrated CI and hardware evidence. Keyboard section reorder requires unowned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt` and floating-grip keyboard movement needs coordinator-owned `MainActivity.kt` plus Chat A-owned `ui/Editor.kt`; no changes to restricted files.
+
+**Thirteenth implementation commit:** `cac0a39f8908ab46fb63144802ba6492a949172c`. **Thirteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in ascending Git order after the previous twelve G08 pairs. **PUSH: NO / MERGE: NO / PR: NO.**
