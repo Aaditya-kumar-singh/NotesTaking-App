@@ -238,11 +238,13 @@ private fun ToolbarItemView(
             var jumpOpen by remember { mutableStateOf(false) }
             Box {
                 val jumpLabel = stringResource(R.string.title_go_to_page)
+                val pageDescription = stringResource(R.string.page_position_count, editor.pageIndex + 1, editor.pageCount)
                 Tooltip(jumpLabel) {
                     PageCounter(
                         editor.pageIndex + 1,
                         editor.pageCount,
-                        Modifier.toolbarTextAction(jumpLabel) { jumpOpen = true },
+                        Modifier.semantics { contentDescription = pageDescription }
+                            .toolbarTextAction(jumpLabel) { jumpOpen = true },
                     )
                 }
                 if (jumpOpen) PageJumpPopup(editor) { jumpOpen = false }
@@ -258,10 +260,12 @@ private fun ToolbarItemView(
             var zoomMenuOpen by remember { mutableStateOf(false) }
             Box {
                 val zoomLabel = stringResource(R.string.title_zoom)
+                val zoomDescription = stringResource(R.string.caption_value_percent, zoomLabel, editor.zoomPercent)
                 Tooltip(zoomLabel) {
                     Label(
                         "${editor.zoomPercent}%",
-                        modifier = Modifier.toolbarTextAction(zoomLabel) { zoomMenuOpen = true },
+                        modifier = Modifier.semantics { contentDescription = zoomDescription }
+                            .toolbarTextAction(zoomLabel) { zoomMenuOpen = true },
                     )
                 }
                 if (zoomMenuOpen) ZoomMenuPopup(editor) { zoomMenuOpen = false }
