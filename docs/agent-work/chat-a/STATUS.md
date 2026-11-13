@@ -77,3 +77,16 @@ No local Gradle/JVM tests, Android lint/build, device install or instrumentation
 - **Compatibility tradeoff:** A provider that reports zero size but denies opening an input stream will now be blocked even if writable. This is intentional fail-closed behavior but requires tests with real newly created SAF documents from local/cloud providers.
 - **Integration sequencing:** B43 remains independent from B42. Publish only after B41 and B42 exact-SHA CI gates pass; cherry-pick this code commit plus this status handoff commit into a fresh coordinator branch. Do not cherry-pick prior lane commits again.
 - **State:** B43 LOCAL READY, NOT PUSHED.
+
+## B44 — interrupt final PDF/ZIP destination copy when cancelled (local-only)
+
+- **Assignment:** P0 NP-082 (export cancellation) and NT-061 PDF batch-copy acceptance.
+- **Root cause:** `PdfBatch.renderTo()` already polls cancellation while rendering into a staging file, but `zip()` and `single()` subsequently used `InputStream.copyTo()` directly to the selected destination without checking Cancel during large copies.
+- **Fix:** Use the existing `CancellableOutputStream` when copying staged PDF bytes into both ZIP entries and a standalone PDF. Any interrupted copy takes the existing failure path, discarding the unfinished destination and deleting scratch files. Valid exports keep the same ZIP/PDF content.
+- **Source commit:** `c8ca435ef2ec7d8b4c92e65db4760fb2e1992937` — `fix(export): interrupt PDF destination copies on cancel`.
+- **Owned files:** `app/src/main/java/com/notestaking/app/platform/PdfBatch.kt` and `app/src/test/java/com/notestaking/app/platform/PdfBatchTest.kt`.
+- **Regression added, not executed locally:** `cancel while copying rendered PDF interrupts both zip and single output` uses a 512-KiB PDF fixture and a destination that sets Cancel on its first write; verifies early interruption, discarded output, closed stream and scratch cleanup.
+- **Callers reviewed:** `Editor.exportPdfsAsync()` routes ZIP and single export through `PdfBatch` and uses an atomic cancellation flag; no UI or shared file changes required.
+- **Validation performed:** Chat A ownership guard PASS, source checker PASS (388 Kotlin source / 226 test files; 0 problems), backup privacy PASS, diff/staged whitespace check PASS, local commit hook PASS. GitHub Kotlin, Android lint/build and physical cancellation tests NOT RUN.
+- **Handoff:** Integrate only B44 `c8ca435` and this handoff commit after B43 exact-SHA CI succeeds. Do not re-apply B39–B43 commits from the older Chat A branch. Real destination-provider cancellation and ZIP cleanup require device acceptance.
+- **State:** B44 LOCAL READY, NOT PUSHED.
