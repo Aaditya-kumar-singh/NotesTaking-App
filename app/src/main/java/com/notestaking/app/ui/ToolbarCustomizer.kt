@@ -3,6 +3,7 @@ package com.notestaking.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
@@ -295,6 +299,10 @@ private fun SectionDragStrip(
     )
 }
 
+/** Handle one activation per key press, without interfering with the chip's drag gestures. */
+internal fun toolbarChipActivationKey(key: Key, type: KeyEventType): Boolean =
+    type == KeyEventType.KeyUp && (key == Key.Enter || key == Key.NumPadEnter || key == Key.Spacebar)
+
 @Composable
 private fun ChipCell(
     item: ToolbarItem,
@@ -325,6 +333,13 @@ private fun ChipCell(
                 toggleableState = if (visible) ToggleableState.On else ToggleableState.Off
                 onClick { tap(); true }
             }
+            .onKeyEvent { event ->
+                if (toolbarChipActivationKey(event.key, event.type)) {
+                    tap()
+                    true
+                } else false
+            }
+            .focusable()
             .pointerInput(item) { detectTapGestures(onTap = { tap() }) }
             .pointerInput(item) {
                 detectDragGesturesAfterLongPress(
