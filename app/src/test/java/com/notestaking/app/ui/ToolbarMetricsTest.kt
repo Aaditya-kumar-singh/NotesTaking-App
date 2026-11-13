@@ -3,6 +3,7 @@ package com.notestaking.app.ui
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.settings.ToolbarSize
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -19,6 +20,12 @@ class ToolbarMetricsTest {
                 assertTrue(metrics.swatch < metrics.button)
             }
         }
+    }
+
+    @Test
+    fun floatingQuickActionsScrollWhileDockedQuickActionsRemainPinned() {
+        assertTrue(toolbarScrollsTrailing(floating = true))
+        assertFalse(toolbarScrollsTrailing(floating = false))
     }
 
     @Test

@@ -73,6 +73,9 @@ internal val LocalMenuOffset = compositionLocalOf { DpOffset.Zero }
 /** How far a floating bar sits in from the canvas edge. */
 private val FLOAT_MARGIN = 8.dp
 
+/** Only docked bars pin quick actions; floating bars scroll them into view on narrow panes. */
+internal fun toolbarScrollsTrailing(floating: Boolean): Boolean = floating
+
 /** What a floating bar covers of the canvas, for overlays that must stay out from under it. */
 internal val LocalToolbarCover = compositionLocalOf { PaddingValues(0.dp) }
 
@@ -128,18 +131,20 @@ internal fun ColumnScope.ToolbarAround(
 
 /**
  * The strip both toolbars are laid out in: a row along the top or bottom, a column down either
- * side. [content] runs along it and scrolls when it runs long, [trailing] stays pinned at the end,
- * and [armed] is the tool the gliding circle sits under.
+ * side. [content] scrolls when long; [trailing] stays pinned when docked, but scrolls with
+ * the tools when floating. [pinned] (split-pane Close) is always fixed at the end.
  */
 @Composable
 internal fun ToolbarFrame(
     armed: Any?,
     trailing: (@Composable () -> Unit)? = null,
+    pinned: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val look = LocalToolbarLook.current
     val bar = barMetrics(look.size).copy(vertical = look.position.vertical)
     val glide = remember { ToolGlide() }
+    val scrollTrailing = toolbarScrollsTrailing(look.floating)
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.extraLarge
     val divider = palette.border.toComposeColor()
@@ -189,8 +194,12 @@ internal fun ToolbarFrame(
                         .padding(vertical = 4.dp)
                         .toolGlide(glide, armed),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                ) { content() }
-                trailing?.invoke()
+                ) {
+                    content()
+                    if (scrollTrailing) trailing?.invoke()
+                }
+                if (!scrollTrailing) trailing?.invoke()
+                pinned?.invoke()
             }
         } else {
             Row(
@@ -204,8 +213,12 @@ internal fun ToolbarFrame(
                         .padding(horizontal = 4.dp)
                         .toolGlide(glide, armed),
                     verticalAlignment = Alignment.CenterVertically,
-                ) { content() }
-                trailing?.invoke()
+                ) {
+                    content()
+                    if (scrollTrailing) trailing?.invoke()
+                }
+                if (!scrollTrailing) trailing?.invoke()
+                pinned?.invoke()
             }
         }
     }
