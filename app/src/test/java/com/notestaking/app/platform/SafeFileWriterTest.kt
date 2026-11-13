@@ -1,5 +1,6 @@
 package com.notestaking.app.platform
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,6 +12,35 @@ import java.util.concurrent.TimeUnit
 
 class SafeFileWriterTest {
     private fun directory(): File = Files.createTempDirectory("notestaking-atomic-").toFile()
+
+    @Test fun borrowedStreamUsesBulkWriteAndLeavesDescriptorOpen() {
+        val destination = object : java.io.ByteArrayOutputStream() {
+            var singleWrites = 0
+            var bulkWrites = 0
+            var closed = false
+            override fun write(b: Int) {
+                singleWrites++
+                super.write(b)
+            }
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                bulkWrites++
+                super.write(b, off, len)
+            }
+            override fun close() {
+                closed = true
+                super.close()
+            }
+        }
+        val data = ByteArray(256 * 1024) { (it % 251).toByte() }
+        val borrowed = SafeFileWriter.nonClosingStream(destination)
+        borrowed.write(data)
+        borrowed.close()
+
+        assertEquals(1, destination.bulkWrites)
+        assertEquals(0, destination.singleWrites)
+        assertFalse(destination.closed)
+        assertArrayEquals(data, destination.toByteArray())
+    }
 
     @Test fun emptySuccessfulWriteCannotReplaceLastGoodSnapshot() {
         val dir = directory()
