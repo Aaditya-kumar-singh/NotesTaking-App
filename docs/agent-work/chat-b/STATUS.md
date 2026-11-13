@@ -268,4 +268,29 @@ All callers of the shared controls were located in `Toolbar.kt`, `InfiniteToolba
 
 **Remaining risks:** Actual Compose keyboard focus behavior, focus-ring appearance, selected/focused contrast, 320dp clipping and TalkBack focus order are unverified without physical device/CI. NP-089/NP-090/NP-092 stay open until integrated hardware acceptance. Keyboard-driven section reorder needs the unowned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating-grip arrow routing needs coordinator work in `MainActivity.kt` and Chat A-owned `Editor.kt` to avoid intercepting page/canvas shortcuts.
 
-**Ninth implementation commit:** `2907304559ba6d60d9d35d3971047a9e1eb2bf8c`. **Ninth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick this pair in Git order after all prior G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
+**Ninth implementation commit:** `2907304559ba6d60d9d35d3971047a9e1eb2bf8c`. **Ninth status-only handoff commit:** `7715c3840a486a114387707bef05546a5518b628`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Tenth checkpoint — NP-089/NP-090/NP-092 Add Section accessibility (2026-11-13)
+
+**Source issue:** `ToolbarCustomizer.kt:AddSectionChip` presents the same localized "Add section" phrase as both the plus icon's content description and an adjacent text label, potentially duplicating TalkBack speech. It used a bare `.clickable(onClick)` without explicit Button role, and its 1dp outline was unchanged when reached by hardware keyboard focus. The adjacent section chips gained a focused accent outline in checkpoint eight, leaving Add Section inconsistent.
+
+**Bounded change:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/ToolbarCustomizer.kt` the Add Section button now:
+- Preserves existing 48dp minimum height, localized text, click callback and section insertion behavior.
+- Uses `contentDescription = null` on the decorative plus icon so the nearby text supplies one descriptive label.
+- Specifies `role = Role.Button` on its existing clickable modifier.
+- Tracks `onFocusChanged`, drawing its existing accent border at 2dp only while focused, otherwise 1dp.
+
+No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, section drag/gesture handlers, drawing/storage or any other agent-owned paths. One source file plus this status file changed.
+
+**Checks executed locally (no Android build):**
+- `python tools/agents/check_lane.py` — PASS, 12 Chat B-owned paths since coordinator baseline.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin sources, 229 test sources, 22 XML files, 39 PNGs, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private data backup exclusions unchanged.
+- `git diff --check` / staged `git diff --cached --check` — PASS.
+- Focused Python source regression assertion — PASS: one spoken label, explicit Button role, focus-responsive accent border, 48dp minimum, `AddSectionChip(onClick = onAdd)`, original section gestures and checkbox state intact. No JVM source test added for this direct, declarative UI change.
+
+**Manual acceptance for coordinator (NOT RUN):** With TalkBack on phone/tablet, navigate to Settings → Toolbar customization → Add Section; confirm a single spoken "Add section", a Button role and one activation that creates exactly one new section. With a hardware keyboard, Tab/Shift+Tab to this chip and verify a clear outline on focus (normal border when unfocused), then press Enter and Space; only one section should be added per activation. Repeat at 320dp and 2x text scale, xnote/xcanvas layouts, and with a stylus to confirm no drag changes. Run GitHub Kotlin/JUnit, Compose compile/lint and Android CI at the exact integrated SHA before acceptance.
+
+**Pending risks:** No actual TalkBack, keyboard, 320dp screenshot or Compose runtime testing. Keyboard section drag reordering still needs coordinator-owned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating-grip arrow routing needs coordinator/Chat A changes to `MainActivity.kt` / `ui/Editor.kt`. NP-089/090/092 stay open pending integrated CI and real-device acceptance.
+
+**Tenth code commit:** `0366719b0126005246ae8fced8ea808445e55100`. **Tenth status handoff:** this file at branch HEAD. Chat A should cherry-pick this pair after all previous Chat B commits in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
