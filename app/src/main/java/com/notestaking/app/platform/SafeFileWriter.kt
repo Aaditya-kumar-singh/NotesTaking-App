@@ -28,9 +28,7 @@ internal object SafeFileWriter {
                 // DocumentCodec/CanvasCodec close their ZipOutputStream when finished.
                 // Keep the real descriptor open until fsync succeeds, even if the codec
                 // closes the stream it received.
-                val borrowed = object : FilterOutputStream(output) {
-                    override fun close() { flush() }
-                }
+                val borrowed = nonClosingStream(output)
                 body(borrowed)
                 borrowed.flush()
                 output.fd.sync()
@@ -49,5 +47,11 @@ internal object SafeFileWriter {
         } finally {
             staged?.delete() // Never touch the previous, successfully committed target on failure.
         }
+    }
+
+    /** Pass ZIP byte arrays through in bulk while letting the caller retain the file descriptor. */
+    internal fun nonClosingStream(output: OutputStream): OutputStream = object : FilterOutputStream(output) {
+        override fun close() { flush() }
+        override fun write(b: ByteArray, off: Int, len: Int) { out.write(b, off, len) }
     }
 }
