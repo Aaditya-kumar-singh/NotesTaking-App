@@ -17,7 +17,7 @@ internal object ProviderCopy {
         try {
             ProviderInput.read(openSource()) { input ->
                 ProviderOutput.write(openDestination()) { output ->
-                    if (input.copyTo(output) == 0L) throw EOFException("Source document is empty")
+                    if (BoundedCopy.copy(input, output, Long.MAX_VALUE) == 0L) throw EOFException("Source document is empty")
                 }
             }
             return Result.SAVED

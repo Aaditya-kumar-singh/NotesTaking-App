@@ -132,6 +132,41 @@ class ProviderCopyTest {
         assertTrue(removed)
     }
 
+    @Test fun stalledProviderReadFailsAndCleansIncompleteDestination() {
+        val source = object : java.io.InputStream() {
+            var closed = false
+            override fun read(): Int = 0
+            override fun read(b: ByteArray, off: Int, len: Int): Int = 0
+            override fun close() { closed = true }
+        }
+        var removed = false
+        val result = ProviderCopy.save(
+            { source },
+            { ByteArrayOutputStream() },
+            { removed = true; true },
+        )
+        assertEquals(ProviderCopy.Result.FAILED_REMOVED, result)
+        assertTrue(removed)
+        assertTrue(source.closed)
+    }
+
+    @Test fun intermittentEmptyReadsStillSaveExactProviderBytes() {
+        val payload = ByteArray(128 * 1024) { (it % 251).toByte() }
+        val input = object : ByteArrayInputStream(payload) {
+            var emptyReads = 4
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (emptyReads-- > 0) return 0
+                return super.read(b, off, len)
+            }
+        }
+        val output = ByteArrayOutputStream()
+        var removed = false
+        val result = ProviderCopy.save({ input }, { output }, { removed = true; true })
+        assertEquals(ProviderCopy.Result.SAVED, result)
+        assertArrayEquals(payload, output.toByteArray())
+        assertFalse(removed)
+    }
+
     @Test fun interruptedPdfSourceReadRemovesIncompleteDestination() {
         val source = object : ByteArrayInputStream("%PDF-1.7 test document".toByteArray()) {
             var readCalls = 0
