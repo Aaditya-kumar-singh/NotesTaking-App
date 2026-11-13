@@ -105,7 +105,7 @@
 | Test | Priority | Environment | NP IDs | Steps | Pass condition |
 |---|---|---|---|---|---|
 | NT-067 | P1 | Phone + Tablet | NP-089 | Measure effective action hit areas, including split divider | Tap/drag controls ≥48dp or defensibly expanded |
-| NT-068 | P1 | TalkBack | NP-090 | Navigate all toolbar icon buttons and saved pen presets | Name/action/selected state spoken, correct focus order |
+| NT-068 | P1 | TalkBack | NP-090 | On paged/infinite notes toggle Sidebar/Wand/Ruler/Minimap/Zoom Lock, pinned Eraser, PDF Read/Annotate and Finger Drawing; inspect inactive state and one-shot Home/Undo/menus, then pen presets | Persistent toggles announce selected and not selected; momentary actions do not falsely announce selected; labels, focus order and stylus interaction remain correct |
 | NT-069 | P1 | Phone + Tablet | NP-091 | Rotate during editor, split view and modal open | No clipped Save/export, preserved viewport |
 | NT-070 | P1 | Phone | NP-092 | Set font scale to 1.3 and 2.0; open export/pen/settings | No unreachable destructive/confirm action |
 | NT-071 | P2 | Tablet | NP-093 | Find screenshot, hyperlink and layer controls in long settings list | Search/grouping navigable and persisted if implemented |
