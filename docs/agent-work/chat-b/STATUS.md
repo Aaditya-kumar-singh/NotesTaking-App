@@ -138,4 +138,26 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 
 **Pending risk:** At extremely constrained panes even the fixed grip, collapse and Close Pane buttons can exhaust the viewport. This patch prioritizes keeping those safety controls visible and makes other quick actions scrollable, but a real 320dp/split-pane device screenshot is required. NP-092 keyboard focus restoration and system Back behavior are outside this bounded change; NP-089/NP-090 still require hardware acceptance.
 
-**Fourth source/test commit:** `4e95fca50238e1eefe7097701debbd622153da09`. **Fourth status-only handoff commit:** this document at branch HEAD. Chat A must review and cherry-pick all earlier G08 commits before this pair, in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Fourth source/test commit:** `4e95fca50238e1eefe7097701debbd622153da09`. **Fourth status-only handoff commit:** `b372e571bc2312082115feb4c9c315107966d13e`. Chat A must review and cherry-pick all earlier G08 commits in order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Fifth checkpoint — NP-092 collapsed floating toolbar on narrow split panes (2026-11-13)
+
+**Confirmed source defect:** `settings/ToolbarLook.kt:visibleFavoriteCount` always returns at least one favorite even when the 48dp grip, 8dp grip gap, one favorite and the Expand control (button width + 8dp spacing each), plus 16dp pane edge inset, do not fit. At 180dp along the toolbar axis, regular 48dp buttons require 184dp, and comfortable 56dp buttons require 200dp. The collapsed bar could therefore exceed its maximum width/height, leaving its essential Expand action clipped. The settings function and `FavoriteToolDock` are outside Chat B ownership and **were not modified**.
+
+**Bounded fix (owned):**
+- `app/src/main/java/com/notestaking/app/ui/FloatingToolbar.kt`: `floatingFavoritesFit(axisDp, count, buttonDp)` calculates whether the computed favorite group, grip and Expand action can all fit. When not, skip composing the favorites entirely and always render Expand; the user can reach every tool through expansion. The same policy works on horizontal/vertical axes.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarMetricsTest.kt`: added JUnit `collapsedFloatingToolbarHidesFavoritesWhenEvenOneWouldOverflow`, iterating Compact/Regular/Comfortable sizes to assert the existing count is 1 at 180dp and the new fit guard hides it there while preserving favorites at 320dp. This is **new test source only**, not locally run.
+
+**Checks actually run from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS; only Chat B's 10 owned paths changed since lane baseline.
+- `python tools/ci/check_project.py` — PASS; 388 Kotlin sources, 228 test sources, 22 XML, 39 PNG, zero problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private backup exclusions unchanged.
+- `git diff --check` and `git diff --cached --check` — PASS.
+- Focused `python -c` static assertion — PASS; guard is applied only to favorites; Expand remains composed independently, and regression source is present.
+- No local Gradle, Kotlin/JUnit execution, Android lint or build, APK/device installation or TalkBack testing performed.
+
+**Manual acceptance for coordinator, NOT RUN:** On a 180dp-axis split pane, try all three toolbar sizes collapsed along the horizontal and vertical axes and confirm the drag grip and Expand button remain fully tappable at 48dp or better, without clipping; after expansion ensure Scroll/All Tools can reach the pen/eraser and Close Pane when present. Repeat at 320dp to ensure normal favorites are still visible. Try PDF note (read/annotate tool reservation), stylus hover/drag, TalkBack reading of Expand and grip custom actions, screen rotation and 1.3x/2x text. Then run Kotlin/JUnit, Compose compilation, lint and Android CI on Chat A's exact integrated SHA.
+
+**Remaining risk:** This source guard does not solve panes narrower than the grip + expand + insets (about 128dp for 48dp buttons or 136dp for 56dp buttons); those still need device design/acceptance. NP-092 keyboard focus restoration/system Back and global 320dp large-font checks remain pending. NP-089 and NP-090 need phone/tablet hardware acceptance. No changes to settings, FavoriteToolDock, MainActivity, resources, drawing/storage or other agents' paths.
+
+**Fifth source/test commit:** `b431c60ca08738e87198f320c0936d50c61112d1`. **Fifth status-only handoff commit:** this status file at branch HEAD. Chat A should cherry-pick it **after** the previous eight G08 commits, keeping Git order. **PUSH: NO / MERGE: NO / PR: NO.**
