@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
 import com.notestaking.app.core.tools.Tool
@@ -183,7 +185,12 @@ fun InfiniteToolbar(
                         ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) {
                             editor.zoomBy(1.0 / InfiniteEditor.ZOOM_STEP)
                         }
-                        Label("${editor.zoomPercent}%")
+                        val zoomDescription = stringResource(
+                            R.string.caption_value_percent,
+                            stringResource(R.string.title_zoom),
+                            editor.zoomPercent,
+                        )
+                        Label("${editor.zoomPercent}%", Modifier.semantics { contentDescription = zoomDescription })
                         ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_IN) {
                             editor.zoomBy(InfiniteEditor.ZOOM_STEP)
                         }
