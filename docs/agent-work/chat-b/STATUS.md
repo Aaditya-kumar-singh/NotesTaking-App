@@ -555,4 +555,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Known limits:** Normal-scale shortcuts can still be long and not word-break across 2 lines at extremely narrow 180dp layouts; actual Android text shaping and clipping remain unverified. `LocalConfiguration` reports Android app-window width, not a narrower in-app split-pane. A 312dp boundary may not match every font/locale's intrinsic name lengths; physical QA required. NP-089/090/092 remain open in shared trackers until Chat A integration, GitHub CI and phone/tablet acceptance. No unowned/editor/storage/shared-resource or Gemini/Chat A paths changed.
 
-**Twenty-second implementation/test commit:** `34aa6407703b7b4bb654b07d1687d5fea1a17473`. **Twenty-second status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick this pair after the prior twenty-one G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-second implementation/test commit:** `34aa6407703b7b4bb654b07d1687d5fea1a17473`. **Twenty-second status-only handoff commit:** `c1b5d4bb913d4677f63670c327bc89caacb9cf10`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-third checkpoint — NP-090 selected-state semantics for overflow tool toggles (2026-11-13)
+
+**Verified source gap:** The All Tools overflow already exposes the currently selected drawing tool through `QuickActionRow(isSelected = ...)` (checkpoint 20). However, persistent Wand, Ruler and Minimap toggles in the extra actions were plain menu rows without `selected` semantics. A duplicate PDF Markup shortcut also failed to indicate when Markup was the active drawing tool. These states are available as observable properties in the existing editors and exposed on equivalent main-toolbar controls.
+
+**Bounded implementation:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`, pass the existing `QuickActionRow` optional `isSelected` argument to five call sites: paged Wand=`editor.wandEnabled`, paged Ruler=`editor.rulerVisible`, PDF Markup=`editor.tool == Tool.MARKUP`, infinite Wand=`editor.wandEnabled`, infinite Minimap=`editor.minimapVisible`. Reused the existing selected semantics implementation, with no new helper, resource, dependency, test fixture, callback, storage or rendering change. All other menu rows, including one-shot page actions, Zoom Fit, Undo/Redo and settings, remain ordinary actions without misleading selected-state semantics.
+
+**Source-only checks actually performed:**
+- `python tools/agents/check_lane.py` — **PASS** (16 Chat B-owned paths since baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin source files, 233 test source files, 22 XML files, 39 PNGs; 0 problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS**, no private-data backup regression.
+- `git diff --check` and `git diff --cached --check` — **PASS**.
+- Focused Python static assertions — **PASS**; all five menu-row semantics bindings, observable editor fields, unchanged callbacks, default absent semantics and unaffected Undo/Redo verified. The code is a declarative binding using the existing helper; **no new JVM test added**.
+- **NOT RUN:** local Gradle, Kotlin/JUnit, Compose compiler, Android lint or APK, GitHub Actions, TalkBack, hardware keyboard or stylus device testing.
+
+**Chat A manual acceptance (NOT RUN):** With TalkBack on a phone/tablet, open a paged note, toggle Wand from All Tools and reopen the menu to check that Wand now announces its correct selected state, then toggle off and verify it clears. Repeat Ruler. On a PDF, select Markup through the extra row and verify it announces selected only while Markup is active. Open an infinite canvas, toggle Wand and Minimap on/off from All Tools, reopen the menu after each toggle and verify the appropriate selected state. Test docked/vertical/floating toolbars, narrow 240/320dp multi-window, and 1.3×/2× font scaling; verify callbacks fire once, other menu rows remain unselected, ink input and navigation still behave normally. Run GitHub Kotlin/JUnit, Compose compilation, lint and APK CI on the coordinator's **exact integrated SHA**.
+
+**Risk and remaining gates:** Whether Material3 merges `selected` semantics into the TalkBack node correctly remains device-dependent; no runtime or UI acceptance evidence has been gathered. Parent pane keyboard preview consumes arrow keys for page navigation/infinite pan; implementing keyboard movement of the floating grip needs coordinator/Chat A cooperation (read-only `MainActivity.kt` and `Editor.kt`). Keyboard section reorder similarly requires coordinator-owned `PreferencesPane.kt`. NP-089/090/092 remain open until integrated CI and device QA. No unowned files or other agents' branches were modified.
+
+**Twenty-third implementation commit:** `cfab0d232ece0cc0c6056bcb1f6c0503ac9a4f0d`. **Twenty-third status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the prior twenty-two G08 checkpoint pairs in order. **PUSH: NO / MERGE: NO / PR: NO.**
