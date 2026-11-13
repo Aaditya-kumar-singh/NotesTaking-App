@@ -85,7 +85,7 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                     R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable)) {
                     dismiss(); editor.toggleFingerDrawing()
                 }
-                QuickActionRow(stringResource(R.string.tool_markup)) { dismiss(); editor.selectTool(Tool.MARKUP) }
+                QuickActionRow(stringResource(R.string.tool_markup), isSelected = editor.tool == Tool.MARKUP) { dismiss(); editor.selectTool(Tool.MARKUP) }
                 QuickActionRow(stringResource(R.string.pdf_search_text)) { dismiss(); editor.openSearch() }
                 QuickActionRow(stringResource(R.string.title_go_to_page)) { dismiss(); pageJumpOpen = true }
                 QuickActionRow(stringResource(R.string.fit_width)) { dismiss(); editor.fitWidth() }
@@ -98,8 +98,8 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 if (!editor.sidebarVisible) editor.toggleSidebar()
             }
             QuickActionRow(stringResource(R.string.tool_image)) { dismiss(); onInsertImage() }
-            QuickActionRow(stringResource(R.string.tool_wand)) { dismiss(); editor.toggleWand() }
-            QuickActionRow(stringResource(R.string.tool_ruler)) { dismiss(); editor.toggleRuler() }
+            QuickActionRow(stringResource(R.string.tool_wand), isSelected = editor.wandEnabled) { dismiss(); editor.toggleWand() }
+            QuickActionRow(stringResource(R.string.tool_ruler), isSelected = editor.rulerVisible) { dismiss(); editor.toggleRuler() }
             QuickActionRow(stringResource(R.string.toolbar_styles)) { dismiss(); stylesOpen = true }
             QuickActionRow(stringResource(R.string.toolbar_view)) { dismiss(); viewOpen = true }
         },
@@ -164,9 +164,9 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
         extras = { dismiss ->
             HorizontalDivider()
             QuickActionRow(stringResource(R.string.tool_image)) { dismiss(); onInsertImage() }
-            QuickActionRow(stringResource(R.string.tool_wand)) { dismiss(); editor.toggleWand() }
+            QuickActionRow(stringResource(R.string.tool_wand), isSelected = editor.wandEnabled) { dismiss(); editor.toggleWand() }
             QuickActionRow(stringResource(R.string.toolbar_fit)) { dismiss(); editor.zoomToFit() }
-            QuickActionRow(stringResource(R.string.toolbar_minimap)) { dismiss(); editor.toggleMinimap() }
+            QuickActionRow(stringResource(R.string.toolbar_minimap), isSelected = editor.minimapVisible) { dismiss(); editor.toggleMinimap() }
             QuickActionRow(stringResource(R.string.toolbar_waypoints)) { dismiss(); waypointsOpen = true }
             QuickActionRow(stringResource(R.string.toolbar_styles)) { dismiss(); stylesOpen = true }
         },
