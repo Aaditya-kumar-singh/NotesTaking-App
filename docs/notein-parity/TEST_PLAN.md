@@ -104,7 +104,7 @@
 
 | Test | Priority | Environment | NP IDs | Steps | Pass condition |
 |---|---|---|---|---|---|
-| NT-067 | P1 | Phone + Tablet | NP-089 | Measure effective action hit areas, including split divider | Tap/drag controls ≥48dp or defensibly expanded |
+| NT-067 | P1 | Phone + Tablet | NP-089 | On 320dp phone and tablet, tap edges of paged toolbar title rename, page counter and zoom percentage; repeat top/bottom/side and floating toolbars, split panes, 1.3x/2x font, and divider drag | Each text action has ≥48dp hit area without accidental adjacent hits, correct rename/jump/zoom callback; split divider remains reachable and drawing gestures unaffected |
 | NT-068 | P1 | TalkBack | NP-090 | On paged/infinite notes toggle Sidebar/Wand/Ruler/Minimap/Zoom Lock, pinned Eraser, PDF Read/Annotate and Finger Drawing; inspect inactive state and one-shot Home/Undo/menus, then pen presets | Persistent toggles announce selected and not selected; momentary actions do not falsely announce selected; labels, focus order and stylus interaction remain correct |
 | NT-069 | P1 | Phone + Tablet | NP-091 | Rotate during editor, split view and modal open | No clipped Save/export, preserved viewport |
 | NT-070 | P1 | Phone | NP-092 | Set font scale to 1.3 and 2.0; open export/pen/settings | No unreachable destructive/confirm action |

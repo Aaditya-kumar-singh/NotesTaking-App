@@ -135,7 +135,7 @@ Evidence and NotesTaking targets: N29, N30, N31, N32, N33 · `ui/Toolbar.kt`, `u
 
 | ID | Priority | Reference feature / requirement | State | Next implementation or audit | Acceptance gate |
 |---|---|---|---|---|---|
-| NP-089 | P1 | 48dp touch regions on primary actions | PARTIAL | B01–B07 increased many; audit remaining phone/tablet controls | All finger actions have ≥48dp hit area |
+| NP-089 | P1 | 48dp touch regions on primary actions | PARTIAL | B01–B07 increased many; B45 locally aligns paged toolbar title/page/zoom text-action targets with 48dp icon sizing (CI/device pending); full-app phone/tablet audit remains | All finger actions have ≥48dp hit area |
 | NP-090 | P1 | TalkBack labels and active/selected state | PARTIAL | B40 selected/not-selected semantics for persistent paged/infinite/PDF toolbar toggles passed GitHub CI; TalkBack device QA and remaining icon/page/preset/dialog audit pending | Every icon is discoverable, action/state spoken |
 | NP-091 | P1 | Phone/tablet/landscape responsive editor | SOURCE | Measure portrait/landscape, split/multi-window and keyboard | No clipped toolbar or inaccessible Save |
 | NP-092 | P1 | Large-font settings and keyboard/back navigation | PARTIAL | Check 1.3x/2.0x font, focus restoration, system Back | No truncated critical action at 320dp |
