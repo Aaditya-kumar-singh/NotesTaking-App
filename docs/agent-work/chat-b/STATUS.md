@@ -361,4 +361,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** TalkBack may combine the value with adjacent semantic nodes depending on device/Compose behavior; only on-device testing can verify speech/focus. G08 NP-089/NP-090/NP-092 still need integrated CI and hardware evidence. Keyboard section reorder requires unowned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt` and floating-grip keyboard movement needs coordinator-owned `MainActivity.kt` plus Chat A-owned `ui/Editor.kt`; no changes to restricted files.
 
-**Thirteenth implementation commit:** `cac0a39f8908ab46fb63144802ba6492a949172c`. **Thirteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in ascending Git order after the previous twelve G08 pairs. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirteenth implementation commit:** `cac0a39f8908ab46fb63144802ba6492a949172c`. **Thirteenth status-only handoff commit:** `68c18856be8c72a0e07c26cfbfb02900dbfe7be3`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Fourteenth checkpoint — NP-090 paged zoom button availability at configured limits (2026-11-13)
+
+**Confirmed source issue:** In `Toolbar.kt:ToolbarItem.ZOOM`, Zoom Out and Zoom In were enabled whenever `editor.zoomLocked` was false, even at the active minimum or maximum. `CanvasState.setZoomAnchored` clamps a step into `state.minZoom..state.maxZoom` and returns without acting when the clamped target is within `1e-9` of the current zoom. TalkBack and keyboard users could therefore be offered enabled zoom buttons that perform no action at a limit.
+
+**Bounded fix (Chat B-owned):**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: Added pure `toolbarZoomStepEnabled(zoom, minZoom, maxZoom, locked, zoomIn)` matching the existing zoom clamp tolerance. The paged toolbar now reads `editor.state.zoom/minZoom/maxZoom` and gates its existing Zoom Out/In `ToolbarIcon` via `enabled`. When locked, both disabled as before; at the minimum only Zoom In is enabled; at the maximum only Zoom Out is enabled; in the interior both remain enabled. The zoom readout, menu, click callbacks, shortcuts, fit controls, stylus/drawing and preferences remain unchanged. Infinite-canvas zoom controls were left untouched because their viewport limits are not exposed by this toolbar's editor API.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarZoomAccessibilityTest.kt`: Added three JUnit regression cases, **source added but not locally run**: `interiorZoomOffersBothDirections`; `eachBoundaryDisablesOnlyTheOutwardDirection`; and `lockedEqualLimitsAndClampedToleranceOfferNoStep`.
+
+**Permitted checks completed inside Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (15 owned changed paths since coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin source, 232 test source, 22 XML, 39 PNG, 0 problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (private app backup exclusions intact).
+- `git diff --check`, `git diff --cached --check` — **PASS**.
+- Focused Python static assertion — **PASS**: source helper matches CanvasState clamp tolerance and both controls use it; original callbacks remain; all three regression test cases present.
+- **Not performed:** local Gradle, JUnit/Kotlin execution, Android/Compose compilation, lint, APK/device install, GitHub CI, physical TalkBack or stylus QA.
+
+**Manual acceptance for coordinator (NOT RUN):** On a phone and tablet, set a restricted zoom range (e.g. 50%..200%), use the toolbar buttons to reach the minimum and maximum, and verify only the outward arrow is disabled at each end while the other remains operable. Test Zoom Lock with both icons disabled; change the zoom range in Preferences and verify the state updates, then pinch or use keyboard zoom shortcuts to move back into range and verify the icons re-enable. Repeat single/double-page note, docked/floating bars, 320dp split screen, 1.0x/1.3x/2.0x font scale, TalkBack announcements and stylus drawing. Run GitHub JUnit/Compose compilation, lint, APK CI against Chat A's exact integrated SHA before NP-090 acceptance.
+
+**Remaining risks:** `CanvasState` zoom fields are not Compose state themselves, so boundary-button refresh must be verified after zoom gestures/settings changes through the existing editor view-state updates on device. Exact accessibility speech/focus for disabled toolbar buttons remains unverified. No coordinator/Chat A/Gemini file, translations, shared tracking document or storage was changed. NP-089/090/092 still require CI and hardware acceptance.
+
+**Fourteenth code/test commit:** `66798138e6edcad4d6971c8e16dd31b0cdcc4e71`. **Fourteenth status-only handoff commit:** this STATUS file at branch HEAD. Chat A must cherry-pick this pair in Git order after all prior G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
