@@ -186,4 +186,30 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 
 **Pending risks and ownership:** The new test is source only; keyboard focus highlights and key event propagation must be verified on device. Section drag-strip reorder is still pointer-only. Full keyboard/TalkBack move-up/down would require a callback from `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`, which is **outside Chat B's ownership**; no edits were made to that file. System Back, other large-text dialog layouts and broad NP-089/NP-090 hardware acceptance remain pending. No storage, editor state, resources, or another agent's files changed.
 
-**Sixth source/test commit:** `b554957ee22e227063a78ff8371da6c3101bde05`. **Sixth STATUS-only commit:** this document at branch HEAD. Chat A must review and cherry-pick both commits in Git order after all prior G08 checkpoints. **PUSH: NO / MERGE: NO / PR: NO.**
+**Sixth source/test commit:** `b554957ee22e227063a78ff8371da6c3101bde05`. **Sixth STATUS-only commit:** `f7045eb726fab47345ccee1ea8abfd70fe0ad8a7`. Chat A must preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Seventh checkpoint — NP-090 paged toolbar spoken page and zoom values (2026-11-13)
+
+**Source issue:** In the paged toolbar, `ToolbarItem.PAGE_NAV` renders "3 / 12" horizontally or separate "3" and "12" labels on a side rail. `ToolbarItem.ZOOM` renders "100%". Both had button roles and activation labels from prior NP-089 work but lacked a contextual spoken content description, so TalkBack could announce an ambiguous pair of numbers or percent without saying what it represents.
+
+**Bounded implementation:** In owned `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`, attached existing translated string resources to the two interactive text controls via Compose semantics, before the existing `toolbarTextAction` modifier:
+- `R.string.page_position_count` → "Page 3 of 12" with current one-based page index and total page count, in either toolbar orientation.
+- `R.string.caption_value_percent` + `R.string.title_zoom` → "Zoom 100%" with the current zoom percentage.
+
+No other files or resources changed; visual layout, targets, callbacks, popups, touch, hover, stylus and canvas behavior remain unchanged.
+
+**Validation actually performed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS, Chat B branch, 12 owned changed paths relative to baseline.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin sources, 229 tests, 22 XML, 39 PNG, zero problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private backup exclusions unchanged.
+- `git diff --check` and staged diff check — PASS.
+- Focused Python static assertion — PASS, resource names exist in `values/strings.xml`, page/zoom stringResource arguments are dynamic and correct, both Compose contentDescription semantics are applied, and existing jump/zoom callbacks and button semantics remain in use. No new JVM test was added for the two declarative label bindings; the static assertion and manual acceptance script are the focused coverage for this checkpoint.
+- No local Kotlin/JUnit execution, Gradle/Compose compilation, lint, Android build, APK installation, phone/tablet TalkBack or stylus QA, or GitHub CI.
+
+**Manual acceptance for Chat A, NOT RUN:** Enable TalkBack on a 320dp phone and tablet, open a multipage note (e.g. page 3/12) and swipe through both docked horizontal and vertical page counters. Confirm exactly one logical control announces "Page 3 of 12" plus the Go to Page action, its value updates after page navigation, and double-tap opens the existing jump popup. Verify Zoom announces its current numeric value with "Zoom", updates after zoom actions, and double-tap opens the existing zoom popup. Test 1.0x/1.3x/2.0x fonts, floating expanded and docked modes, and stylus taps without accidental canvas strokes. Then run GitHub-hosted Kotlin/JUnit, Compose compilation, lint and Android CI on the integrated SHA.
+
+**Keyboard constraint discovered (no edits):** Floating toolbar grip exposes TalkBack custom move/reset actions but cannot safely gain arrow-key movement solely within Chat B's ownership: `app/src/main/java/com/notestaking/app/MainActivity.kt` has parent `onPreviewKeyEvent` dispatch to `Editor.handleKeyDown`, whose page navigation already consumes unmodified arrows in `ui/Editor.kt`; `ui/InfiniteEditor.kt` pans the canvas on those same arrows. Those files are outside Chat B ownership. Chat A/coordinator must decide focus-scoped shortcut routing before keyboard grip arrow movement is implemented; do not layer a second arrow action over page/canvas navigation. Section drag-strip keyboard reorder still needs coordinator-owned `ui/PreferencesPane.kt` callbacks.
+
+**Pending risks:** TalkBack spoken text priority, screen-reader focus merging, 320dp clipping, keyboard/Back interactions, and regression tests on an actual Android build are unverified. NP-089/090/092 remain open pending integrated CI and hardware evidence, not accepted based on source checks alone.
+
+**Seventh code commit:** `c62eb14565bb4b02c1dbd0d99a21efb55090f574`. **Seventh status-only commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after all previous G08 commits in Git order, without editing Chat A's storage branch from this worktree. **PUSH: NO / MERGE: NO / PR: NO.**
