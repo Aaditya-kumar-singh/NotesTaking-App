@@ -244,12 +244,16 @@ private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: Strin
     }
 }
 
+/** At larger Android text scales, keep keyboard hints from squeezing the tooltip label. */
+internal fun tooltipStackShortcut(fontScale: Float): Boolean = fontScale >= 1.3f
+
 @Composable
 private fun TipChip(text: String, hint: String?, shortcut: String?) {
     val m = LocalPalette.current.materialColors
     val bg = m.inverseSurface.toComposeColor()
     val fg = m.inverseOnSurface.toComposeColor()
     val shape = MaterialTheme.shapes.small
+    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale)
     Column(
         Modifier
             .shadow(TIP_ELEVATION, shape)
@@ -257,19 +261,30 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
             .widthIn(max = TIP_MAX_WIDTH)
             .padding(start = 10.dp, end = if (shortcut != null) 6.dp else 10.dp, top = 6.dp, bottom = 6.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text, color = fg, fontSize = 13.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp, modifier = Modifier.weight(1f, fill = false))
-            if (shortcut != null) {
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    shortcut,
-                    color = fg.copy(alpha = 0.72f),
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .border(1.dp, fg.copy(alpha = 0.22f), TIP_KEY_SHAPE)
-                        .padding(horizontal = 5.dp, vertical = 1.dp),
-                )
+        val name: @Composable (Modifier) -> Unit = { modifier ->
+            Text(text, color = fg, fontSize = 13.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp, modifier = modifier)
+        }
+        val key: @Composable () -> Unit = {
+            Text(
+                shortcut.orEmpty(),
+                color = fg.copy(alpha = 0.72f),
+                fontSize = 11.sp,
+                maxLines = 1,
+                modifier = Modifier
+                    .border(1.dp, fg.copy(alpha = 0.22f), TIP_KEY_SHAPE)
+                    .padding(horizontal = 5.dp, vertical = 1.dp),
+            )
+        }
+        if (stackShortcut) {
+            name(Modifier)
+            Box(Modifier.padding(top = 4.dp)) { key() }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                name(Modifier.weight(1f, fill = false))
+                if (shortcut != null) {
+                    Spacer(Modifier.width(10.dp))
+                    key()
+                }
             }
         }
         if (hint != null) Text(hint, color = fg.copy(alpha = 0.72f), fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 1.dp))
