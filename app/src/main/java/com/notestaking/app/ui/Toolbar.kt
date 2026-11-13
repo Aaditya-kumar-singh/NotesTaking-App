@@ -53,10 +53,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -493,6 +495,16 @@ private const val GLIDE_MS_PER_DP = 0.6f
 private const val GLIDE_BASE_MS = 80f
 private const val GLIDE_MAX_MS = 300
 
+/** Keyboard focus must be visible even when a toolbar control suppresses ripple feedback. */
+@Composable
+private fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    val accent = LocalPalette.current.accent.toComposeColor()
+    return this
+        .onFocusChanged { focused = it.isFocused }
+        .then(if (focused) Modifier.border(2.dp, accent, shape) else Modifier)
+}
+
 /** Tools and persistent toggles announce selection; one-shot actions do not. */
 internal fun toolbarSelectionState(active: Boolean, glideKey: Any?, reportSelection: Boolean): Boolean? =
     if (glideKey != null || reportSelection) active else null
@@ -539,6 +551,7 @@ internal fun ToolbarIcon(
             Modifier
                 .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
                 .size(bar.button)
+                .toolbarFocusOutline(CircleShape)
                 .then(if (selectionState != null) Modifier.semantics { selected = selectionState } else Modifier)
                 .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
@@ -584,6 +597,7 @@ internal fun Swatch(
         modifier = Modifier
             .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
             .size(bar.button)
+            .toolbarFocusOutline(CircleShape)
             .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
             .semantics { contentDescription = accessibleLabel; selected = active }
             .clickable(role = Role.Button, onClick = onClick),
@@ -608,6 +622,7 @@ private fun Modifier.toolbarTextAction(actionLabel: String, onClick: () -> Unit)
     return this
         .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
         .sizeIn(minWidth = bar.button, minHeight = bar.button)
+        .toolbarFocusOutline(MaterialTheme.shapes.extraSmall)
         .clip(MaterialTheme.shapes.extraSmall)
         .clickable(onClickLabel = actionLabel, role = Role.Button, onClick = onClick)
         .wrapContentSize(Alignment.Center)
