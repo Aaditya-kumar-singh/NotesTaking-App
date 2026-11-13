@@ -275,7 +275,7 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
                 shortcut.orEmpty(),
                 color = fg.copy(alpha = 0.72f),
                 fontSize = 11.sp,
-                maxLines = 1,
+                maxLines = if (stackShortcut) 2 else 1,
                 modifier = Modifier
                     .border(1.dp, fg.copy(alpha = 0.22f), TIP_KEY_SHAPE)
                     .padding(horizontal = 5.dp, vertical = 1.dp),
