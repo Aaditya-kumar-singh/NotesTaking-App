@@ -318,4 +318,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Pending risk:** Compose semantics refresh and TalkBack focus interaction require device verification; only source checks passed. No change to restricted `MainActivity.kt`, Chat A-owned `ui/Editor.kt`, `PreferencesPane.kt`, strings, storage, Gemini, or shared trackers. Keyboard arrow grip movement and section reordering remain coordinator-blocked. NP-089/NP-090/NP-092 cannot be marked accepted until integrated CI and real QA.
 
-**Eleventh code/test commit:** `a9596fc5c8181ba375e924bc5f4b559d4979c2d9`. **Eleventh status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick both in Git order after all previous G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
+**Eleventh code/test commit:** `a9596fc5c8181ba375e924bc5f4b559d4979c2d9`. **Eleventh status-only handoff commit:** `7142903fb1d1327334810fc7e457092454231eb6`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twelfth checkpoint — NP-090 page navigation boundaries / two-page spreads (2026-11-13)
+
+**Confirmed source bug:** In `Toolbar.kt:ToolbarItem.PAGE_NAV`, the Previous Page and Next Page controls always used the default enabled state. The underlying `Editor.prevPage()/nextPage()` delegate to `CanvasState.prevPageIndex()/nextPageIndex()`, which clamp at the first/last **row** of the active viewing mode. At the start/end of a document, or at the ends of a double-page or cover spread, activating the visible toolbar button could therefore do nothing while still being announced as available to TalkBack.
+
+**Bounded fix in Chat B-owned paths:**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: Added pure `pageNavigationEnabled(row: IntRange, pageCount: Int, forward: Boolean)`, matching the editor's existing row-stepping rule. `PAGE_NAV` now reads the active row from `editor.state.rowOf(editor.pageIndex)` when pages exist (otherwise `0..0`) and applies `enabled = ...` to both existing `ToolbarIcon` buttons. Page-index speech, clickable jump menu, labels, shortcuts, UI layout, callbacks, zoom, paint/stylus and storage remain unchanged.
+- `app/src/test/java/com/notestaking/app/ui/PageNavigationAccessibilityTest.kt`: Three new JUnit regression cases (**source only; not executed locally**): `emptyAndSinglePageDocumentsHaveNoAvailablePageStep`, `doublePageSpreadsDisableOnlyTheUnavailableEdgeAction`, and `coverModeAndPartialLastSpreadUseRowBoundaries`. Cases cover 0/1/5/6 pages and interior, first, and last rows.
+
+**Permitted validation actually executed in the isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS, 14 Chat B-owned changed paths since coordination baseline.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin sources, 231 Kotlin test sources, 22 XML, 39 PNG, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private backup exclusions intact.
+- `git diff --check` and `git diff --cached --check` — PASS.
+- Focused Python static source assertion — PASS: both toolbar actions gated by one row-based policy, existing callbacks preserved, source navigation clamps by row, all 3 regression source tests present.
+- **Not run:** Kotlin/JUnit execution, Compose/Kotlin compilation, Android Gradle/lint/APK, emulator/device installation, GitHub CI, phone/tablet TalkBack or stylus acceptance.
+
+**Manual acceptance for Chat A (NOT RUN):** Open a 1-page document, then a multi-page note in Single, Double and Cover viewing modes. With TalkBack enabled, verify Prev is disabled on the first row, Next on the final row, and both enabled on intermediate rows. In Double mode, use a 6-page file (rows 1–2, 3–4, 5–6); in Cover mode, use 5 pages (1 alone, 2–3, 4–5). Verify the arrow controls update after navigation and page deletion/insertion, labels and Page X of Y counter stay accurate, PgUp/PgDn and click actions retain original behavior, and all available moves visibly change rows. Repeat on 320dp phone and tablet, with docked/floating toolbars at 1.0x/1.3x/2.0x fonts. Confirm drawing/eraser and stylus strokes still work. Then run GitHub-hosted Kotlin/JUnit, Compose compilation, lint and APK CI on the **exact integrated SHA**.
+
+**Pending:** The new regression cases are not yet executable evidence, and screen-reader/keyboard focus semantics require physical device acceptance. Kotlin/Compose compilation is unverified. NP-089/NP-090/NP-092 remain open in shared trackers until Chat A coordinates CI and hardware QA. No prohibited code, resources, storage, Gemini paths, Chat A files or shared tracking documents were modified.
+
+**Twelfth code/test commit:** `c557a9d3afaccffdb78cf2aa399d6a2f5885ea33`. **Twelfth status-only handoff commit:** this STATUS file at branch HEAD. Chat A should cherry-pick this pair after all previous G08 commits in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
