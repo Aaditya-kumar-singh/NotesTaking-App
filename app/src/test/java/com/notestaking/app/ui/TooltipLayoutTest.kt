@@ -6,7 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The keyboard shortcut moves below the tooltip label at large accessibility text sizes. */
+/** The keyboard shortcut moves below the tooltip label for large text or narrow windows. */
 class TooltipLayoutTest {
     @Test
     fun tooltipWidthLeavesSpaceForWindowEdges() {
@@ -23,13 +23,21 @@ class TooltipLayoutTest {
 
     @Test
     fun shortcutRemainsInlineAtNormalTextScale() {
-        assertFalse(tooltipStackShortcut(1f))
-        assertFalse(tooltipStackShortcut(1.29f))
+        assertFalse(tooltipStackShortcut(1f, 320))
+        assertFalse(tooltipStackShortcut(1.29f, 360))
     }
 
     @Test
     fun shortcutStacksAtLargeTextScale() {
-        assertTrue(tooltipStackShortcut(1.3f))
-        assertTrue(tooltipStackShortcut(2f))
+        assertTrue(tooltipStackShortcut(1.3f, 320))
+        assertTrue(tooltipStackShortcut(2f, 360))
+    }
+
+    @Test
+    fun narrowWindowsStackShortcutsEvenAtNormalFontSize() {
+        assertFalse(tooltipStackShortcut(1f, 312))
+        assertTrue(tooltipStackShortcut(1f, 311))
+        assertTrue(tooltipStackShortcut(1f, 240))
+        assertTrue(tooltipStackShortcut(1.29f, 180))
     }
 }

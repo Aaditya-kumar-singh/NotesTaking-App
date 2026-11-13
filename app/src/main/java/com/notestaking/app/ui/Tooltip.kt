@@ -249,8 +249,9 @@ private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: Strin
 internal fun tooltipMaxWidth(screenWidth: Dp): Dp =
     minOf(TIP_MAX_WIDTH, (screenWidth - (TIP_SHADOW_ROOM + 8.dp) * 2).coerceAtLeast(1.dp))
 
-/** At larger Android text scales, keep keyboard hints from squeezing the tooltip label. */
-internal fun tooltipStackShortcut(fontScale: Float): Boolean = fontScale >= 1.3f
+/** Stack shortcuts when large text or a narrow window would squeeze the label. */
+internal fun tooltipStackShortcut(fontScale: Float, screenWidthDp: Int): Boolean =
+    fontScale >= 1.3f || tooltipMaxWidth(screenWidthDp.dp) < TIP_MAX_WIDTH
 
 @Composable
 private fun TipChip(text: String, hint: String?, shortcut: String?) {
@@ -258,8 +259,9 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
     val bg = m.inverseSurface.toComposeColor()
     val fg = m.inverseOnSurface.toComposeColor()
     val shape = MaterialTheme.shapes.small
-    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale)
-    val maxWidth = tooltipMaxWidth(LocalConfiguration.current.screenWidthDp.dp)
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale, screenWidthDp)
+    val maxWidth = tooltipMaxWidth(screenWidthDp.dp)
     Column(
         Modifier
             .shadow(TIP_ELEVATION, shape)
