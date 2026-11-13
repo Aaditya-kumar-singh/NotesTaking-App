@@ -533,4 +533,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Known risks:** Exact TalkBack phrasing and popup focus transfer are device-dependent and not yet tested. Existing generic `material_custom_colour` wording is re-used rather than adding a new resource; translated wording needs real-device review. The shared ColourPickerPopup layout is outside Chat B ownership and may not fit extreme windows; no unowned files were modified. NP-089/090/092 remain open until integrated CI/hardware evidence.
 
-**Twenty-first implementation commit:** `537f092b9fe93c52e16c1b4e684952b1bb67c556`. **Twenty-first status-only handoff commit:** this STATUS document at branch HEAD. Chat A should cherry-pick both after prior twenty G08 checkpoint pairs in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-first implementation commit:** `537f092b9fe93c52e16c1b4e684952b1bb67c556`. **Twenty-first status-only handoff commit:** `a72bcfdad8a4de988338b85734ecdebbbce441a4`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-second checkpoint — NP-092 shortcut-label layout in narrow tooltips (2026-11-13)
+
+**Confirmed source issue:** The tooltip's prior large-text accessibility work stacked keyboard shortcut badges only at Android font scale 1.3× or above. Checkpoint sixteen also capped tooltip width to the Android window minus shadow and margins. In narrow multi-window mode (e.g. 180dp or 240dp), a normal-font tooltip still put its tool name and shortcut in the same `Row`, squeezing/truncating long labels despite available vertical space. This source gap affects tooltips across both paged and infinite toolbars when a physical keyboard is attached.
+
+**Small scoped fix in owned paths:**
+- `app/src/main/java/com/notestaking/app/ui/Tooltip.kt`: Expanded the existing `tooltipStackShortcut(fontScale, screenWidthDp)` predicate to return true when font scale is at least 1.3× **or** the already-calculated `tooltipMaxWidth(screenWidthDp.dp)` is below the normal `TIP_MAX_WIDTH` of 280dp. `TipChip` reads the current `LocalConfiguration.current.screenWidthDp` once and feeds both the width cap and stack decision. So when a window is narrower than 312dp and a keyboard shortcut exists, shortcut and label stack; at 312dp+ with normal font they remain inline. The stacked layout continues to permit 2 lines for the shortcut, while normal inline layout stays at 1 line. The popup anchor, size margins/shadow, hover delays and stylus interaction remain unchanged; tooltips without a keyboard shortcut remain as before.
+- `app/src/test/java/com/notestaking/app/ui/TooltipLayoutTest.kt`: Updated existing two font-scale tests to pass standard 320/360dp windows and added `narrowWindowsStackShortcutsEvenAtNormalFontSize` covering the 312/311dp boundary, 240dp and 180dp windows. **JUnit source only; not locally executed**.
+
+**Verification run inside Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (16 Chat B-owned changed paths since coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin sources, 233 Kotlin test sources, 22 XML files, 39 PNGs, zero problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (private note backup exclusions intact).
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python source assertions — **PASS**, normal font thresholds and width cap unchanged, the 2-line stacked shortcut, all old tests updated and new width tests present.
+- **NOT performed:** Kotlin/JUnit execution, Gradle, Compose compiler, lint, Android build/APK, GitHub CI, device install, TalkBack or stylus QA.
+
+**Manual device acceptance for Chat A (NOT RUN):** On phone/tablet with a connected hardware keyboard, hover toolbar icons with longer names/shortcuts using mouse or stylus at window widths 320dp, 312dp, 311dp, 240dp and 180dp. Verify tooltip label and shortcut appear side by side at normal font scale 320/312dp, with shortcut underneath below 312dp, at scale 1.3× or 2× on any size, and remain legible and on-screen without stealing focus/touch. Test docked all sides and floating bar, long localized labels, and that normal keyboard actions, pen strokes, mouse/stylus hover and tooltip dismissal still work. Run Kotlin/JUnit, Compose compilation, lint and Android CI against **exact integrated SHA**.
+
+**Known limits:** Normal-scale shortcuts can still be long and not word-break across 2 lines at extremely narrow 180dp layouts; actual Android text shaping and clipping remain unverified. `LocalConfiguration` reports Android app-window width, not a narrower in-app split-pane. A 312dp boundary may not match every font/locale's intrinsic name lengths; physical QA required. NP-089/090/092 remain open in shared trackers until Chat A integration, GitHub CI and phone/tablet acceptance. No unowned/editor/storage/shared-resource or Gemini/Chat A paths changed.
+
+**Twenty-second implementation/test commit:** `34aa6407703b7b4bb654b07d1687d5fea1a17473`. **Twenty-second status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick this pair after the prior twenty-one G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
