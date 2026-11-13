@@ -425,4 +425,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Known limits:** `screenWidthDp` reflects the Android app window, not a narrower in-app split-pane column. Tooltips may legitimately extend across an adjacent pane while remaining inside the app window. Very long unbreakable shortcut labels may still truncate in an extremely narrow window because they intentionally use one line; a later design decision is needed for that case. Pixel-level popup width and actual TalkBack/device behavior are unverified until integration QA. This checkpoint only modifies owned tooltip source/test and status, not `PreferencesPane.kt`, resources, editor/storage, shared trackers or other agents' files.
 
-**Sixteenth code/test commit:** `125d25a1a8bf8f562c86c7e2b36d6e5ca6cd4158`. **Sixteenth status-only handoff commit:** this file at branch HEAD. Chat A must review and cherry-pick both after earlier fifteen G08 checkpoints in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Sixteenth code/test commit:** `125d25a1a8bf8f562c86c7e2b36d6e5ca6cd4158`. **Sixteenth status-only handoff commit:** `adc0500f8dfa5f9616b1872d2a73483aa0b07fc4`. Chat A must preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Seventeenth checkpoint — NP-092 keyboard shortcut hint wrapping at large fonts (2026-11-13)
+
+**Source issue:** `ui/Tooltip.kt:TipChip` already placed a keyboard shortcut beneath the tooltip's title when Android font scale is at least 1.3×, and checkpoint sixteen restricted popup width to narrow windows. However, the shortcut badge itself kept `maxLines = 1` in all modes. Long shortcuts such as Ctrl+Shift+Z risk truncation in split-screen at 1.3×/2× text, defeating the accessibility layout.
+
+**Small scoped fix:** One-line change in Chat B-owned `app/src/main/java/com/notestaking/app/ui/Tooltip.kt`: the shortcut `Text` now uses `maxLines = if (stackShortcut) 2 else 1`. Normal-scale inline tooltips remain single-line; large-text tooltips may wrap the key badge onto a second line after the label. Existing `tooltipStackShortcut` threshold, popup bounds, Material colors, shadow, pointer/stylus hover timing, nonfocusable popup and all toolbar action callbacks are unchanged. No new strings, dependencies, or tests necessary for this declarative property using the already-tested layout predicate.
+
+**Permitted checks performed from Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS, only 15 Chat B-owned paths changed since coordination baseline.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin source files, 232 Kotlin test files, 22 XML, 39 PNG, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, private note backup exclusions unchanged.
+- `git diff --check` and staged diff whitespace check — PASS.
+- Focused Python source regression assertion — PASS, `stackShortcut` is triggered by font scaling, badge max lines now follow the same branch, normal inline layout is unchanged, prior `TooltipLayoutTest.kt` cases cover 1.29×/1.3×/2× thresholds, responsive width and nonfocusable popup preserved.
+- **NOT performed:** local Gradle, Kotlin/JUnit execution, Compose compilation, lint, APK, device installation, GitHub CI, TalkBack/hardware keyboard/stylus QA.
+
+**Manual acceptance for Chat A (NOT RUN):** On phone and tablet in an Android multi-window pane at widths 180dp/240dp/320dp, connect a hardware keyboard and hover toolbar Undo, Redo and other controls with longer shortcut labels. Confirm shortcuts stay single-line at font scale 1.0×, then show beneath the name and can wrap up to two lines at 1.3×/2× without clipping or obscuring buttons. Check tooltips anchored to all four dock positions and floating toolbars; hover with stylus/mouse, press to dismiss, ensure touch passes through the popup and drawing remains unaffected. Long unbreakable strings could still truncate and require physical verification. Chat A must run GitHub Kotlin/JUnit, Compose compilation, lint and APK CI on the exact integrated commit before accepting NP-092.
+
+**Remaining risks:** Android text line-breaking around '+' and other shortcut symbols may not wrap as expected; this is source-verified only. Full G08 NP-089/NP-090/NP-092 still needs GitHub CI and real phone/tablet testing. Keyboard-driven section reorder depends on coordinator-owned `ui/PreferencesPane.kt`; floating-grip arrow movement depends on parent preview key handling in coordinator-owned `MainActivity.kt` and Chat A-owned `ui/Editor.kt`. No changes were made to those paths, shared trackers, storage or other agent worktrees.
+
+**Seventeenth implementation commit:** `d62c1a0efbf839949e70d118da2f50b43e92a310`. **Seventeenth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should cherry-pick both in Git order after the earlier sixteen G08 checkpoint pairs. **PUSH: NO / MERGE: NO / PR: NO.**
