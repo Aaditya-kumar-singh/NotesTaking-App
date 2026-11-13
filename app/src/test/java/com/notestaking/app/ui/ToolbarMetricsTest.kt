@@ -1,6 +1,7 @@
 package com.notestaking.app.ui
 
 import androidx.compose.ui.unit.dp
+import com.notestaking.app.settings.ToolbarLook
 import com.notestaking.app.settings.ToolbarSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,6 +27,21 @@ class ToolbarMetricsTest {
     fun floatingQuickActionsScrollWhileDockedQuickActionsRemainPinned() {
         assertTrue(toolbarScrollsTrailing(floating = true))
         assertFalse(toolbarScrollsTrailing(floating = false))
+    }
+
+    @Test
+    fun collapsedFloatingToolbarHidesFavoritesWhenEvenOneWouldOverflow() {
+        for (size in ToolbarSize.entries) {
+            val buttonDp = barMetrics(size).button.value.toInt()
+            val narrowCount = ToolbarLook.visibleFavoriteCount(180, 180, buttonDp)
+            assertEquals(1, narrowCount)
+            assertFalse("$size: expand must remain reachable in a 180dp pane",
+                floatingFavoritesFit(180, narrowCount, buttonDp))
+
+            val normalCount = ToolbarLook.visibleFavoriteCount(320, 320, buttonDp)
+            assertTrue("$size: keep favorites when they fit",
+                floatingFavoritesFit(320, normalCount, buttonDp))
+        }
     }
 
     @Test

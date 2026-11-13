@@ -45,6 +45,10 @@ import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
 import kotlin.math.roundToInt
 
+/** Keep the expand control reachable when the pane is too short for the mandatory first favorite. */
+internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boolean =
+    axisDp >= 16 + 48 + 8 + (count + 1) * (buttonDp + 8)
+
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
  * pen, eraser, swatches, menus and the underlying canvas keep their original input handlers.
@@ -72,11 +76,13 @@ internal fun MovableFloatingToolbar(
         val commit by rememberUpdatedState(onDrop)
         var expanded by remember { mutableStateOf(false) }
         val length = if (look.position.vertical) maxHeight else maxWidth
+        val buttonDp = barMetrics(look.size).button.value.toInt()
         val count = ToolbarLook.visibleFavoriteCount(
             shortSideDp = minOf(maxWidth, maxHeight).value.toInt(),
             axisDp = length.value.toInt(),
-            buttonDp = barMetrics(look.size).button.value.toInt(),
+            buttonDp = buttonDp,
         )
+        val showFavorites = floatingFavoritesFit(length.value.toInt(), count, buttonDp)
 
         fun nudge(dx: Float, dy: Float): Boolean {
             if ((dx != 0f && travelX == 0f) || (dy != 0f && travelY == 0f)) return false
@@ -159,7 +165,7 @@ internal fun MovableFloatingToolbar(
                     .border(1.dp, palette.border.toComposeColor(), shape)
                 CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
                     val content: @Composable () -> Unit = {
-                        favorites(count)
+                        if (showFavorites) favorites(count)
                         ToolbarIcon(NotesTakingIcons.more, stringResource(R.string.toolbar_expand_all_tools)) {
                             expanded = true
                         }
