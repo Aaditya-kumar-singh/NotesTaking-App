@@ -513,4 +513,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** Actual Material3 DropdownMenuItem semantics merge and TalkBack wording are not proven without a physical device; source-only checks do not prove compilation or accessibility tree behavior. Keyboard section drag/reorder requires the coordinator-owned `ui/PreferencesPane.kt`; floating-grip keyboard arrow handling requires coordinator/Chat A-owned key handlers. Shared NP trackers remain open; no restricted files, other-agent worktrees, remote branches or storage changed.
 
-**Twentieth implementation commit:** `d091b852aea922a1ef62aedaaa948fe8ede6206d`. **Twentieth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after prior nineteen G08 checkpoint pairs in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twentieth implementation commit:** `d091b852aea922a1ef62aedaaa948fe8ede6206d`. **Twentieth status-only handoff commit:** `ebb750b1aed660c9dfbd1f56b8418a57d4ef48ed`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-first checkpoint — NP-090 selected ink-swatch TalkBack picker action (2026-11-13)
+
+**Confirmed source issue:** In `Toolbar.kt:Swatch`, both paged and infinite toolbars correctly select a colour on the first activation and open `ColorSwitcherPopup` on a second activation when that swatch is already selected. The swatch exposed its colour hex and `selected` state to TalkBack but offered only a generic activation action; a screen-reader user could not tell the selected swatch opens the colour picker rather than reselecting the colour.
+
+**Bounded implementation:** One line in Chat B-owned `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: the shared `Swatch` applies `onClickLabel = if (active) stringResource(R.string.material_custom_colour) else null` to its existing `clickable`. Uses an existing translated "Choose a custom colour" action label when the selected swatch will open the shared picker; unselected swatches retain a generic select action. The visual swatch, hex description, selected state, 48dp hit area, focus outline, drag source, both editors' callbacks and picker dismissal/persistence logic remain unchanged. No other source files/resources/dependencies touched.
+
+**Permitted source verification from isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS**, 16 owned paths changed from coordination baseline.
+- `python tools/ci/check_project.py` — **PASS**, 388 Kotlin source, 233 test source, 22 XML files, 39 PNGs, 0 problems.
+- `python tools/ci/check_backup_privacy.py` — **PASS**, private backup exclusions intact.
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python static source assertion — **PASS**: localized picker string exists; selected-only action label; current hex/selected semantics and drag source intact; both paged and infinite colour-select/second-tap ColorSwitcherPopup callbacks unchanged. No new JUnit test added for this declarative one-line semantics binding.
+- **NOT run:** Gradle, Kotlin/JUnit execution, Compose compiler, lint, Android build/APK, GitHub CI, device installation, real TalkBack/stylus verification.
+
+**Manual acceptance for Chat A (NOT RUN):** Open a note on a TalkBack-enabled phone/tablet. Select a different toolbar ink swatch: it should perform the ordinary select action and become selected without opening the colour picker. Navigate back to the active swatch; TalkBack's available click action should describe choosing a custom colour. Activate it and verify the existing Swatches/Spectrum popup opens once and selected swatch colour still updates correctly. Confirm current hex and selected state are announced, active action refreshes when the selected colour changes, and repeated activation works in both paged and infinite canvases. Repeat with docked/floating positions, 320dp/split panes, 1.3×/2× fonts and stylus colour drag to the page; verify undo/ink strokes unaffected. Chat A must run GitHub-hosted Kotlin/JUnit, Compose compilation, lint and Android CI on the exact integrated SHA before marking NP-090 accepted.
+
+**Known risks:** Exact TalkBack phrasing and popup focus transfer are device-dependent and not yet tested. Existing generic `material_custom_colour` wording is re-used rather than adding a new resource; translated wording needs real-device review. The shared ColourPickerPopup layout is outside Chat B ownership and may not fit extreme windows; no unowned files were modified. NP-089/090/092 remain open until integrated CI/hardware evidence.
+
+**Twenty-first implementation commit:** `537f092b9fe93c52e16c1b4e684952b1bb67c556`. **Twenty-first status-only handoff commit:** this STATUS document at branch HEAD. Chat A should cherry-pick both after prior twenty G08 checkpoint pairs in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
