@@ -35,6 +35,8 @@ internal object SafeFileWriter {
                 borrowed.flush()
                 output.fd.sync()
             }
+            // Never replace the last recoverable copy with an empty "successful" write.
+            if (staged.length() == 0L) return false
             Files.move(
                 staged.toPath(),
                 target.toPath(),

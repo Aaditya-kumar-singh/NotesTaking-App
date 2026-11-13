@@ -12,6 +12,30 @@ import java.util.concurrent.TimeUnit
 class SafeFileWriterTest {
     private fun directory(): File = Files.createTempDirectory("notestaking-atomic-").toFile()
 
+    @Test fun emptySuccessfulWriteCannotReplaceLastGoodSnapshot() {
+        val dir = directory()
+        try {
+            val target = File(dir, "document.xnote").apply { writeText("last-good-note") }
+            assertFalse(SafeFileWriter.write(target) { /* No bytes from a failed or empty encoder. */ })
+            assertEquals("last-good-note", target.readText())
+            assertEquals(listOf("document.xnote"), dir.listFiles()!!.map { it.name })
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test fun emptySuccessfulFirstSaveLeavesNoBrokenDocument() {
+        val dir = directory()
+        try {
+            val target = File(dir, "document.xnote")
+            assertFalse(SafeFileWriter.write(target) { })
+            assertFalse(target.exists())
+            assertTrue(dir.listFiles()!!.isEmpty())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun codecClosingZipStreamDoesNotCloseFileBeforeSync() {
         val dir = directory()
         try {
