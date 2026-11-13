@@ -175,6 +175,10 @@ fun Toolbar(
     }
 }
 
+/** Page arrows move between rows, not between pages within a two-page spread. */
+internal fun pageNavigationEnabled(row: IntRange, pageCount: Int, forward: Boolean): Boolean =
+    if (forward) row.last < pageCount - 1 else row.first > 0
+
 /** Renders one toolbar item by id, reusing the same controls/popups the bar has always used. */
 @Composable
 private fun ToolbarItemView(
@@ -236,7 +240,12 @@ private fun ToolbarItemView(
         ToolbarItem.REDO -> ToolbarIcon(NotesTakingIcons.redo, stringResource(R.string.redo), enabled = editor.canRedo, shortcut = Keys.REDO) { editor.redo() }
 
         ToolbarItem.PAGE_NAV -> {
-            ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.previous_page), shortcut = Keys.PREV_PAGE) { editor.prevPage() }
+            val currentRow = if (editor.pageCount > 0) editor.state.rowOf(editor.pageIndex) else 0..0
+            ToolbarIcon(
+                NotesTakingIcons.prev, stringResource(R.string.previous_page),
+                enabled = pageNavigationEnabled(currentRow, editor.pageCount, forward = false),
+                shortcut = Keys.PREV_PAGE,
+            ) { editor.prevPage() }
             var jumpOpen by remember { mutableStateOf(false) }
             Box {
                 val jumpLabel = stringResource(R.string.title_go_to_page)
@@ -251,7 +260,11 @@ private fun ToolbarItemView(
                 }
                 if (jumpOpen) PageJumpPopup(editor) { jumpOpen = false }
             }
-            ToolbarIcon(NotesTakingIcons.next, stringResource(R.string.next_page), shortcut = Keys.NEXT_PAGE) { editor.nextPage() }
+            ToolbarIcon(
+                NotesTakingIcons.next, stringResource(R.string.next_page),
+                enabled = pageNavigationEnabled(currentRow, editor.pageCount, forward = true),
+                shortcut = Keys.NEXT_PAGE,
+            ) { editor.nextPage() }
         }
         ToolbarItem.STYLES -> StylesButton(editor, onImportTemplate)
         ToolbarItem.MARGINS -> MarginsButton(editor)
