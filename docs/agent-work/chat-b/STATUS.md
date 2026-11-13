@@ -79,4 +79,32 @@ Added `app/src/test/java/com/notestaking/app/ui/ToolbarSelectionStateTest.kt` (J
 
 **Pending:** This is an owned toolbar subset of NP-089, not a full-app touch-target audit. NP-092 large-font layout/Back/keyboard and first checkpoint NP-090 TalkBack acceptance are still pending. No shared resources, tracking sheets, external worktrees or Chat A/Gemini files were changed.
 
-**NP-089 source/test commit:** `cb5077de0f79ace8ae5c4fd71f0e0d95f33269ed`. **Status-only follow-up commit:** this document at branch HEAD. Chat A should cherry-pick first checkpoint commits, then this code/test commit and status-only commit in ascending order. **PUSH / PR / MERGE: NO.**
+**NP-089 source/test commit:** `cb5077de0f79ace8ae5c4fd71f0e0d95f33269ed`. **Status-only follow-up commit:** `009b81f3116a71e5e9449f1bad4e26f8ae470ee2`. Chat A should cherry-pick each reviewed commit in ascending order. **PUSH / PR / MERGE: NO.**
+
+## Third checkpoint — NP-092 toolbar tooltip readability at larger font scales (2026-11-13)
+
+**Source issue:** `Tooltip.kt:TipChip` put every tooltip name and its hardware-keyboard shortcut together in a single horizontal `Row` with a 280dp maximum tooltip width. The shortcut chip has a fixed single line, squeezing the name into the remaining space at 1.3x/2.0x Android font scaling. With longer tool names and shortcuts such as `Ctrl+Shift+Z`, the name can wrap excessively and lose readability in constrained tooltips. This is a source-level layout issue, **not a hardware reproduction**.
+
+**Bounded fix:** `TipChip` now uses existing `LocalDensity.current.fontScale` to place a non-null keyboard shortcut **below** the tooltip name at font scale >= 1.3. At normal font scales, the original inline shortcut layout is retained. Tooltips without a shortcut retain their existing label-only layout. Colors, existing strings, hover/press timing, tool selection, keyboard event handlers, popup positioning, canvas/stylus, and storage are unchanged.
+
+**Files changed:**
+- `app/src/main/java/com/notestaking/app/ui/Tooltip.kt` — responsive shortcut presentation, using existing composables and no dependencies.
+- `app/src/test/java/com/notestaking/app/ui/TooltipLayoutTest.kt` — new JVM tests `shortcutRemainsInlineAtNormalTextScale` (1.0, 1.29) and `shortcutStacksAtLargeTextScale` (1.3, 2.0). **Test source added but not executed locally.**
+
+**Permitted checks actually run in Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS, only 8 owned paths changed since lane baseline at check time.
+- `python tools/ci/check_project.py` — PASS, 388 Kotlin source, 228 test source, 22 XML, 39 PNG, zero problems.
+- `python tools/ci/check_backup_privacy.py` — PASS, exclusions intact.
+- Focused static `python -c` assertion — PASS: fontScale policy and two-layout branches present, with JUnit test source.
+- `git diff --check` and staged diff whitespace check — PASS.
+- No local Gradle, Kotlin/JVM test execution, lint, Android build, APK installation or physical device work.
+
+**Manual acceptance needed by Chat A / device QA (NOT executed):**
+1. Connect physical keyboard and, on a 320dp phone and a tablet, enable toolbar tips and move stylus/mouse over Undo, Redo, Sidebar, Next Page and zoom buttons. At font scale 1.0, each shortcut stays inline with its name; at 1.3 and 2.0, shortcut appears on a second line and the name remains readable.
+2. Check localized and long tool names, with toolbar docked on every edge and floating. At 320dp/split-pane sizes, look for popup clipping, overlap or occluded canvas controls and check tooltips appear on correct sides.
+3. Hover/press the same tools, confirm tooltips dismiss on press and remain non-focusable; keyboard shortcuts still trigger the same actions and stylus drawings, swatch drags and eraser behavior are unchanged.
+4. Run GitHub-hosted Kotlin/JUnit tests, Compose compilation, lint and Android CI for the exact integrated SHA before accepting this change.
+
+**Remaining NP-092:** full 320dp/large-text settings coverage, keyboard focus restoration and system Back behavior need hardware/CI verification or separate owned fixes. This checkpoint only improves tooltip labels when a hardware keyboard is connected. NP-089 and NP-090 acceptance still require physical touch/TalkBack coverage.
+
+**NP-092 code/test commit:** `7b0ce452f5de6fe728eb33aac41a4371bd0dc34e`. **Status-only handoff commit:** this STATUS.md change at branch HEAD. All four prior G08 commits plus this third checkpoint stay local for Chat A's serialized review/cherry-pick; **PUSH: NO / MERGE: NO / PR: NO**.
