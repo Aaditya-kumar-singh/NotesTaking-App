@@ -15,7 +15,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
 import com.notestaking.app.core.tools.EraseMode
@@ -171,6 +173,10 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
     if (waypointsOpen) Box { CanvasWaypointsPopup(editor) { waypointsOpen = false } }
 }
 
+/** Preserve the usual menu size while fitting Android's narrower multi-window bounds. */
+internal fun quickAccessMenuWidth(windowWidthDp: Int, preferredWidth: Dp): Dp =
+    minOf(preferredWidth, (windowWidthDp.dp - 16.dp).coerceAtLeast(1.dp))
+
 /** PDF-only shortcut: a disabled finger draws no ink, while two fingers always navigate. */
 @Composable
 private fun PinnedFingerDrawing(editor: Editor) {
@@ -220,7 +226,7 @@ private fun PinnedPageInsertion(editor: Editor) {
             stringResource(R.string.add_page),
             active = open,
         ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(224.dp)) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 224.dp))) {
             Text(
                 stringResource(R.string.add_page),
                 style = MaterialTheme.typography.titleSmall,
@@ -265,7 +271,7 @@ private fun CanvasAllTools(
             stringResource(R.string.canvas_all_tools),
             active = open,
         ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(248.dp)) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 248.dp))) {
             Text(
                 stringResource(R.string.canvas_all_tools),
                 style = MaterialTheme.typography.titleSmall,
