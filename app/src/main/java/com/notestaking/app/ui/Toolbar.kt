@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -193,14 +195,14 @@ private fun ToolbarItemView(
 
         ToolbarItem.HOME -> ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.toolbar_home)) { onOpenBackstage() }
         // A name has no room down a side rail.
-        ToolbarItem.TITLE -> if (!LocalBar.current.vertical) Tooltip(stringResource(R.string.rename_note)) {
-            Label(
-                if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
-                modifier = Modifier
-                    .widthIn(max = 160.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable { onRename() },
-            )
+        ToolbarItem.TITLE -> if (!LocalBar.current.vertical) {
+            val renameLabel = stringResource(R.string.rename_note)
+            Tooltip(renameLabel) {
+                Label(
+                    if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
+                    modifier = Modifier.widthIn(max = 160.dp).toolbarTextAction(renameLabel, onRename),
+                )
+            }
         }
         ToolbarItem.SIDEBAR ->
             ToolbarIcon(NotesTakingIcons.sidebar, stringResource(R.string.side_panel), active = editor.sidebarVisible, reportSelection = true, shortcut = Keys.SIDEBAR) { editor.toggleSidebar() }
@@ -231,13 +233,12 @@ private fun ToolbarItemView(
             ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.previous_page), shortcut = Keys.PREV_PAGE) { editor.prevPage() }
             var jumpOpen by remember { mutableStateOf(false) }
             Box {
-                Tooltip(stringResource(R.string.title_go_to_page)) {
+                val jumpLabel = stringResource(R.string.title_go_to_page)
+                Tooltip(jumpLabel) {
                     PageCounter(
                         editor.pageIndex + 1,
                         editor.pageCount,
-                        Modifier
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .clickable { jumpOpen = true },
+                        Modifier.toolbarTextAction(jumpLabel) { jumpOpen = true },
                     )
                 }
                 if (jumpOpen) PageJumpPopup(editor) { jumpOpen = false }
@@ -252,12 +253,11 @@ private fun ToolbarItemView(
             ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) { editor.zoomOut() }
             var zoomMenuOpen by remember { mutableStateOf(false) }
             Box {
-                Tooltip(stringResource(R.string.title_zoom)) {
+                val zoomLabel = stringResource(R.string.title_zoom)
+                Tooltip(zoomLabel) {
                     Label(
                         "${editor.zoomPercent}%",
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .clickable { zoomMenuOpen = true },
+                        modifier = Modifier.toolbarTextAction(zoomLabel) { zoomMenuOpen = true },
                     )
                 }
                 if (zoomMenuOpen) ZoomMenuPopup(editor) { zoomMenuOpen = false }
@@ -591,6 +591,18 @@ internal fun Swatch(
                 .background(color),
         )
     }
+}
+
+/** Match icon button touch bounds for the three clickable labels in the paged toolbar. */
+@Composable
+private fun Modifier.toolbarTextAction(actionLabel: String, onClick: () -> Unit): Modifier {
+    val bar = LocalBar.current
+    return this
+        .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
+        .sizeIn(minWidth = bar.button, minHeight = bar.button)
+        .clip(MaterialTheme.shapes.extraSmall)
+        .clickable(onClickLabel = actionLabel, role = Role.Button, onClick = onClick)
+        .wrapContentSize(Alignment.Center)
 }
 
 @Composable
