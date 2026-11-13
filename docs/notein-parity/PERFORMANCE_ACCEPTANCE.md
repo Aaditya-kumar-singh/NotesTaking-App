@@ -21,6 +21,7 @@ Reference: saved Notein APK analysis and NotesTaking native source, not a measur
 | PDF transforms | Rotation/zoom/crop coordinate tests | Ink anchors remain correct on all pages |
 | Toolbar animation | No canvas re-create; accessible touch targets | Responsive phone/tablet, Back, font scale |
 | Recovery/export | ZIP/SAF safety and output-file tests | No false success after cancellation/error |
+| Native large-asset save | Non-closing ZIP wrapper forwards byte-array writes in bulk; verify exact bytes | Compare identical large note/canvas fixtures before and after on the same device; record elapsed save time, memory and reopened media integrity |
 
 ## Result record
 
