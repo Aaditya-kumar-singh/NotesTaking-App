@@ -136,7 +136,7 @@ Evidence and NotesTaking targets: N29, N30, N31, N32, N33 · `ui/Toolbar.kt`, `u
 | ID | Priority | Reference feature / requirement | State | Next implementation or audit | Acceptance gate |
 |---|---|---|---|---|---|
 | NP-089 | P1 | 48dp touch regions on primary actions | PARTIAL | B01–B07 increased many; audit remaining phone/tablet controls | All finger actions have ≥48dp hit area |
-| NP-090 | P1 | TalkBack labels and active/selected state | PARTIAL | B40 published selected/not-selected semantics for persistent paged/infinite/PDF toolbar toggles with three JVM regression cases; CI and TalkBack device QA and remaining icon/page/preset/dialog audit pending | Every icon is discoverable, action/state spoken |
+| NP-090 | P1 | TalkBack labels and active/selected state | PARTIAL | B40 selected/not-selected semantics for persistent paged/infinite/PDF toolbar toggles passed GitHub CI; TalkBack device QA and remaining icon/page/preset/dialog audit pending | Every icon is discoverable, action/state spoken |
 | NP-091 | P1 | Phone/tablet/landscape responsive editor | SOURCE | Measure portrait/landscape, split/multi-window and keyboard | No clipped toolbar or inaccessible Save |
 | NP-092 | P1 | Large-font settings and keyboard/back navigation | PARTIAL | Check 1.3x/2.0x font, focus restoration, system Back | No truncated critical action at 320dp |
 | NP-093 | P2 | Organize many toolbar settings by category/search | GAP | Group visibility/action settings with preview and optional search | Core tools located quickly, no preference reset |
