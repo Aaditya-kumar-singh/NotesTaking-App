@@ -113,6 +113,7 @@ internal fun PdfModeButton(editor: Editor) {
         if (reading) NotesTakingIcons.pan else NotesTakingIcons.edit,
         stringResource(if (reading) R.string.pdf_reading_active else R.string.pdf_annotating_active),
         active = reading,
+        reportSelection = true,
         hint = stringResource(if (reading) R.string.pdf_annotate_mode else R.string.pdf_read_mode),
     ) { editor.setPdfReadingMode(!reading) }
 }
@@ -177,6 +178,7 @@ private fun PinnedFingerDrawing(editor: Editor) {
         NotesTakingIcons.edit,
         stringResource(if (enabled) R.string.pdf_finger_inking_enabled else R.string.pdf_finger_inking_disabled),
         active = enabled,
+        reportSelection = true,
         hint = stringResource(if (enabled) R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable),
     ) { editor.toggleFingerDrawing() }
 }
@@ -196,6 +198,7 @@ private fun PinnedEraser(
             NotesTakingIcons.eraser,
             "$name: $mode",
             active = active,
+            reportSelection = true,
             hint = stringResource(R.string.canvas_eraser_tool_hint),
         ) {
             if (active) settingsOpen = true else selectEraser()

@@ -131,6 +131,7 @@ fun InfiniteToolbar(
                         NotesTakingIcons.magicWand,
                         stringResource(R.string.tool_wand),
                         active = editor.wandEnabled,
+                        reportSelection = true,
                     ) { editor.toggleWand() }
 
                     ToolbarItem.IMAGE -> InsertButton(
@@ -170,7 +171,7 @@ fun InfiniteToolbar(
                         if (waypointsOpen) CanvasWaypointsPopup(editor) { waypointsOpen = false }
                     }
                     ToolbarItem.MINIMAP ->
-                        ToolbarIcon(NotesTakingIcons.map, stringResource(R.string.toolbar_minimap), active = editor.minimapVisible) {
+                        ToolbarIcon(NotesTakingIcons.map, stringResource(R.string.toolbar_minimap), active = editor.minimapVisible, reportSelection = true) {
                             editor.toggleMinimap()
                         }
 
@@ -190,6 +191,7 @@ fun InfiniteToolbar(
                         if (editor.zoomLocked) NotesTakingIcons.lock else NotesTakingIcons.unlock,
                         stringResource(if (editor.zoomLocked) R.string.unlock_zoom else R.string.lock_zoom),
                         active = editor.zoomLocked,
+                        reportSelection = true,
                     ) { editor.toggleZoomLock() }
 
                     // Everything else belongs to the paged bar; a canvas layout never holds one.
