@@ -237,4 +237,35 @@ No other files or resources changed; visual layout, targets, callbacks, popups, 
 
 **Risks and ownership:** Focus visibility still requires actual Android keyboard/TalkBack QA; no Compose screenshot or automated UI test ran. Full keyboard section reordering requires coordinator-owned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating grip arrow-key routing conflicts with parent preview handlers in coordinator-owned `MainActivity.kt` and Chat A-owned `Editor.kt`. No unowned file was edited; shared acceptance trackers remain for Chat A.
 
-**Eighth code commit:** `58c6386dfe7b841f27a58f001f6b11589b320a83`. **Eighth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick in Git order after all earlier G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
+**Eighth code commit:** `58c6386dfe7b841f27a58f001f6b11589b320a83`. **Eighth status-only handoff commit:** `7b51f21d4c4d6a0e710a8b41ead2fe7ac5a9a1bb`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Ninth checkpoint — NP-092 keyboard focus visibility across editor toolbar controls (2026-11-13)
+
+**Confirmed source issue:** `ToolbarIcon` suppresses ripple indication by design and only shows selected or pressed state, with no keyboard-focus outline. `Swatch` and the prior NP-089 text-action controls also lacked an explicit focus ring. A keyboard user navigating paged/infinite, floating/docked toolbars could not reliably identify the focused action, especially next to visually selected pen tools or colors.
+
+**Bounded implementation:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/Toolbar.kt` introduced a small shared `@Composable Modifier.toolbarFocusOutline(shape)` that tracks `onFocusChanged` and paints an accent-colored 2dp border **only while focused**, following the app's existing visual focus pattern. Applied it after the existing size modifiers to all three shared interactive types:
+- `ToolbarIcon` — circular keyboard focus outline around the existing 48dp-or-larger hit area, without re-enabling ripple or changing the gliding tool-selection circle.
+- `Swatch` — circular focus outline distinct from its inner color-selection ring; retained drag-to-canvas source, color value and selected semantics.
+- `toolbarTextAction` — rounded outline on the existing minimum-48dp note-title rename, page-counter jump, and zoom-percent menu hit areas; retained button role and action labels.
+
+All callers of the shared controls were located in `Toolbar.kt`, `InfiniteToolbar.kt`, `FloatingToolbar.kt`, `CanvasQuickAccess.kt`, `FavoriteToolDock.kt` and `InsertMenu.kt`; no caller API or resource changes needed. The selected/focus states, enabled state and pointer/stylus operations remain separate. Only this owned Kotlin source and Chat B status changed; no underlying drawing/storage or coordinator/Gemini files touched.
+
+**Focused source regression:** Allowed Python static assertion checked that the shared modifier uses remembered focus state, `onFocusChanged`, and the 2dp accent border; verified exactly three call sites (icon, swatch, and text-action), the original click semantics, 48dp sizing, color-drag handling, and accessibility state. **PASS** after correcting an initial assertion that accidentally counted the helper declaration as a usage (the first static assertion failed due solely to that count; code unchanged). This presentational change adds no new JUnit source; existing UI tests await GitHub execution.
+
+**Permitted checks from Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS**, only 12 owned paths changed since baseline.
+- `python tools/ci/check_project.py` — **PASS**, 388 Kotlin sources, 229 Kotlin test sources, 22 XML files and 39 PNGs, zero problems.
+- `python tools/ci/check_backup_privacy.py` — **PASS**, private backup exclusions intact.
+- `git diff --check` and `git diff --cached --check` — **PASS**.
+- Corrected focused Python assertion — **PASS**.
+- No local Gradle/Kotlin/JVM test execution, Android lint, build, emulator/phone installation, GitHub CI or device TalkBack/stylus QA.
+
+**Manual acceptance for Chat A (NOT performed):**
+1. Connect a hardware keyboard to a 320dp Android phone and a tablet. In paged and infinite canvases, Tab/Shift+Tab through docked top/bottom/left/right and floating toolbar controls. The focused toolbar icon must show a clear 2dp accent ring, including when it is not selected. The ring must follow focus and disappear from the old control.
+2. Repeat with a selected pen/eraser and selected ink swatches: verify the focus ring and existing selected/glide/color ring remain visually distinct. Tab to Rename, Go To Page, and Zoom value: each should show the rounded focus ring. Enter/Space and accessibility activation should still use the original callbacks; disabled actions must remain disabled.
+3. Repeat with TalkBack enabled, font scale 1.3x/2.0x, split pane, and customized toolbar layout; confirm accessible names, role, selection state, focus order and no clipped rings.
+4. Test stylus hover, pen stroke, eraser, drag swatch onto canvas, active tool settings on second tap, and floating grip drag. Verify focus ring never causes accidental drawing, selection or gesture changes. After Chat A integrates, require GitHub Kotlin/JUnit, Compose compilation, lint and APK CI for the **exact integrated SHA**.
+
+**Remaining risks:** Actual Compose keyboard focus behavior, focus-ring appearance, selected/focused contrast, 320dp clipping and TalkBack focus order are unverified without physical device/CI. NP-089/NP-090/NP-092 stay open until integrated hardware acceptance. Keyboard-driven section reorder needs the unowned `app/src/main/java/com/notestaking/app/ui/PreferencesPane.kt`; floating-grip arrow routing needs coordinator work in `MainActivity.kt` and Chat A-owned `Editor.kt` to avoid intercepting page/canvas shortcuts.
+
+**Ninth implementation commit:** `2907304559ba6d60d9d35d3971047a9e1eb2bf8c`. **Ninth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick this pair in Git order after all prior G08 commits. **PUSH: NO / MERGE: NO / PR: NO.**
