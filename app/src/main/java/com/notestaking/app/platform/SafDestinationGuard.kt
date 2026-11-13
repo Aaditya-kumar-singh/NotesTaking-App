@@ -24,9 +24,9 @@ internal object SafDestinationGuard {
         }
     }
 
-    /** When size metadata is unavailable, read one byte; failure to inspect must not authorize a write. */
+    /** Check one byte even for reported zero size: provider metadata can be stale or incorrect. */
     fun canWrite(reportedSize: Long?, firstByte: () -> Int?): Boolean {
-        if (reportedSize != null && reportedSize >= 0L) return reportedSize == 0L
+        if (reportedSize != null && reportedSize > 0L) return false
         return try {
             firstByte() == -1
         } catch (_: Exception) {

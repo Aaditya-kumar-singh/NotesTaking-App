@@ -6,10 +6,14 @@ import org.junit.Test
 import java.io.IOException
 
 class SafDestinationGuardTest {
-    @Test fun reportedEmptyDestinationIsWritableWithoutOpeningInput() {
-        assertTrue(SafDestinationGuard.canWrite(0L) {
-            throw AssertionError("Zero-size destination does not need a second read")
-        })
+    @Test fun reportedEmptyDestinationMustBeConfirmedEmpty() {
+        assertTrue(SafDestinationGuard.canWrite(0L) { -1 })
+        assertFalse(SafDestinationGuard.canWrite(0L) { 42 })
+    }
+
+    @Test fun falseZeroMetadataOrUnreadableDestinationCannotDestroyExistingData() {
+        assertFalse(SafDestinationGuard.canWrite(0L) { throw IOException("provider refused read") })
+        assertFalse(SafDestinationGuard.canWrite(0L) { null })
     }
 
     @Test fun existingDataIsNeverWritableOrProbed() {
