@@ -525,6 +525,10 @@ private fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
         .then(if (focused) Modifier.border(2.dp, accent, shape) else Modifier)
 }
 
+/** Named toggle actions work in both states; re-tap settings hints only work when armed. */
+internal fun toolbarActionLabel(active: Boolean, hint: String?, explicitLabel: String?): String? =
+    explicitLabel ?: hint.takeIf { active }
+
 /** Tools and persistent toggles announce selection; one-shot actions do not. */
 internal fun toolbarSelectionState(active: Boolean, glideKey: Any?, reportSelection: Boolean): Boolean? =
     if (glideKey != null || reportSelection) active else null
@@ -543,6 +547,7 @@ internal fun ToolbarIcon(
     glideKey: Any? = null,
     reportSelection: Boolean = false,
     hint: String? = null,
+    actionLabel: String? = null,
     shortcut: String? = null,
     onClick: () -> Unit,
 ) {
@@ -573,7 +578,7 @@ internal fun ToolbarIcon(
                 .size(bar.button)
                 .toolbarFocusOutline(CircleShape)
                 .then(if (selectionState != null) Modifier.semantics { selected = selectionState } else Modifier)
-                .clickable(interaction, indication = null, enabled = enabled, onClickLabel = hint.takeIf { active }, role = Role.Button, onClick = onClick),
+                .clickable(interaction, indication = null, enabled = enabled, onClickLabel = toolbarActionLabel(active, hint, actionLabel), role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(

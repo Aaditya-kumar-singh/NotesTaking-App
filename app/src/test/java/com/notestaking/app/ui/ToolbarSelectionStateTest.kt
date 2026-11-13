@@ -24,4 +24,19 @@ class ToolbarSelectionStateTest {
         assertNull(toolbarSelectionState(false, null, reportSelection = false))
         assertNull(toolbarSelectionState(true, null, reportSelection = false))
     }
+
+    @Test
+    fun armedToolHintsAreActionsOnlyWhileSelected() {
+        assertNull(toolbarActionLabel(false, "Tap for settings", null))
+        assertEquals("Tap for settings", toolbarActionLabel(true, "Tap for settings", null))
+        assertNull(toolbarActionLabel(false, null, null))
+    }
+
+    @Test
+    fun explicitToggleActionsAreNamedWhenOnOrOff() {
+        assertEquals("Read (Pan)", toolbarActionLabel(false, "Read (Pan)", "Read (Pan)"))
+        assertEquals("Annotate", toolbarActionLabel(true, "Annotate", "Annotate"))
+        assertEquals("Enable finger writing", toolbarActionLabel(false, null, "Enable finger writing"))
+        assertEquals("Disable finger writing", toolbarActionLabel(true, null, "Disable finger writing"))
+    }
 }
