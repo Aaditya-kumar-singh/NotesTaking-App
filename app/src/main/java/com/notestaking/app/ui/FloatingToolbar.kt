@@ -49,6 +49,10 @@ import kotlin.math.roundToInt
 internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boolean =
     axisDp >= 16 + 48 + 8 + (count + 1) * (buttonDp + 8)
 
+/** Don't offer TalkBack a movement that cannot change the grip's position. */
+internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): Boolean =
+    travel > 0f && (fraction + step).coerceIn(0f, 1f) != fraction
+
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
  * pen, eraser, swatches, menus and the underlying canvas keep their original input handlers.
@@ -112,19 +116,23 @@ internal fun MovableFloatingToolbar(
                     .border(1.dp, palette.border.toComposeColor(), shape)
                     .semantics {
                         contentDescription = dragLabel
-                        customActions = listOf(
-                            CustomAccessibilityAction(leftLabel) { nudge(-0.1f, 0f) },
-                            CustomAccessibilityAction(rightLabel) { nudge(0.1f, 0f) },
-                            CustomAccessibilityAction(upLabel) { nudge(0f, -0.1f) },
-                            CustomAccessibilityAction(downLabel) { nudge(0f, 0.1f) },
-                            CustomAccessibilityAction(resetLabel) {
+                        customActions = buildList {
+                            if (floatingGripCanNudge(travelX, x, -0.1f))
+                                add(CustomAccessibilityAction(leftLabel) { nudge(-0.1f, 0f) })
+                            if (floatingGripCanNudge(travelX, x, 0.1f))
+                                add(CustomAccessibilityAction(rightLabel) { nudge(0.1f, 0f) })
+                            if (floatingGripCanNudge(travelY, y, -0.1f))
+                                add(CustomAccessibilityAction(upLabel) { nudge(0f, -0.1f) })
+                            if (floatingGripCanNudge(travelY, y, 0.1f))
+                                add(CustomAccessibilityAction(downLabel) { nudge(0f, 0.1f) })
+                            add(CustomAccessibilityAction(resetLabel) {
                                 val defaults = look.copy(floatingX = null, floatingY = null).floatingFractions
                                 x = defaults.first
                                 y = defaults.second
                                 commit(x, y)
                                 true
-                            },
-                        )
+                            })
+                        }
                     }
                     .pointerInput(travelX, travelY) {
                         detectDragGestures(
