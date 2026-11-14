@@ -209,14 +209,18 @@ private fun ToolbarItemView(
         ToolbarItem.WAYPOINTS, ToolbarItem.MINIMAP -> Unit
 
         ToolbarItem.HOME -> ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.toolbar_home)) { onOpenBackstage() }
-        // A name has no room down a side rail.
-        ToolbarItem.TITLE -> if (!LocalBar.current.vertical) {
+        // Show a compact rename action on a side rail instead of hiding the Title item.
+        ToolbarItem.TITLE -> {
             val renameLabel = stringResource(R.string.rename_note)
-            Tooltip(renameLabel) {
-                Label(
-                    if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
-                    modifier = Modifier.widthIn(max = 160.dp).toolbarTextAction(renameLabel, onRename),
-                )
+            if (LocalBar.current.vertical) {
+                ToolbarIcon(NotesTakingIcons.edit, renameLabel, onClick = onRename)
+            } else {
+                Tooltip(renameLabel) {
+                    Label(
+                        if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
+                        modifier = Modifier.widthIn(max = 160.dp).toolbarTextAction(renameLabel, onRename),
+                    )
+                }
             }
         }
         ToolbarItem.SIDEBAR ->
@@ -392,7 +396,7 @@ private fun RenameDialog(initial: String, onConfirm: (String) -> Unit, onDismiss
             )
         },
         confirmButton = {
-            TextButton(onClick = { if (text.isBlank()) onDismiss() else onConfirm(text) }) { Text(stringResource(R.string.rename)) }
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.rename)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
