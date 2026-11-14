@@ -56,6 +56,29 @@ class CanvasSessionStoreTest {
         }
     }
 
+    @Test fun metadataOnlySaveRejectsEmptyCanvasAndFullSaveCanRecover() {
+        val dir = Files.createTempDirectory("notestaking-canvas-empty").toFile()
+        val images = Files.createTempDirectory("notestaking-canvas-empty-images").toFile()
+        try {
+            val store = CanvasSessionStore(dir, codec(), images)
+            assertTrue(store.save(InfiniteDocument(dpi = 144), writeDocument = true))
+            val sidecar = dir.resolve("canvas-session.json")
+            val originalMetadata = sidecar.readBytes()
+            val slot = dir.resolve("canvas.xcanvas")
+            assertTrue(slot.delete())
+            assertTrue(slot.createNewFile())
+
+            assertFalse(store.save(InfiniteDocument(dpi = 300), writeDocument = false))
+            assertEquals(0L, slot.length())
+            assertArrayEquals(originalMetadata, sidecar.readBytes())
+            assertTrue(store.save(InfiniteDocument(dpi = 300), writeDocument = true))
+            assertEquals(300, store.load()!!.dpi)
+        } finally {
+            dir.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun blockedMetadataCannotOverwriteLastGoodCanvas() {
         val sessionDir = Files.createTempDirectory("notestaking-canvas-metadata").toFile()
         val imageDir = Files.createTempDirectory("notestaking-canvas-images").toFile()

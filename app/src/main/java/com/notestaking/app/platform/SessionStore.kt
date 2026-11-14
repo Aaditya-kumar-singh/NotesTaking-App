@@ -44,6 +44,7 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
             // A known-invalid sidecar must not replace the last recoverable document.
             if (metaFile.exists() && !metaFile.isFile) return false
             if (docFile.exists() && !docFile.isFile) return false
+            if (!writeDocument && docFile.isFile && docFile.length() == 0L) return false
             val m = JSONObject()
                 .put("dirty", document.dirty)
                 .put("zoom", zoom)
