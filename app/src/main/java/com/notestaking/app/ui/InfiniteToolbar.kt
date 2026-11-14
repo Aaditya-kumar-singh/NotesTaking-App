@@ -101,8 +101,28 @@ fun InfiniteToolbar(
             for (entry in section.visibleEntries) {
                 when (val item = entry.item) {
                     ToolbarItem.HOME -> ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.toolbar_home)) { onOpenBackstage() }
-                    // A name has no room down a side rail.
-                    ToolbarItem.TITLE -> if (!LocalBar.current.vertical) Label(if (editor.document.displayName == null && editor.document.path == null) stringResource(R.string.untitled) else editor.title, Modifier.padding(end = 4.dp))
+                    // Show a compact title indicator where a text label cannot fit.
+                    ToolbarItem.TITLE -> {
+                        val title = if (editor.document.displayName == null && editor.document.path == null) stringResource(R.string.untitled) else editor.title
+                        if (LocalBar.current.vertical) {
+                            val description = "${stringResource(R.string.toolbar_title)}: $title"
+                            Tooltip(description) {
+                                Box(
+                                    Modifier.size(LocalBar.current.button).semantics { contentDescription = description },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        NotesTakingIcons.file,
+                                        contentDescription = null,
+                                        tint = LocalPalette.current.textDim.toComposeColor(),
+                                        modifier = Modifier.size(LocalBar.current.icon),
+                                    )
+                                }
+                            }
+                        } else {
+                            Label(title, Modifier.padding(end = 4.dp))
+                        }
+                    }
 
                     in CANVAS_TOOL_OF -> {
                         val tool = CANVAS_TOOL_OF.getValue(item)
