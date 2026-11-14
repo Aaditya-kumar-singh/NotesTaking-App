@@ -53,7 +53,7 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
             document.displayName?.let { m.put("displayName", it) }
             val metadata = ViewOverridesJson.write(m, viewOverrides)
             if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
+                if (!SafeFileWriter.write(docFile, SafeFileWriter::hasNativeManifest) { output -> codec.write(document, output) }) return false
             }
             meta.writeChecked(metadata)
         } catch (_: Exception) {

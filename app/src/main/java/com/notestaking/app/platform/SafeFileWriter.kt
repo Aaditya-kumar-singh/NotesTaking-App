@@ -6,6 +6,7 @@ import java.io.FilterOutputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.zip.ZipFile
 
 /**
  * Replaces a file only after a complete, fsynced write.
@@ -18,7 +19,11 @@ import java.nio.file.StandardCopyOption
  * replacement protects file integrity, not application-level write ordering.
  */
 internal object SafeFileWriter {
-    fun write(target: File, body: (OutputStream) -> Unit): Boolean {
+    fun write(
+        target: File,
+        validateStaged: (File) -> Boolean = { true },
+        body: (OutputStream) -> Unit,
+    ): Boolean {
         var staged: File? = null
         return try {
             val parent = target.absoluteFile.parentFile ?: return false
@@ -34,7 +39,7 @@ internal object SafeFileWriter {
                 output.fd.sync()
             }
             // Never replace the last recoverable copy with an empty "successful" write.
-            if (staged.length() == 0L) return false
+            if (staged.length() == 0L || !validateStaged(staged)) return false
             Files.move(
                 staged.toPath(),
                 target.toPath(),
@@ -48,6 +53,14 @@ internal object SafeFileWriter {
             staged?.delete() // Never touch the previous, successfully committed target on failure.
         }
     }
+
+    /** A native session must have a finished ZIP index and nonempty manifest before it replaces a recoverable copy. */
+    internal fun hasNativeManifest(file: File): Boolean = runCatching {
+        ZipFile(file).use { zip ->
+            val manifest = zip.getEntry("manifest.json")
+            manifest != null && !manifest.isDirectory && manifest.size > 0L
+        }
+    }.getOrDefault(false)
 
     /** Pass ZIP byte arrays through in bulk while letting the caller retain the file descriptor. */
     internal fun nonClosingStream(output: OutputStream): OutputStream = object : FilterOutputStream(output) {
