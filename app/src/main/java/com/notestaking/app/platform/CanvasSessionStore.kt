@@ -10,7 +10,8 @@ import java.io.FileInputStream
 class CanvasSessionStore(private val dir: File, private val codec: CanvasCodec, private val imageDir: File) {
 
     private val docFile = File(dir, "canvas.xcanvas")
-    private val meta = JsonStore(File(dir, "canvas-session.json"))
+    private val metaFile = File(dir, "canvas-session.json")
+    private val meta = JsonStore(metaFile)
 
     @Synchronized
     fun exists(): Boolean = docFile.exists()
@@ -19,13 +20,14 @@ class CanvasSessionStore(private val dir: File, private val codec: CanvasCodec, 
     @Synchronized
     fun save(document: InfiniteDocument, writeDocument: Boolean): Boolean {
         return try {
-            if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
-            }
+            if (metaFile.exists() && !metaFile.isFile) return false
             val json = JSONObject()
             document.path?.let { json.put("path", it) }
             document.displayName?.let { json.put("display_name", it) }
             json.put("dirty", document.dirty)
+            if (writeDocument || !docFile.exists()) {
+                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
+            }
             meta.writeChecked(json)
         } catch (_: Exception) {
             false
