@@ -32,12 +32,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -63,7 +66,7 @@ internal enum class TipSide { BELOW, ABOVE, LEFT, RIGHT }
 internal val LocalTipSide = compositionLocalOf { TipSide.BELOW }
 
 /**
- * Names [content] while a pen or mouse hovers over it: an inverse chip that fades in after a short
+ * Names [content] on pen/mouse hover or hardware-keyboard focus: an inverse chip that fades in after a short
  * wait, or at once while the pointer moves on from a neighbour whose tip was showing. [hint] is a
  * dimmer second line for a gesture the control hides; [shortcut] shows beside the name only while a
  * hardware keyboard is attached. A press hides the tip until the pointer leaves, so a tapped button
@@ -80,8 +83,16 @@ internal fun Tooltip(
 ) {
     val scope = rememberCoroutineScope()
     val tip = remember { TipState(scope) }
+    val inputMode = LocalInputModeManager.current
     DisposableEffect(tip) { onDispose { tip.dispose() } }
-    Box(modifier.pointerInput(tip) { trackHover(tip) }, propagateMinConstraints = true) {
+    Box(
+        modifier
+            .onFocusChanged { focus ->
+                if (focus.hasFocus && inputMode.inputMode == InputMode.Keyboard) tip.enter() else tip.exit()
+            }
+            .pointerInput(tip) { trackHover(tip) },
+        propagateMinConstraints = true,
+    ) {
         content()
         if (tip.mounted) TipPopup(tip, text, hint, shortcut?.takeIf { keyboardAttached() }, side)
     }
