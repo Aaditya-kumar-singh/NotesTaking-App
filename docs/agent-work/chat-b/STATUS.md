@@ -786,4 +786,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Bounded unresolved issue / ownership handoff:** `app/src/main/java/com/notestaking/app/ui/CanvasWaypointsPopup.kt:109` also invokes `editor.zoomToFit()` via a `ModeChip` that stays enabled under zoom lock. That file is **not** in Chat B's allowlist; Chat A should allocate ownership or handle it in a separate coordinator-approved change. No modification to the Waypoints popup or unrelated files was made.
 
-**Thirty-fourth source commit:** `0cf98ea7789c90b6fafa8578839ddc42e21dbf34`. **Thirty-fourth status-only handoff commit:** subsequent commit to this STATUS file. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-fourth source commit:** `0cf98ea7789c90b6fafa8578839ddc42e21dbf34`. **Thirty-fourth status-only handoff commit:** `6850f4e5f89b2476f51c74c5b75157d84cb25eb9`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-fifth G08 checkpoint — NP-090/NP-092 paged-note Rename dialog label and IME Done (2026-11-14)
+
+**Source gap:** The Chat B-owned `Toolbar.kt:RenameDialog` had an unlabeled `OutlinedTextField` and no `ImeAction.Done` binding, even though the existing Rename button already rejected blank/whitespace names. TalkBack would have to infer the field purpose from the dialog heading, and the soft keyboard's Done action was not wired to submit the rename.
+
+**Bounded fix:** `app/src/main/java/com/notestaking/app/ui/Toolbar.kt` now uses existing localized `R.string.toolbar_title` as the input label and installs `KeyboardOptions(imeAction = ImeAction.Done)` and `KeyboardActions(onDone = { confirm() })`. The dialog's Rename button reuses the same local `confirm` lambda, which accepts only `text.isNotBlank()`. The existing focus requester, Cancel, Back dismissal, current-name initialization, and `Editor.renameCurrentDocument` storage validation remain intact. Only the owned toolbar file changed; no new resource, dependency, storage/editor or other-agent change.
+
+**Checks actually completed in Chat B worktree:** `python tools/agents/check_lane.py` — PASS (21 owned paths vs lane baseline); `python tools/ci/check_project.py` — PASS (388 Kotlin sources / 234 Kotlin tests / 22 XML / 39 PNG; 0 problems); `python tools/ci/check_backup_privacy.py` — PASS; unstaged/staged `git diff --check` — PASS; focused Python static assertion — PASS for text label, shared nonblank validation, Done action, retained focus and dialog dismissal, and existing localized strings. An initial assertion command failed due PowerShell quote escaping, then the corrected command passed. No new JVM test was added for declarative Compose UI binding.
+
+**Coordinator acceptance NOT RUN:** With a new or saved paged note, open Rename in horizontal/vertical toolbar mode, confirm the field is announced as Title, type a nonblank new name and submit using the Android soft-keyboard Done key. Confirm a single rename, proper note title and storage path; empty or whitespace-only names must leave Rename disabled, Done must not submit, and Cancel/Back must still dismiss without renaming. Verify TalkBack, keyboard navigation, 1.3x/2.0x font, 240/320dp split panes, no unwanted focus change and no impact on inking/stylus hover. A hardware keyboard's Enter/Escape behavior is not proven by the IME Done binding; separate device acceptance is necessary. GitHub-hosted Kotlin/JUnit, Compose compile, Android lint/APK CI and physical phone/tablet QA have not been performed.
+
+**Remaining risk:** NP-089/NP-090/NP-092 still await exact-SHA integrated CI and TalkBack/device acceptance. The unowned `CanvasWaypointsPopup.kt` zoom-lock Fit All gap from Checkpoint 34 remains for Chat A to allocate. No push, merge, APK or protected branch modifications.
+
+**Thirty-fifth implementation commit:** `3e194f469223f45d25e2e147394ff9aae1e74432`. **Thirty-fifth STATUS-only handoff commit:** the immediately following Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
