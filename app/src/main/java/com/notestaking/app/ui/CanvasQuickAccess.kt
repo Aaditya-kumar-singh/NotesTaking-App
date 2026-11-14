@@ -167,7 +167,7 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
             HorizontalDivider()
             QuickActionRow(stringResource(R.string.tool_image)) { dismiss(); onInsertImage() }
             QuickActionRow(stringResource(R.string.tool_wand), isSelected = editor.wandEnabled) { dismiss(); editor.toggleWand() }
-            QuickActionRow(stringResource(R.string.toolbar_fit)) { dismiss(); editor.zoomToFit() }
+            QuickActionRow(stringResource(R.string.toolbar_fit), enabled = !editor.zoomLocked) { dismiss(); editor.zoomToFit() }
             QuickActionRow(stringResource(R.string.toolbar_minimap), isSelected = editor.minimapVisible) { dismiss(); editor.toggleMinimap() }
             QuickActionRow(stringResource(R.string.toolbar_waypoints)) { dismiss(); waypointsOpen = true }
             QuickActionRow(stringResource(R.string.toolbar_styles)) { dismiss(); stylesOpen = true }
