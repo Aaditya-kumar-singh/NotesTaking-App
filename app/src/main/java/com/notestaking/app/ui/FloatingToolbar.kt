@@ -2,6 +2,7 @@ package com.notestaking.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -119,6 +120,7 @@ internal fun MovableFloatingToolbar(
                     .clip(shape)
                     .background(palette.panel.toComposeColor())
                     .border(1.dp, palette.border.toComposeColor(), shape)
+                    .toolbarFocusOutline(shape)
                     .semantics {
                         contentDescription = dragLabel
                         customActions = buildList {
@@ -139,6 +141,7 @@ internal fun MovableFloatingToolbar(
                                 })
                         }
                     }
+                    .focusable()
                     .pointerInput(travelX, travelY) {
                         detectDragGestures(
                             onDragStart = { dragStartX = x; dragStartY = y },
