@@ -21,6 +21,7 @@ class CanvasSessionStore(private val dir: File, private val codec: CanvasCodec, 
     fun save(document: InfiniteDocument, writeDocument: Boolean): Boolean {
         return try {
             if (metaFile.exists() && !metaFile.isFile) return false
+            if (docFile.exists() && !docFile.isFile) return false
             val json = JSONObject()
             document.path?.let { json.put("path", it) }
             document.displayName?.let { json.put("display_name", it) }
