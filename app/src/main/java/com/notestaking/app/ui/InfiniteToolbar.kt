@@ -3,20 +3,28 @@ package com.notestaking.app.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolbarItem
 import com.notestaking.app.ui.icons.NotesTakingIcons
+import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
 
 /** Which tool a toolbar item arms, for the items that are simply a tool button. */
@@ -204,14 +212,39 @@ fun InfiniteToolbar(
             }
         }
 
-        if (!LocalBar.current.vertical) editor.renderFailure?.let {
+        editor.renderFailure?.let {
             Separator()
-            Label(stringResource(R.string.gl_unavailable))
+            InfiniteCanvasWarning(stringResource(R.string.gl_unavailable))
         }
-        if (!LocalBar.current.vertical && editor.outOfMemory) {
+        if (editor.outOfMemory) {
             Separator()
-            Label(stringResource(R.string.canvas_out_of_memory))
+            InfiniteCanvasWarning(stringResource(R.string.canvas_out_of_memory))
         }
         Spacer(Modifier.padding(horizontal = 2.dp))
+    }
+}
+
+/** Keep critical canvas failures visible even when the toolbar is docked vertically. */
+@Composable
+private fun InfiniteCanvasWarning(message: String) {
+    if (LocalBar.current.vertical) {
+        Tooltip(message) {
+            Box(
+                Modifier.size(LocalBar.current.button).semantics {
+                    contentDescription = message
+                    liveRegion = LiveRegionMode.Polite
+                },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    NotesTakingIcons.info,
+                    contentDescription = null,
+                    modifier = Modifier.size(LocalBar.current.icon),
+                    tint = LocalPalette.current.textDim.toComposeColor(),
+                )
+            }
+        }
+    } else {
+        Label(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
 }
