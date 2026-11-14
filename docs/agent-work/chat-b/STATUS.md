@@ -642,4 +642,24 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** Material3 DropdownMenu content and translated Add stickers/hint text could impose wider intrinsic constraints or wrap at very small widths; the grid math alone cannot prove full popup fit until real-device measurement. Grid width is based on the Android window, not an in-app pane narrower than that. Scroll, image decoding, semantics and input behavior remain runtime-unverified. NP-089/NP-090/NP-092 remain open until Chat A reviews, integrates and accepts with CI + hardware evidence. No protected resource/editor/storage/trackers or Chat A/Gemini worktrees edited.
 
-**Twenty-sixth implementation + test commit:** `a04b757f4b3ba16bfafa41191acfc28cf625be7a`. **Twenty-sixth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both commits after the previous twenty-five G08 checkpoint pairs in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-sixth implementation + test commit:** `a04b757f4b3ba16bfafa41191acfc28cf625be7a`. **Twenty-sixth status-only handoff commit:** `02ccb7a8976cc86e9ca83cff51792daa6b707703`. Chat A should review and cherry-pick both commits after the previous twenty-five G08 checkpoint pairs in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-seventh checkpoint — NP-090 PDF quick-tools current-mode selected state (2026-11-14)
+
+**Verified source gap:** The paged PDF All Tools overflow offered Read (Pan), Annotate and Enable/Disable finger writing rows with correct callbacks but no selected-state semantics or visible active-state mark. This was inconsistent with the main PDF mode and finger-writing buttons and with the existing selected-state checkmarks on drawing tools, Wand/Ruler and Minimap. The disabled current Read/Annotate option did not visibly explain which mode was in effect.
+
+**Bounded source fix:** In Chat B-owned `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`, reused `QuickActionRow(isSelected = ...)` for exactly three existing PDF actions. Read is selected when `editor.tool == Tool.PAN`, Annotate is selected otherwise, and Finger Writing is selected when `editor.preferences.fingerDraws` is enabled. This reuses the current optional Compose `selected` semantics and the decorative trailing checkmark. Existing enabled/disabled handling, locale string resources, button labels, callbacks (`setPdfReadingMode`, `toggleFingerDrawing`), menu dismissal, PDF-only gating, tool selections, ink input and note storage are unchanged. No new helper, test source, resource or dependency was needed for these three declarative bindings.
+
+**Checks actually performed in the isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — PASS (17 owned paths from coordination baseline).
+- `python tools/ci/check_project.py` — PASS (388 Kotlin sources, 234 Kotlin tests, 22 XML and 39 PNG; zero problems).
+- `python tools/ci/check_backup_privacy.py` — PASS.
+- `git diff --check` and `git diff --cached --check` — PASS.
+- Focused Python source assertions — PASS: Read/Annotate selections mirror each other, Finger Writing tracks the existing preference, selected semantics/checkmark remain available, and all original callbacks are retained.
+- **NOT RUN:** local Kotlin/JUnit/Gradle, Android lint/Compose compilation, APK build, GitHub CI, physical TalkBack, stylus, mouse or keyboard testing.
+
+**Manual acceptance for Chat A (NOT RUN):** On a PDF with TalkBack enabled, open All Tools while reading; the disabled Read (Pan) row should have a visible checkmark and read as selected, while Annotate is enabled and unselected. Activate Annotate, reopen the menu, and verify selected/enabled states invert and drawing still works. Toggle Finger Writing on and off from the menu and verify the selected mark and spoken selection track the preference and action label. On a non-PDF note ensure no PDF-only rows are present. Check 180/240/320dp widths, 1.0/1.3/2.0x fonts, docked/floating toolbars and stylus interactions. After coordinated integration, run GitHub Kotlin/JUnit, Compose, lint and Android CI on the **exact integration SHA**.
+
+**Unverified risk:** Material3 may suppress or differently merge `selected` semantics on disabled menu rows, and trailing checkmarks may reduce label width in 180dp windows. These require real TalkBack/screenshot QA; source checks do not prove Android runtime behavior. G08 NP-089/090/092 remain open pending coordinator review, cloud CI and device acceptance. No shared trackers, protected files, Chat A/Gemini worktrees, remote branches or storage code were changed.
+
+**Twenty-seventh implementation commit:** `bb466b4f140ef1e3289605035676d43dca4ebf03`. **Twenty-seventh status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick after Checkpoint 26, preserving Git order. **PUSH: NO / MERGE: NO / PR: NO.**
