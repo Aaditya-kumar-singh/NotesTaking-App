@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,8 +107,8 @@ fun InfiniteToolbar(
                     // Show a compact title indicator where a text label cannot fit.
                     ToolbarItem.TITLE -> {
                         val title = if (editor.document.displayName == null && editor.document.path == null) stringResource(R.string.untitled) else editor.title
+                        val description = "${stringResource(R.string.toolbar_title)}: $title"
                         if (LocalBar.current.vertical) {
-                            val description = "${stringResource(R.string.toolbar_title)}: $title"
                             Tooltip(description) {
                                 Box(
                                     Modifier.size(LocalBar.current.button)
@@ -125,7 +126,15 @@ fun InfiniteToolbar(
                                 }
                             }
                         } else {
-                            Label(title, Modifier.padding(end = 4.dp))
+                            Tooltip(description) {
+                                Label(
+                                    title,
+                                    Modifier.padding(end = 4.dp)
+                                        .toolbarFocusOutline(MaterialTheme.shapes.extraSmall)
+                                        .semantics { contentDescription = description }
+                                        .focusable(),
+                                )
+                            }
                         }
                     }
 
@@ -273,6 +282,16 @@ private fun InfiniteCanvasWarning(message: String) {
             }
         }
     } else {
-        Label(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        Tooltip(message) {
+            Label(
+                message,
+                Modifier.toolbarFocusOutline(MaterialTheme.shapes.extraSmall)
+                    .semantics {
+                        contentDescription = message
+                        liveRegion = LiveRegionMode.Polite
+                    }
+                    .focusable(),
+            )
+        }
     }
 }
