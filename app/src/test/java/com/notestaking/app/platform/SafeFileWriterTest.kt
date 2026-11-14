@@ -13,6 +13,15 @@ import java.util.concurrent.TimeUnit
 class SafeFileWriterTest {
     private fun directory(): File = Files.createTempDirectory("notestaking-atomic-").toFile()
 
+    private fun nativeZip(entryName: String): ByteArray =
+        java.io.ByteArrayOutputStream().also { bytes ->
+            java.util.zip.ZipOutputStream(bytes).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry(entryName))
+                zip.write("{}".toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
+            }
+        }.toByteArray()
+
     @Test fun borrowedStreamUsesBulkWriteAndLeavesDescriptorOpen() {
         val destination = object : java.io.ByteArrayOutputStream() {
             var singleWrites = 0
@@ -61,6 +70,43 @@ class SafeFileWriterTest {
             assertFalse(SafeFileWriter.write(target) { })
             assertFalse(target.exists())
             assertTrue(dir.listFiles()!!.isEmpty())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test fun truncatedNativeArchiveCannotReplaceLastGoodSnapshot() {
+        val dir = directory()
+        try {
+            val target = File(dir, "document.xnote")
+            val original = nativeZip("manifest.json")
+            assertTrue(SafeFileWriter.write(target, SafeFileWriter::hasNativeManifest) {
+                it.write(original)
+            })
+            // Losing the end-of-central-directory record still leaves nonempty ZIP bytes.
+            val partial = original.copyOf(original.size - 22)
+            assertTrue(partial.isNotEmpty())
+            assertFalse(SafeFileWriter.write(target, SafeFileWriter::hasNativeManifest) {
+                it.write(partial)
+            })
+            assertArrayEquals(original, target.readBytes())
+            assertEquals(listOf("document.xnote"), dir.listFiles()!!.map { it.name })
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test fun nativeArchiveMissingManifestCannotReplaceCanvasSnapshot() {
+        val dir = directory()
+        try {
+            val target = File(dir, "canvas.xcanvas")
+            val original = nativeZip("manifest.json")
+            target.writeBytes(original)
+            assertFalse(SafeFileWriter.write(target, SafeFileWriter::hasNativeManifest) {
+                it.write(nativeZip("assets/other.bin"))
+            })
+            assertArrayEquals(original, target.readBytes())
+            assertEquals(listOf("canvas.xcanvas"), dir.listFiles()!!.map { it.name })
         } finally {
             dir.deleteRecursively()
         }

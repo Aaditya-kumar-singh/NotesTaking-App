@@ -26,7 +26,7 @@ class CanvasSessionStore(private val dir: File, private val codec: CanvasCodec, 
             document.displayName?.let { json.put("display_name", it) }
             json.put("dirty", document.dirty)
             if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
+                if (!SafeFileWriter.write(docFile, SafeFileWriter::hasNativeManifest) { output -> codec.write(document, output) }) return false
             }
             meta.writeChecked(json)
         } catch (_: Exception) {
