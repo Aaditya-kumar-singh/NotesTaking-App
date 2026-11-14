@@ -597,4 +597,27 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Risks and remaining gates:** Decorative checkmark may reduce available text width in very narrow Material3 menus; visual QA needed. Screen-reader semantics merging also remains device-unverified. The lane did not change shared resource, editor, preferences, note storage, Gemini or Chat A files; G08 NP-089/NP-090/NP-092 remain open pending integrated CI and phone/tablet acceptance.
 
-**Twenty-fourth implementation commit:** `8a502a7f3897361df9c3e483e088a39936ea91a5`. **Twenty-fourth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the previous twenty-three G08 checkpoint pairs, in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-fourth implementation commit:** `8a502a7f3897361df9c3e483e088a39936ea91a5`. **Twenty-fourth status-only handoff commit:** `753553aa13ec6d8841473a730f402a431c872286`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-fifth checkpoint — NP-090 accessible sticker tile names and insert/remove actions (2026-11-14)
+
+**Confirmed source issue:** The sticker picker grid in `ui/Toolbar.kt:StickersMenu` used a generic `Sticker` image description for every saved sticker and `combinedClickable` without named click/long-click actions. TalkBack users could not distinguish saved stickers or reliably understand that activating one inserts it while long-pressing removes it from the shared library. Read-only inspection of `Editor.addSticker` showed generated temporary filenames (`stamp-<timestamp>-...`), so presenting raw file names would not be a useful user-facing description.
+
+**Bounded implementation (owned paths only):**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: Switched the LazyVerticalGrid from `items` to `itemsIndexed`, preserving each original stable `file.name` key. Each `StickerTile` receives the existing localized `R.string.sticker` plus its 1-based position (e.g. `Sticker 1`, `Sticker 2`). The tile exposes that description at the clickable container and labels its existing `combinedClickable` actions using the localized `R.string.insert` and `R.string.remove`. The preview image is decorative (`contentDescription = null`), avoiding duplicate generic image announcements. This does not change the 72dp hit area, decoded thumbnails, insert/delete callbacks, ordering, storage paths or any note data.
+- No JVM test source for declarative accessibility semantics; checked via a focused Python source assertion using the real callers, editor sticker creation/removal code and existing resource strings. No new resources, dependencies or other code paths were added.
+
+**Permitted checks run from isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (16 Chat B-owned changed paths from coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin source, 233 test source, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (private note data remains excluded from backup).
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python assertion — **PASS**: localized Sticker/Insert/Remove resources present; stable lazy keys preserved; indexed labels, clickable actions, decorative preview, original editor callbacks and >=48dp target unchanged.
+- A first source-validation invocation failed due to PowerShell quoting; it was corrected and all checks above passed with exit 0 before committing.
+- **NOT RUN:** local Gradle/Kotlin/JUnit, Compose compilation, Android lint/APK, GitHub CI, physical TalkBack, stylus or keyboard tests.
+
+**Chat A manual acceptance (NOT RUN):** Open a note with at least three saved stickers. With TalkBack enabled, navigate the picker and verify tiles are individually identified (Sticker 1, 2, 3), the default action says Insert, and the long-click action says Remove; normal activation inserts the correct sticker and closes the picker, while choosing Remove deletes only the selected saved sticker. Repeat after removal and adding a sticker to confirm numbering updates with the reordered list; confirm the preview image does not cause duplicate spoken “Sticker”. Verify keyboard activation and TalkBack custom action, then repeat on 320dp phone, tablet, split screen at 1.3×/2× text scale. With stylus, confirm insert/long-press continue to behave as before. Run GitHub Kotlin/JUnit, Compose compilation, lint and APK CI against **exact integrated SHA** before NP-090 acceptance.
+
+**Remaining risks:** Positional names distinguish items but do not convey image content; accessible descriptions would require user-provided titles or image metadata outside this lane. Deletion is immediate by existing design; no confirmation flow added. Actual TalkBack wording, long-click action exposure, target semantics merging, keyboard operation and physical behavior are unverified until device QA. NP-089/090/092 remain open for coordinator integration/CI/device validation. No shared trackers, translations, storage, Chat A or Gemini paths were edited.
+
+**Twenty-fifth implementation commit:** `b32d750b3cb765ee333a020eb31e18789a98161d`. **Twenty-fifth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the prior twenty-four G08 checkpoint pairs, preserving Git order. **PUSH: NO / MERGE: NO / PR: NO.**
