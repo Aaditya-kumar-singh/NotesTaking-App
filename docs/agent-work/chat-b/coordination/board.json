@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "policy": "Proposal only: do not replace the existing worktree owner policy until coordinator review.",
+  "agents": {
+    "chat-a": {
+      "label": "Chat A - current save/recovery owner",
+      "provider": "chatgpt",
+      "enabled": true,
+      "read_only": false,
+      "worktree": ".agent-worktrees/chat-a",
+      "branch": "agent/chat-a-b39-save-recovery",
+      "capacity": 1,
+      "max_risk": "high",
+      "max_difficulty": 5,
+      "skills": {
+        "kotlin": 5,
+        "storage": 5,
+        "security": 5,
+        "testing": 5,
+        "pdf": 4,
+        "research": 4,
+        "ui": 2,
+        "docs": 3
+      },
+      "allowed_paths": [
+        "app/src/main/java/com/notestaking/app/ui/Editor.kt",
+        "app/src/main/java/com/notestaking/app/ui/SidePanel.kt",
+        "app/src/main/java/com/notestaking/app/format/**",
+        "app/src/main/java/com/notestaking/app/platform/**",
+        "app/src/test/java/com/notestaking/app/format/**",
+        "app/src/test/java/com/notestaking/app/platform/**",
+        "docs/agent-work/chat-a/**"
+      ]
+    },
+    "chat-b": {
+      "label": "Chat B - current toolbar accessibility owner",
+      "provider": "chatgpt",
+      "enabled": true,
+      "read_only": false,
+      "worktree": ".agent-worktrees/chat-b",
+      "branch": "agent/chat-b-g08-toolbar-accessibility",
+      "capacity": 1,
+      "max_risk": "medium",
+      "max_difficulty": 5,
+      "skills": {
+        "kotlin": 4,
+        "ui": 5,
+        "accessibility": 5,
+        "testing": 4,
+        "docs": 4,
+        "research": 3,
+        "pdf": 3,
+        "storage": 1
+      },
+      "allowed_paths": [
+        "app/src/main/java/com/notestaking/app/ui/Toolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/ToolbarFrame.kt",
+        "app/src/main/java/com/notestaking/app/ui/ToolbarCustomizer.kt",
+        "app/src/main/java/com/notestaking/app/ui/FloatingToolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt",
+        "app/src/main/java/com/notestaking/app/ui/Tooltip.kt",
+        "app/src/test/java/com/notestaking/app/ui/**",
+        "docs/agent-work/chat-b/**"
+      ]
+    },
+    "gemini-pro": {
+      "label": "Gemini Pro - existing Quick Scratch worktree",
+      "provider": "gemini",
+      "enabled": true,
+      "read_only": false,
+      "worktree": "../NotesTaking-QuickScratch",
+      "branch": "feature/gemini-np004-quick-scratch",
+      "capacity": 1,
+      "max_risk": "medium",
+      "max_difficulty": 5,
+      "skills": {
+        "kotlin": 4,
+        "ui": 5,
+        "testing": 4,
+        "research": 4,
+        "docs": 4,
+        "navigation": 5,
+        "storage": 2
+      },
+      "allowed_paths": [
+        "app/src/main/java/com/notestaking/app/ui/Backstage.kt",
+        "app/src/main/java/com/notestaking/app/ui/NewNoteScreen.kt",
+        "app/src/main/java/com/notestaking/app/ui/ExplorerChrome.kt"
+      ]
+    },
+    "gpt-plus-research": {
+      "label": "Additional ChatGPT Plus - read-only planning/review until coordinator provisions a coding lane",
+      "provider": "chatgpt",
+      "enabled": true,
+      "read_only": true,
+      "worktree": null,
+      "branch": null,
+      "capacity": 1,
+      "max_risk": "high",
+      "max_difficulty": 5,
+      "skills": {
+        "research": 5,
+        "pdf": 5,
+        "security": 4,
+        "testing": 5,
+        "docs": 4,
+        "architecture": 5,
+        "performance": 4
+      },
+      "allowed_paths": []
+    },
+    "gpt-go-research": {
+      "label": "Additional ChatGPT Go - read-only bounded research/checklists until coordinator provisions a coding lane",
+      "provider": "chatgpt",
+      "enabled": true,
+      "read_only": true,
+      "worktree": null,
+      "branch": null,
+      "capacity": 1,
+      "max_risk": "low",
+      "max_difficulty": 3,
+      "skills": {
+        "research": 4,
+        "docs": 5,
+        "testing": 3,
+        "ui": 3,
+        "architecture": 2,
+        "performance": 2
+      },
+      "allowed_paths": []
+    }
+  },
+  "protected_paths": [
+    "AGENTS.md",
+    "docs/github/**",
+    "docs/notein-parity/**",
+    ".github/**",
+    "tools/agents/**",
+    "gradle/**",
+    "gradlew",
+    "gradlew.bat",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "app/build.gradle.kts",
+    "app/src/main/java/com/notestaking/app/MainActivity.kt",
+    "app/src/main/res/values*/strings.xml"
+  ],
+  "tasks": [
+    {
+      "id": "LANE-A",
+      "title": "Chat A existing P0 save and recovery lane",
+      "priority": "P0",
+      "risk": "high",
+      "difficulty": 5,
+      "skills": [
+        "storage",
+        "security",
+        "testing"
+      ],
+      "paths": [
+        "app/src/main/java/com/notestaking/app/ui/Editor.kt",
+        "app/src/main/java/com/notestaking/app/ui/SidePanel.kt",
+        "app/src/main/java/com/notestaking/app/format/**",
+        "app/src/main/java/com/notestaking/app/platform/**",
+        "app/src/test/java/com/notestaking/app/format/**",
+        "app/src/test/java/com/notestaking/app/platform/**",
+        "docs/agent-work/chat-a/**"
+      ],
+      "deps": [],
+      "reserve_for": "chat-a",
+      "note": "Existing lane reservation; source commits have been integrated separately. Not a completion assertion."
+    },
+    {
+      "id": "LANE-B",
+      "title": "Chat B existing G08 accessibility lane",
+      "priority": "P1",
+      "risk": "medium",
+      "difficulty": 4,
+      "skills": [
+        "accessibility",
+        "kotlin",
+        "testing"
+      ],
+      "paths": [
+        "app/src/main/java/com/notestaking/app/ui/Toolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/ToolbarFrame.kt",
+        "app/src/main/java/com/notestaking/app/ui/ToolbarCustomizer.kt",
+        "app/src/main/java/com/notestaking/app/ui/FloatingToolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt",
+        "app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt",
+        "app/src/main/java/com/notestaking/app/ui/Tooltip.kt",
+        "app/src/test/java/com/notestaking/app/ui/**",
+        "docs/agent-work/chat-b/**"
+      ],
+      "deps": [],
+      "reserve_for": "chat-b",
+      "note": "Existing lane reservation. Multiple unpublished checkpoints; not CI accepted."
+    },
+    {
+      "id": "NP-004",
+      "title": "Quick Scratch existing Gemini assignment",
+      "priority": "P1",
+      "risk": "medium",
+      "difficulty": 3,
+      "skills": [
+        "ui",
+        "kotlin",
+        "navigation"
+      ],
+      "paths": [
+        "app/src/main/java/com/notestaking/app/ui/Backstage.kt",
+        "app/src/main/java/com/notestaking/app/ui/NewNoteScreen.kt",
+        "app/src/main/java/com/notestaking/app/ui/ExplorerChrome.kt"
+      ],
+      "deps": [],
+      "reserve_for": "gemini-pro",
+      "note": "Gemini assignment reserved, not confirmed implemented. Creation-flow test files need coordinator ownership allocation because Chat B owns ui tests broadly."
+    },
+    {
+      "id": "R-PDF-ANNOT",
+      "title": "Research native editable PDF annotation export approaches (NP-074)",
+      "priority": "P1",
+      "risk": "low",
+      "difficulty": 5,
+      "skills": [
+        "pdf",
+        "research",
+        "architecture"
+      ],
+      "paths": [],
+      "deps": [],
+      "kind": "research",
+      "note": "Read-only options and compatibility report; no code or assets changed."
+    },
+    {
+      "id": "R-CI-TRACE",
+      "title": "Audit CI regression coverage for P0 reliability tests",
+      "priority": "P0",
+      "risk": "low",
+      "difficulty": 3,
+      "skills": [
+        "testing",
+        "research"
+      ],
+      "paths": [],
+      "deps": [],
+      "kind": "research",
+      "note": "Read-only mapping of tests to NT-001 through NT-007, no CI/push."
+    },
+    {
+      "id": "R-PERF",
+      "title": "Prepare 200-page PDF performance evidence plan (NP-070)",
+      "priority": "P1",
+      "risk": "low",
+      "difficulty": 3,
+      "skills": [
+        "performance",
+        "research"
+      ],
+      "paths": [],
+      "deps": [],
+      "kind": "research",
+      "note": "Read-only test fixtures, metrics and reproducible procedure."
+    },
+    {
+      "id": "R-TAGS",
+      "title": "Assess note-level tags and favorites data model (NP-015/016)",
+      "priority": "P2",
+      "risk": "low",
+      "difficulty": 2,
+      "skills": [
+        "research",
+        "docs"
+      ],
+      "paths": [],
+      "deps": [],
+      "kind": "research",
+      "note": "Design brief only, no migrations."
+    }
+  ]
+}
