@@ -113,7 +113,7 @@
 | NT-073 | P2 | Phone + Tablet | NP-095 | Light, Dark, OLED and dynamic color screenshot comparison | Text/icons contrast measured and PDF colors unchanged |
 | NT-074 | P2 | Phone | NP-096 | Disable animation scale and interrupt transitions mid-gesture | No stuck overlay, dropped pen or unintended repeated action |
 | NT-075 | P2 | Phone | NP-097 | Dismiss onboarding/gesture help and reopen editor | Help optional, never blocks writing |
-| NT-076 | P1 | TalkBack | NP-098–NP-100 | Use split divider, pen slider and export cancel/error | Values and recovery announced; no color-only status |
+| NT-076 | P1 | TalkBack | NP-098–NP-100 | Use split divider, pen slider, export cancel/error and simulated infinite-canvas GL failure or out-of-memory state while toolbar is docked left/right/top/bottom; verify localized warning and recovery | Values and recovery announced; no color-only status |
 | NT-077 | P2 | Tablet offline | NP-101 | If OCR implemented, scan PDF page at 90° and search recognized word | Local index and correct rotated text hit; no upload |
 | NT-078 | P3 | S Pen tablet offline | NP-102 | If handwriting recognition implemented, write English/Hindi test corpus | Text recognized with measured quality and preserved ink |
 | NT-079 | P3 | Phone offline | NP-103–NP-108 | Confirm optional network/identity/AI/lock features absent or opt-in | No silent account registration or network upload |
