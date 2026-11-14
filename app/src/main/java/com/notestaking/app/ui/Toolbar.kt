@@ -780,11 +780,11 @@ private fun StickerTile(file: java.io.File, onInsert: () -> Unit, onRemove: () -
 private fun FitMenu(editor: Editor) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        ToolbarIcon(NotesTakingIcons.fit, stringResource(R.string.toolbar_fit)) { expanded = true }
+        ToolbarIcon(NotesTakingIcons.fit, stringResource(R.string.toolbar_fit), enabled = !editor.zoomLocked) { expanded = true }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.fit_page)) }, onClick = { editor.fitPage(); expanded = false })
-            DropdownMenuItem(text = { Text(stringResource(R.string.fit_width)) }, onClick = { editor.fitWidth(); expanded = false })
-            DropdownMenuItem(text = { Text(stringResource(R.string.fit_height)) }, onClick = { editor.fitHeight(); expanded = false })
+            DropdownMenuItem(text = { Text(stringResource(R.string.fit_page)) }, enabled = !editor.zoomLocked, onClick = { editor.fitPage(); expanded = false })
+            DropdownMenuItem(text = { Text(stringResource(R.string.fit_width)) }, enabled = !editor.zoomLocked, onClick = { editor.fitWidth(); expanded = false })
+            DropdownMenuItem(text = { Text(stringResource(R.string.fit_height)) }, enabled = !editor.zoomLocked, onClick = { editor.fitHeight(); expanded = false })
         }
     }
 }

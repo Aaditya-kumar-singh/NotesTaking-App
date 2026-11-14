@@ -84,8 +84,8 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 QuickActionRow(stringResource(R.string.tool_markup)) { dismiss(); editor.selectTool(Tool.MARKUP) }
                 QuickActionRow(stringResource(R.string.pdf_search_text)) { dismiss(); editor.openSearch() }
                 QuickActionRow(stringResource(R.string.title_go_to_page)) { dismiss(); pageJumpOpen = true }
-                QuickActionRow(stringResource(R.string.fit_width)) { dismiss(); editor.fitWidth() }
-                QuickActionRow(stringResource(R.string.fit_page)) { dismiss(); editor.fitPage() }
+                QuickActionRow(stringResource(R.string.fit_width), enabled = !editor.zoomLocked) { dismiss(); editor.fitWidth() }
+                QuickActionRow(stringResource(R.string.fit_page), enabled = !editor.zoomLocked) { dismiss(); editor.fitPage() }
             }
             HorizontalDivider()
             QuickActionRow(stringResource(R.string.pages)) {
