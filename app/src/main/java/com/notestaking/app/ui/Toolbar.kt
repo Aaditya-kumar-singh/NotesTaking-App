@@ -68,6 +68,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -697,11 +698,16 @@ private fun NoteInsertMenu(editor: Editor, onInsertImage: () -> Unit, onTakePhot
     }
 }
 
+/** Leave 16dp menu clearance and 10dp grid padding on each side of the window. */
+internal fun stickerGridColumns(windowWidthDp: Int): Int =
+    ((windowWidthDp - 32 - 20 + 6) / (72 + 6)).coerceIn(1, 3)
+
 /**
  * The sticker library popup: a grid of saved images that insert with one tap, so a
  * recurring image never needs the gallery round trip. Stickers live on disk (see
  * [Editor.stickers]); each tile decodes its own small preview off the main thread.
  */
+
 @Composable
 private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: () -> Unit) {
     val palette = LocalPalette.current
@@ -721,14 +727,15 @@ private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: (
         } else {
             // Both dimensions must be fixed: the menu measures its content by intrinsics, which a
             // lazy grid cannot answer (it crashes) — a fixed size short-circuits the query.
-            val rows = ((editor.stickers.size + 2) / 3).coerceAtMost(3)
+            val columns = stickerGridColumns(LocalConfiguration.current.screenWidthDp)
+            val rows = ((editor.stickers.size + columns - 1) / columns).coerceAtMost(3)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+                columns = GridCells.Fixed(columns),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
                     .padding(horizontal = 10.dp, vertical = 4.dp)
-                    .width(72.dp * 3 + 6.dp * 2)
+                    .width(72.dp * columns + 6.dp * (columns - 1))
                     .height(72.dp * rows + 6.dp * (rows - 1)),
             ) {
                 itemsIndexed(editor.stickers, key = { _, file -> file.name }) { index, file ->
