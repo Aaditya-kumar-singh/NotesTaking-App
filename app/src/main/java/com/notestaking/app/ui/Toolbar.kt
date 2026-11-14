@@ -29,7 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -747,9 +747,10 @@ private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: (
                     .width(72.dp * 3 + 6.dp * 2)
                     .height(72.dp * rows + 6.dp * (rows - 1)),
             ) {
-                items(editor.stickers, key = { it.name }) { file ->
+                itemsIndexed(editor.stickers, key = { _, file -> file.name }) { index, file ->
                     StickerTile(
                         file = file,
+                        label = "${stringResource(R.string.sticker)} ${index + 1}",
                         onInsert = { editor.insertSticker(file); onDismiss() },
                         onRemove = { editor.removeSticker(file) },
                     )
@@ -767,7 +768,7 @@ private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: (
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun StickerTile(file: java.io.File, onInsert: () -> Unit, onRemove: () -> Unit) {
+private fun StickerTile(file: java.io.File, label: String, onInsert: () -> Unit, onRemove: () -> Unit) {
     val palette = LocalPalette.current
     val thumbPx = with(LocalDensity.current) { 72.dp.roundToPx() }
     val thumb by produceState<ImageBitmap?>(null, file) {
@@ -780,13 +781,19 @@ private fun StickerTile(file: java.io.File, onInsert: () -> Unit, onRemove: () -
             .size(72.dp)
             .clip(MaterialTheme.shapes.small)
             .border(1.dp, palette.border.toComposeColor(), MaterialTheme.shapes.small)
-            .combinedClickable(onClick = onInsert, onLongClick = onRemove),
+            .semantics { contentDescription = label }
+            .combinedClickable(
+                onClickLabel = stringResource(R.string.insert),
+                onLongClickLabel = stringResource(R.string.remove),
+                onClick = onInsert,
+                onLongClick = onRemove,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         thumb?.let {
             Image(
                 bitmap = it,
-                contentDescription = stringResource(R.string.sticker),
+                contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize().padding(3.dp),
             )
