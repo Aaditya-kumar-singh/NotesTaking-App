@@ -106,6 +106,7 @@ fun ToolbarCustomizerBody(
         layout.sections.forEachIndexed { sec, section ->
             if (draggingSection && sectionDropTarget == sec) SectionCaret()
             SectionCard(
+                sectionNumber = sec + 1,
                 canDelete = layout.sections.size > 1,
                 targeted = dragging && dropTarget?.first == sec,
                 dimmed = dragSection == sec,
@@ -208,6 +209,7 @@ internal fun toolbarSectionDropTarget(
  */
 @Composable
 private fun SectionCard(
+    sectionNumber: Int,
     canDelete: Boolean,
     targeted: Boolean,
     dimmed: Boolean,
@@ -221,6 +223,7 @@ private fun SectionCard(
     content: @Composable () -> Unit,
 ) {
     val palette = LocalPalette.current
+    val deleteLabel = "${stringResource(R.string.delete_section)} $sectionNumber"
     SectionCardScaffold(
         modifier = Modifier
             .alpha(if (dimmed) 0.35f else 1f)
@@ -240,10 +243,10 @@ private fun SectionCard(
                     onDrop = onGrabDrop,
                     onCancel = onGrabCancel,
                 )
-                Tooltip(stringResource(R.string.delete_section)) {
+                Tooltip(deleteLabel) {
                     IconButton(onClick = onDelete, enabled = canDelete, modifier = Modifier.size(48.dp)) {
                         Icon(
-                            NotesTakingIcons.close, stringResource(R.string.delete_section),
+                            NotesTakingIcons.close, deleteLabel,
                             tint = (if (canDelete) palette.textDim else palette.border).toComposeColor(),
                             modifier = Modifier.size(14.dp),
                         )
