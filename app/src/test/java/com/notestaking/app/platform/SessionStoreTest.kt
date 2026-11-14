@@ -22,6 +22,36 @@ class SessionStoreTest {
     private fun pdfDir(): File = Files.createTempDirectory("xnotes-pdfsrc").toFile()
     private fun imageDir(): File = Files.createTempDirectory("xnotes-img").toFile()
 
+    @Test fun metadataOnlySaveRejectsBlockedDocumentSlotWithoutChangingSidecar() {
+        val dir = tempDir()
+        val pdf = pdfDir()
+        val images = imageDir()
+        try {
+            val store = SessionStore(dir, codec(), pdf, images)
+            assertTrue(store.save(
+                Document.blank(2), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            val sidecar = File(dir, "session.json")
+            val originalMetadata = sidecar.readBytes()
+            val slot = File(dir, "document.xnote")
+            assertTrue(slot.delete())
+            assertTrue(slot.mkdir())
+
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(3), zoom = 2.0, scrollX = 50.0, scrollY = 50.0,
+                zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertTrue(slot.isDirectory)
+            assertArrayEquals(originalMetadata, sidecar.readBytes())
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
+        } finally {
+            dir.deleteRecursively()
+            pdf.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun failsClosedWhenSessionDocumentCannotBeReplaced() {
         val dir = tempDir()
         try {
