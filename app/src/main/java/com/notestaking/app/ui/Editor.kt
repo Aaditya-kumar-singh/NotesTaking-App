@@ -5661,8 +5661,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val obj = org.json.JSONObject().put("version", 1).put("colors", colors)
         val fileUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, fileId)
         return runCatching {
-            appContext.contentResolver.openOutputStream(fileUri, "wt")?.use { it.write(obj.toString().toByteArray(Charsets.UTF_8)) }
-            true
+            appContext.contentResolver.openOutputStream(fileUri, "wt")?.use { it.write(obj.toString().toByteArray(Charsets.UTF_8)) } != null
         }.getOrDefault(false)
     }
 
@@ -5675,8 +5674,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun setItemColors(treeUri: String, parentDocId: String, changes: Map<String, Rgba?>): Boolean = runCatching {
         if (changes.isEmpty()) return@runCatching true
         val tree = android.net.Uri.parse(treeUri)
-        val sidecarId = sidecarDir(tree, parentDocId, create = changes.values.any { it != null })
-            ?: return@runCatching true // nothing stored, nothing to clear
+        val creating = changes.values.any { it != null }
+        val sidecarId = sidecarDir(tree, parentDocId, create = creating)
+            ?: return@runCatching !creating // clearing an absent sidecar is already complete
         val map = readSidecarColors(tree, sidecarId).toMutableMap()
         for ((name, c) in changes) if (c == null) map.remove(name) else map[name] = c
         writeSidecarColors(tree, sidecarId, map)
@@ -5845,8 +5845,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         }
         val fileUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, fileId)
         return runCatching {
-            appContext.contentResolver.openOutputStream(fileUri, "wt")?.use { it.write(obj.toString().toByteArray(Charsets.UTF_8)) }
-            true
+            appContext.contentResolver.openOutputStream(fileUri, "wt")?.use { it.write(obj.toString().toByteArray(Charsets.UTF_8)) } != null
         }.getOrDefault(false)
     }
 
