@@ -182,7 +182,10 @@ fun InfiniteToolbar(
                         }
 
                     ToolbarItem.ZOOM -> {
-                        ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) {
+                        val viewport = editor.viewport
+                        val zoomOutEnabled = toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, editor.zoomLocked, zoomIn = false)
+                        val zoomInEnabled = toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, editor.zoomLocked, zoomIn = true)
+                        ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = zoomOutEnabled, shortcut = Keys.ZOOM_OUT) {
                             editor.zoomBy(1.0 / InfiniteEditor.ZOOM_STEP)
                         }
                         val zoomDescription = stringResource(
@@ -191,7 +194,7 @@ fun InfiniteToolbar(
                             editor.zoomPercent,
                         )
                         Label("${editor.zoomPercent}%", Modifier.semantics { contentDescription = zoomDescription })
-                        ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_IN) {
+                        ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = zoomInEnabled, shortcut = Keys.ZOOM_IN) {
                             editor.zoomBy(InfiniteEditor.ZOOM_STEP)
                         }
                     }

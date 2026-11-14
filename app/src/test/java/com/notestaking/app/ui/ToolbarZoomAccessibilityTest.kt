@@ -1,5 +1,6 @@
 package com.notestaking.app.ui
 
+import com.notestaking.app.core.infinite.CanvasViewport
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,5 +29,21 @@ class ToolbarZoomAccessibilityTest {
         assertFalse(toolbarZoomStepEnabled(1.0, 1.0, 1.0, locked = false, zoomIn = true))
         assertFalse(toolbarZoomStepEnabled(0.25 + 5e-10, 0.25, 4.0, locked = false, zoomIn = false))
         assertFalse(toolbarZoomStepEnabled(4.0 - 5e-10, 0.25, 4.0, locked = false, zoomIn = true))
+    }
+
+    @Test
+    fun infiniteCanvasDisablesZoomOnlyAtTheActualViewportBounds() {
+        val viewport = CanvasViewport()
+        viewport.zoom = viewport.minZoom
+        assertFalse(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = false, zoomIn = false))
+        assertTrue(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = false, zoomIn = true))
+
+        viewport.zoom = viewport.maxZoom
+        assertTrue(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = false, zoomIn = false))
+        assertFalse(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = false, zoomIn = true))
+
+        viewport.zoom = 1.0
+        assertFalse(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = true, zoomIn = false))
+        assertFalse(toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, locked = true, zoomIn = true))
     }
 }
