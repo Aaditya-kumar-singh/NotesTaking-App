@@ -15,6 +15,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +75,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -357,6 +360,7 @@ private val PAGED_TOOL_KEYS = mapOf(
 @Composable
 private fun RenameDialog(initial: String, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf(initial) }
+    val confirm = { if (text.isNotBlank()) onConfirm(text) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     AlertDialog(
@@ -367,11 +371,14 @@ private fun RenameDialog(initial: String, onConfirm: (String) -> Unit, onDismiss
                 value = text,
                 onValueChange = { text = it },
                 singleLine = true,
+                label = { Text(stringResource(R.string.toolbar_title)) },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { confirm() }),
                 modifier = Modifier.focusRequester(focus),
             )
         },
         confirmButton = {
-            TextButton(onClick = { if (text.isBlank()) onDismiss() else onConfirm(text) }) { Text(stringResource(R.string.rename)) }
+            TextButton(onClick = confirm, enabled = text.isNotBlank()) { Text(stringResource(R.string.rename)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
