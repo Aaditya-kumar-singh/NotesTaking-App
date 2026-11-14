@@ -800,4 +800,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risk:** NP-089/NP-090/NP-092 still await exact-SHA integrated CI and TalkBack/device acceptance. The unowned `CanvasWaypointsPopup.kt` zoom-lock Fit All gap from Checkpoint 34 remains for Chat A to allocate. No push, merge, APK or protected branch modifications.
 
-**Thirty-fifth implementation commit:** `3e194f469223f45d25e2e147394ff9aae1e74432`. **Thirty-fifth STATUS-only handoff commit:** the immediately following Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-fifth implementation commit:** `3e194f469223f45d25e2e147394ff9aae1e74432`. **Thirty-fifth STATUS-only handoff commit:** `2771048a407ee7ebdbe0dc5ec05b5bc5199fa63b`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-sixth G08 checkpoint — NP-090 paged/PDF fit actions honor zoom lock (2026-11-14)
+
+**Source issue:** `CanvasState.fitWidth()`, `fitHeight()` and `fitPage()` all return immediately when `zoomLocked`, but the paged toolbar's Fit popup and its Fit icon offered fully enabled actions. The PDF reader quick-access menu likewise offered enabled Fit Width and Fit Page actions that could not succeed while zoom was locked. This misled pointer, keyboard and TalkBack users with apparent actions that silently performed no work.
+
+**Smallest owned fix:** In `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`, the existing Fit icon and all three Fit menu rows now use `enabled = !editor.zoomLocked`. In `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt`, the PDF quick-access Fit Width/Fit Page rows use the same existing enabled flag. The original callbacks, menu selection, PDF operations, note contents, zoom limits and persistence are unchanged. No new strings, dependencies, tests or shared files. Both files are explicitly Chat B-owned.
+
+**Local permitted checks:** `python tools/agents/check_lane.py` PASS (21 owned paths vs lane baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources / 234 Kotlin tests / 22 XML / 39 PNG, zero problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS; focused Python assertions PASS that all changed controls use `!editor.zoomLocked`, and all CanvasState fit operations already guard against locked zoom. No Kotlin/JUnit execution or new tests (only declarative enabled bindings).
+
+**Acceptance NOT RUN:** In a paged note and a PDF (single/double/cover page modes), toggle Zoom Lock and check the Fit menu icon becomes disabled in locked state; unlock and verify Fit Page/Width/Height execute normally. In PDF All Tools, confirm Fit Page/Width rows are correctly disabled under zoom lock while the other menu actions work, and re-enable when unlocked. Test touch, Tab/Enter, TalkBack disabled announcements, 240/320dp panes, 1.3x/2x fonts, docked/floating bars, and viewport stability. Require exact integrated SHA GitHub Kotlin/JUnit/Compose/lint/APK CI and real phone/tablet verification before accepting NP-090.
+
+**Unresolved ownership handoff:** `CanvasWaypointsPopup.kt` also exposes Fit All without respecting zoom lock and remains outside Chat B's permitted ownership. Chat A must allocate or address that path. G08 NP-089/090/092 overall acceptance remains open. No push/merge/PR, Android build or device test.
+
+**Thirty-sixth implementation commit:** `f3f010f1e496b166f0abc783df793b84c2cc0937`. **Thirty-sixth status-only handoff commit:** the following Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
