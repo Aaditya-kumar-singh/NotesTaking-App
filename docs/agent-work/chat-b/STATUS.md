@@ -620,4 +620,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining risks:** Positional names distinguish items but do not convey image content; accessible descriptions would require user-provided titles or image metadata outside this lane. Deletion is immediate by existing design; no confirmation flow added. Actual TalkBack wording, long-click action exposure, target semantics merging, keyboard operation and physical behavior are unverified until device QA. NP-089/090/092 remain open for coordinator integration/CI/device validation. No shared trackers, translations, storage, Chat A or Gemini paths were edited.
 
-**Twenty-fifth implementation commit:** `b32d750b3cb765ee333a020eb31e18789a98161d`. **Twenty-fifth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review/cherry-pick both after the prior twenty-four G08 checkpoint pairs, preserving Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-fifth implementation commit:** `b32d750b3cb765ee333a020eb31e18789a98161d`. **Twenty-fifth status-only handoff commit:** `b57ba5b1e55173415a7579b2e027e0a0e3cad308`. Chat A should preserve Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-sixth checkpoint — NP-092 responsive saved-sticker grid in multi-window (2026-11-14)
+
+**Confirmed source issue:** `Toolbar.kt:StickersMenu` had a fixed 3-column `LazyVerticalGrid` (each sticker 72dp, with 6dp gaps plus 10dp content padding on both sides) even when Android's current window is 180 or 240dp wide. The menu may extend beyond the window, making saved sticker insert/removal targets hard to access. The previous checkpoint improved TalkBack naming but did not fix the picker geometry.
+
+**Bounded change in Chat B-owned paths:**
+- `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`: Added pure `stickerGridColumns(windowWidthDp)` selecting one, two or three columns according to available Android window width, reserving 16dp popup edge clearance and 10dp grid padding on both sides. `StickersMenu` now measures `LocalConfiguration.current.screenWidthDp`, adjusts `GridCells.Fixed(columns)`, grid width and row count, and still caps visible rows at three. Defaults to 3 columns at >=280dp (normal 320dp phones/tablets); 2 columns at 202-279dp (e.g. 240dp multi-window); 1 column below 202dp (e.g. 180dp multi-window). Existing 72dp tile targets, intrinsics-crash workaround (fixed width/height), scrolling, stable `file.name` keys, accessible sticker numbering, image decoding, insertion and removal callbacks remain unchanged.
+- `app/src/test/java/com/notestaking/app/ui/StickerPickerLayoutTest.kt`: Added three JUnit cases **NOT executed locally** for normal 3-column windows, 279/280 and 201/202 boundaries, 180/240dp multi-window and degenerate width fallback. No resources or dependencies changed.
+
+**Actual permitted validation from Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (17 owned paths changed since coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin sources, 234 Kotlin test files, 22 XML, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS** (private note backups remain excluded).
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python static assertions — **PASS** (width calculation and decision boundaries, unchanged 72dp tiles/stable keys, adaptive rows and fixed grid dimensions, new JUnit source cases present).
+- **NOT run:** local Gradle/Kotlin/JUnit execution, Android Compose compilation/lint, APK, GitHub CI, live TalkBack, actual phone/tablet/mouse/stylus tests.
+
+**Manual acceptance script for Chat A (NOT RUN):** On phone/tablet in 320dp, 280dp, 279dp, 240dp, 202dp, 201dp and 180dp wide Android windows, open a note with 7+ saved stickers. Open Insert > Stickers. Verify grid displays 3/2/1 columns at boundaries, no horizontal clipping, all sticker tiles reachable with vertical scroll, fixed 72dp touch targets and Add stickers action reachable. Repeat at 1x, 1.3x and 2x font scale, landscape, split screen, docked and floating toolbar and TalkBack. Verify each sticker's numbered name and labelled Insert/Remove actions, inserting the correct image, and removal still update the shared sticker library without altering notes. Run GitHub Kotlin/JUnit, Compose compilation, lint and Android build on the **exact integration SHA** before NP-092 acceptance.
+
+**Remaining risks:** Material3 DropdownMenu content and translated Add stickers/hint text could impose wider intrinsic constraints or wrap at very small widths; the grid math alone cannot prove full popup fit until real-device measurement. Grid width is based on the Android window, not an in-app pane narrower than that. Scroll, image decoding, semantics and input behavior remain runtime-unverified. NP-089/NP-090/NP-092 remain open until Chat A reviews, integrates and accepts with CI + hardware evidence. No protected resource/editor/storage/trackers or Chat A/Gemini worktrees edited.
+
+**Twenty-sixth implementation + test commit:** `a04b757f4b3ba16bfafa41191acfc28cf625be7a`. **Twenty-sixth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both commits after the previous twenty-five G08 checkpoint pairs in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
