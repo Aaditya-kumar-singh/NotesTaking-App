@@ -772,4 +772,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining G08 risks:** NP-089/NP-090/NP-092 require exact integrated SHA CI and hardware acceptance. No task was marked complete by the coordinator. `LANE-B` remains active for further owned toolbar tasks. No push/PR/merge.
 
-**Thirty-third implementation commit:** `1bbcfb5f45d5b9eae1e441bbf83f59e6ad0ad015`. **Thirty-third status-only handoff commit:** recorded as the following Git commit in this worktree. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-third implementation commit:** `1bbcfb5f45d5b9eae1e441bbf83f59e6ad0ad015`. **Thirty-third status-only handoff commit:** `fc07f4a0b1965568f2f64411748be43ee702a427`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-fourth G08 checkpoint — NP-090 disabled Fit All menu semantics under zoom lock (2026-11-14)
+
+**Confirmed source issue:** In `CanvasQuickAccess.kt:InfiniteQuickButtons`, the All Tools overflow contained an always-enabled `Fit All` row even when `editor.zoomLocked` was true. The underlying `InfiniteEditor.zoomToFit()` immediately returns when locked, while `InfiniteToolbar.kt` correctly disables its equivalent direct Fit icon. Consequently, accessibility users were offered an enabled menu action that silently did nothing.
+
+**Minimal owned fix:** `app/src/main/java/com/notestaking/app/ui/CanvasQuickAccess.kt` now passes `enabled = !editor.zoomLocked` to the existing `QuickActionRow` for infinite-canvas Fit All, reusing the existing Material3 `DropdownMenuItem(enabled = enabled)` semantics. The existing callback, menu structure, other tools, zoom range/lock state, note data and drawing behavior are unchanged; no resources or dependencies were added. One declarative property update; no new JUnit for the trivial binding.
+
+**Permitted source validation performed:** `python tools/agents/check_lane.py` PASS (21 owned paths relative to lane baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 Kotlin tests, 22 XML, 39 PNG, zero problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged diff whitespace PASS; focused Python assertions PASS checking quick menu uses live `!editor.zoomLocked`, the direct toolbar Fit icon uses the same guard, the editor itself rejects locked fit, and `QuickActionRow` forwards enabled to `DropdownMenuItem`. No Gradle, JUnit/Kotlin execution, Compose compiler, Android CI, lint, APK or device tests were run.
+
+**Coordinator acceptance NOT RUN:** Open an infinite-canvas note, lock zoom, then open All Tools using touch, keyboard and TalkBack. Fit All must be disabled and announced as unavailable without changing viewport or closing the menu; unlock and verify it enables and fits as before. Cross-check the direct Fit icon and a new/saved canvas, top/bottom/left/right and floating toolbars, 240/320dp splits and large fonts. Require GitHub-hosted Kotlin/JUnit, Compose/lint/debug APK CI on the exact integrated SHA plus phone/tablet accessibility QA before accepting NP-090.
+
+**Bounded unresolved issue / ownership handoff:** `app/src/main/java/com/notestaking/app/ui/CanvasWaypointsPopup.kt:109` also invokes `editor.zoomToFit()` via a `ModeChip` that stays enabled under zoom lock. That file is **not** in Chat B's allowlist; Chat A should allocate ownership or handle it in a separate coordinator-approved change. No modification to the Waypoints popup or unrelated files was made.
+
+**Thirty-fourth source commit:** `0cf98ea7789c90b6fafa8578839ddc42e21dbf34`. **Thirty-fourth status-only handoff commit:** subsequent commit to this STATUS file. **PUSH: NO / MERGE: NO / PR: NO.**
