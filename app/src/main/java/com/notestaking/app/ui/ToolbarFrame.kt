@@ -89,13 +89,14 @@ internal fun ColumnScope.ToolbarAround(
     bar: @Composable () -> Unit,
     onCover: (Double, Double, Double, Double) -> Unit,
     onFloatingDrop: (Float, Float) -> Unit,
+    onGripFocusChange: (Boolean) -> Unit,
     favorites: @Composable (Int) -> Unit,
     content: @Composable (floatingBar: @Composable BoxScope.() -> Unit) -> Unit,
 ) {
     val look = LocalToolbarLook.current
     val rest = Modifier.weight(1f).fillMaxWidth()
     if (!look.floating) {
-        SideEffect { onCover(0.0, 0.0, 0.0, 0.0) }
+        SideEffect { onCover(0.0, 0.0, 0.0, 0.0); onGripFocusChange(false) }
         val docked: @Composable BoxScope.() -> Unit = {}
         // Left and right are the screen's, as the canvas insets are, whatever the language.
         val across = Arrangement.Absolute.Left
@@ -125,7 +126,7 @@ internal fun ColumnScope.ToolbarAround(
         ToolbarPosition.RIGHT -> PaddingValues.Absolute(right = depth)
     }
     CompositionLocalProvider(LocalToolbarCover provides cover) {
-        Box(rest) { content { MovableFloatingToolbar(look, bar, favorites, onFloatingDrop) } }
+        Box(rest) { content { MovableFloatingToolbar(look, bar, favorites, onFloatingDrop, onGripFocusChange) } }
     }
 }
 

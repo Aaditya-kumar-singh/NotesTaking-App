@@ -2,6 +2,7 @@ package com.notestaking.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -57,6 +67,19 @@ internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): 
 internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY: Float): Boolean =
     x != defaultX || y != defaultY
 
+/** Use the same bounded movement for hardware keys and TalkBack. */
+internal fun floatingGripKeyStep(key: Key): Pair<Float, Float>? = when (key) {
+    Key.DirectionLeft -> -0.1f to 0f
+    Key.DirectionRight -> 0.1f to 0f
+    Key.DirectionUp -> 0f to -0.1f
+    Key.DirectionDown -> 0f to 0.1f
+    else -> null
+}
+
+/** Parent preview lets these arrows reach the grip only while it owns focus. */
+internal fun floatingGripOwnsArrow(focused: Boolean, key: Key, alt: Boolean, ctrl: Boolean, meta: Boolean): Boolean =
+    focused && !alt && !ctrl && !meta && floatingGripKeyStep(key) != null
+
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
  * pen, eraser, swatches, menus and the underlying canvas keep their original input handlers.
@@ -67,6 +90,7 @@ internal fun MovableFloatingToolbar(
     bar: @Composable () -> Unit,
     favorites: @Composable (Int) -> Unit,
     onDrop: (Float, Float) -> Unit,
+    onGripFocusChange: (Boolean) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -119,6 +143,7 @@ internal fun MovableFloatingToolbar(
                     .clip(shape)
                     .background(palette.panel.toComposeColor())
                     .border(1.dp, palette.border.toComposeColor(), shape)
+                    .onFocusChanged { onGripFocusChange(it.isFocused) }
                     .semantics {
                         contentDescription = dragLabel
                         customActions = buildList {
@@ -139,6 +164,16 @@ internal fun MovableFloatingToolbar(
                                 })
                         }
                     }
+                    .onKeyEvent { event ->
+                        if (!floatingGripOwnsArrow(true, event.key, event.isAltPressed, event.isCtrlPressed, event.isMetaPressed)) false
+                        else {
+                            if (event.type == KeyEventType.KeyDown) {
+                                floatingGripKeyStep(event.key)?.let { (dx, dy) -> nudge(dx, dy) }
+                            }
+                            true // Edges still consume the arrow instead of turning pages or panning ink.
+                        }
+                    }
+                    .focusable()
                     .pointerInput(travelX, travelY) {
                         detectDragGestures(
                             onDragStart = { dragStartX = x; dragStartY = y },

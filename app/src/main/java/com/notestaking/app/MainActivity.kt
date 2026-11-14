@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -96,6 +97,7 @@ import com.notestaking.app.canvas.StylusButtonLatch
 import com.notestaking.app.ui.Editor
 import com.notestaking.app.ui.Toolbar
 import com.notestaking.app.ui.ToolbarAround
+import com.notestaking.app.ui.floatingGripOwnsArrow
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.NotesTakingTheme
@@ -1548,6 +1550,7 @@ private fun EditorPane(
 ) {
     val palette = LocalPalette.current
     val focusRequester = remember { FocusRequester() }
+    var gripFocused by remember(editor) { mutableStateOf(false) }
     val focused = app.active === editor
     SideEffect { editor.openInPane = { uri -> actions.onOpenFile(editor, uri) } }
     // This pane owns the keyboard while it is the focused one; (re)grab it as that changes.
@@ -1573,7 +1576,11 @@ private fun EditorPane(
                 .focusRequester(focusRequester)
                 .focusable()
                 .onPreviewKeyEvent { ke ->
-                    ke.type == KeyEventType.KeyDown && editor.handleKeyDown(ke.nativeKeyEvent)
+                    val native = ke.nativeKeyEvent
+                    val gripOwnsArrow = floatingGripOwnsArrow(
+                        gripFocused, ke.key, native.isAltPressed, native.isCtrlPressed, native.isMetaPressed,
+                    )
+                    !gripOwnsArrow && ke.type == KeyEventType.KeyDown && editor.handleKeyDown(native)
                 },
         ) {
             val onClose = if (closable) ({ actions.onClosePane(editor) }) else null
@@ -1599,7 +1606,7 @@ private fun EditorPane(
                         onTakePhoto = { actions.onTakePhoto(editor) },
                     )
                 }
-                ToolbarAround(bar, onCover = canvas::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar,
+                ToolbarAround(bar, onCover = canvas::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar, onGripFocusChange = { gripFocused = it },
                     favorites = { count -> com.notestaking.app.ui.FavoriteToolDock(canvas, canvas.tool, app.toolbarLook.favoriteTools, count, canvas::armTool) },
                 ) { floatingBar ->
                     Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
@@ -1639,7 +1646,7 @@ private fun EditorPane(
                         onTakePhoto = { actions.onTakePhoto(editor) },
                     ) }
                 }
-                ToolbarAround(bar, onCover = editor::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar,
+                ToolbarAround(bar, onCover = editor::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar, onGripFocusChange = { gripFocused = it },
                     favorites = { count -> com.notestaking.app.ui.FavoriteToolDock(editor, editor.tool, app.toolbarLook.favoriteTools, count, editor::selectTool) },
                 ) { floatingBar ->
                     Row(modifier = Modifier.fillMaxSize()) {

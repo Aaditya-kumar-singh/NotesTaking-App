@@ -1,5 +1,7 @@
 package com.notestaking.app.ui
 
+import androidx.compose.ui.input.key.Key
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,6 +20,26 @@ class FloatingGripAccessibilityTest {
     fun noFreeSpaceExposesNoMovementOnThatAxis() {
         assertFalse(floatingGripCanNudge(0f, 0.5f, -0.1f))
         assertFalse(floatingGripCanNudge(0f, 0.5f, 0.1f))
+    }
+
+    @Test
+    fun keyboardArrowsUseExistingBoundedTenPercentNudges() {
+        assertEquals(-0.1f to 0f, floatingGripKeyStep(Key.DirectionLeft))
+        assertEquals(0.1f to 0f, floatingGripKeyStep(Key.DirectionRight))
+        assertEquals(0f to -0.1f, floatingGripKeyStep(Key.DirectionUp))
+        assertEquals(0f to 0.1f, floatingGripKeyStep(Key.DirectionDown))
+        assertEquals(null, floatingGripKeyStep(Key.Enter))
+    }
+
+    @Test
+    fun parentPreviewYieldsOnlyPlainArrowsToFocusedGrip() {
+        assertTrue(floatingGripOwnsArrow(true, Key.DirectionLeft, false, false, false))
+        assertTrue(floatingGripOwnsArrow(true, Key.DirectionDown, false, false, false))
+        assertFalse(floatingGripOwnsArrow(false, Key.DirectionLeft, false, false, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.Enter, false, false, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, true, false, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, false, true, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, false, false, true))
     }
 
     @Test
