@@ -758,4 +758,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Risk:** Compose semantics, keyboard focus order, narrow-rail clipping and provider renames remain unverified until integrated CI/device QA. Infinite-canvas Title behavior remains unchanged and is not part of this fix. Board `LANE-B` stays active; Chat A should serially integrate after earlier G08 checkpoints and only then update shared trackers.
 
-**Thirty-second implementation commit:** `0b1fb80815238d3dda4f1debc6237067a5a014cd`. **Thirty-second status-only handoff commit:** this STATUS document at branch HEAD. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-second implementation commit:** `0b1fb80815238d3dda4f1debc6237067a5a014cd`. **Thirty-second status-only handoff commit:** `bd48448571f047d05cbf1ff0992b308251f6ef9b`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-third G08 checkpoint — NP-090 infinite-canvas title on vertical rails (2026-11-14)
+
+**Confirmed source issue:** `InfiniteToolbar.kt` rendered the configured `ToolbarItem.TITLE` only for horizontal toolbars. Docking left or right silently removed the note-title information, unlike the existing horizontal toolbar. Unlike paged notes, the infinite-canvas title was informational rather than an existing rename action; adding a rename callback would cross unrelated ownership/storage behavior.
+
+**Minimal owned fix:** In `app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt`, vertical bars now show a compact, non-clickable file icon sized using existing 48dp/56dp bar metrics. Compose `contentDescription` and an existing `Tooltip` expose the localized toolbar-title label plus the actual current title; the existing `Untitled` fallback is preserved. Horizontal toolbars continue showing the original text `Label`. No rename action, tool interaction, navigation, canvas, storage, resources, dependencies, Gemini/Chat A or protected paths were changed.
+
+**Permitted checks actually passed:** `python tools/agents/check_lane.py` — PASS (21 owned paths since baseline); `python tools/ci/check_project.py` — PASS (388 Kotlin sources, 234 Kotlin tests, 22 XML, 39 PNG; zero problems); `python tools/ci/check_backup_privacy.py` — PASS; `git diff --check` and staged whitespace check — PASS; targeted Python static assertions — PASS for vertical title indicator, localized title/untitled resources, content semantics, non-clickable 48dp/56dp size, retained horizontal title. Initial focused Python attempts failed on PowerShell string escaping and Windows default codepage; the corrected UTF-8 assertion passed. No new JUnit test for this declarative UI binding.
+
+**Coordinator/device acceptance NOT RUN:** With a disposable infinite note and its Title item enabled in toolbar customization, dock the toolbar top/bottom/left/right and confirm the actual note name remains available visually on horizontal bars and via accessible/hover descriptive icon on vertical bars. Check saved and untitled notes, name changes, Compact/Regular/Comfortable sizing, 240dp/320dp split panes, 1.3x/2.0x text, TalkBack focus announcement, mouse/stylus hover, keyboard traversal and scrollability; ensure the vertical indicator is informational and does not rename or intercept drawing. GitHub Kotlin/JUnit, Compose compilation, Android lint/build/APK and physical phone/tablet testing remain unrun; this source check does not prove the static icon is independently focusable in TalkBack or the tooltip is reachable on a real device.
+
+**Remaining G08 risks:** NP-089/NP-090/NP-092 require exact integrated SHA CI and hardware acceptance. No task was marked complete by the coordinator. `LANE-B` remains active for further owned toolbar tasks. No push/PR/merge.
+
+**Thirty-third implementation commit:** `1bbcfb5f45d5b9eae1e441bbf83f59e6ad0ad015`. **Thirty-third status-only handoff commit:** recorded as the following Git commit in this worktree. **PUSH: NO / MERGE: NO / PR: NO.**
