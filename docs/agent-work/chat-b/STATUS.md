@@ -844,4 +844,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining issues:** The out-of-scope `CanvasWaypointsPopup.kt` Fit All zoom-lock discrepancy remains allocated to Chat A; keyboard section reorder requires out-of-scope `PreferencesPane.kt`. G08 NP-089/090/092 have not passed integrated CI/device acceptance. No push/merge/PR or changes outside Chat B-owned paths.
 
-**Thirty-eighth implementation commit:** `b018c69f34d238261421481e21ff86056aea8c6b`. **Thirty-eighth STATUS-only handoff commit:** the following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-eighth implementation commit:** `b018c69f34d238261421481e21ff86056aea8c6b`. **Thirty-eighth STATUS-only handoff commit:** `fee0b1a99ece2d18b6259b3e0420562585134bce`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-ninth G08 checkpoint — NP-092 floating toolbar grip keyboard focus (2026-11-14)
+
+**Source gap:** The floating toolbar's 48dp grip in `ui/FloatingToolbar.kt` already has a descriptive TalkBack node with movement/Reset custom actions, but unlike its surrounding ToolbarIcon controls it lacked a Compose keyboard focus target and visible focus outline. Users tabbing with a hardware keyboard could not focus the grip to identify the movable area.
+
+**Smallest owned fix:** Added `androidx.compose.foundation.focusable` and appended the existing `.toolbarFocusOutline(shape)` plus `.focusable()` modifiers to the grip, preserving its existing `contentDescription`, TalkBack `customActions`, pointer `detectDragGestures`/cancel handlers and preferences storage callbacks. Reused the helper made internal by Checkpoint 38. The grip remains non-clickable: no fabricated button action, renamed strings, new dependencies, gesture changes, unowned files, toolbar layout or persisted data changes.
+
+**Checks run locally and passed:** `python tools/agents/check_lane.py` PASS (21 owned paths since lane baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 Kotlin test sources, 22 XML, 39 PNG, zero problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS; focused Python source assertion PASS verifying visible focus outline and focusable ordering, retained semantic custom actions, and unmodified drag processing. Declarative modifier addition required no new JUnit test. No Gradle, JVM tests, Compose compilation, Android lint/build/APK, GitHub CI or physical device testing ran.
+
+**Acceptance still required (NOT RUN):** With floating toolbar in each dock orientation and Compact/Regular/Comfortable sizes, Tab and Shift+Tab from drawing tools to the grip, verify its accent focus outline and exposed descriptive name; confirm tabbing away removes the outline and drag/pen interactions remain unaffected. TalkBack must still expose valid directional and Reset custom actions, with boundary actions omitted. Test a keyboard in 240/320dp split panes, larger text, stylus hover and screen rotation. This change **does not implement keyboard arrow repositioning**; the parent keyboard event routing and movement ownership remain outside Chat B's file scope. CI compile/test and actual accessibility evidence must be obtained on the exact integrated SHA.
+
+**Remaining ownership/integration issues:** `CanvasWaypointsPopup.kt` still offers Fit All under zoom lock; `PreferencesPane.kt` owns section reordering and keyboard movement coordination. Both need Chat A allocation or handling. NP-089/NP-090/NP-092 are not accepted pending integrated CI and device QA. No push, merge, PR, APK or protected branch edits.
+
+**Thirty-ninth implementation commit:** `8347ca4564a8fdf71ee221495cea6831ab3c09dc`. **Thirty-ninth STATUS-only handoff commit:** immediately following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
