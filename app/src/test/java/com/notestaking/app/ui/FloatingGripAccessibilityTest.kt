@@ -21,6 +21,14 @@ class FloatingGripAccessibilityTest {
     }
 
     @Test
+    fun resetIsOfferedOnlyWhenThePositionDiffersFromTheDefault() {
+        assertFalse(floatingGripCanReset(0.5f, 0f, 0.5f, 0f))
+        assertFalse(floatingGripCanReset(1f, 0.5f, 1f, 0.5f))
+        assertTrue(floatingGripCanReset(0.25f, 0f, 0.5f, 0f))
+        assertTrue(floatingGripCanReset(0.5f, 0.25f, 0.5f, 0f))
+    }
+
+    @Test
     fun interiorAllowsBothDirectionsButZeroStepsAreNotActions() {
         assertTrue(floatingGripCanNudge(100f, 0.5f, -0.1f))
         assertTrue(floatingGripCanNudge(100f, 0.5f, 0.1f))
