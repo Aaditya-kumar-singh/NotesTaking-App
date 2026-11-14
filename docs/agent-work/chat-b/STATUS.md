@@ -662,4 +662,26 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Unverified risk:** Material3 may suppress or differently merge `selected` semantics on disabled menu rows, and trailing checkmarks may reduce label width in 180dp windows. These require real TalkBack/screenshot QA; source checks do not prove Android runtime behavior. G08 NP-089/090/092 remain open pending coordinator review, cloud CI and device acceptance. No shared trackers, protected files, Chat A/Gemini worktrees, remote branches or storage code were changed.
 
-**Twenty-seventh implementation commit:** `bb466b4f140ef1e3289605035676d43dca4ebf03`. **Twenty-seventh status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick after Checkpoint 26, preserving Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+**Twenty-seventh implementation commit:** `bb466b4f140ef1e3289605035676d43dca4ebf03`. **Twenty-seventh status-only handoff commit:** `04a046db803c76a32c16f46f7a08797f791e053b`. Chat A should review and cherry-pick after Checkpoint 26 in Git order. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Twenty-eighth checkpoint — NP-090 infinite-canvas zoom arrows honor viewport limits (2026-11-14)
+
+**Confirmed source issue:** `InfiniteToolbar.kt:ToolbarItem.ZOOM` enabled both zoom arrows whenever `!editor.zoomLocked`, even at the actual `CanvasViewport.minZoom` and `maxZoom`. `InfiniteEditor.zoomBy` calls `CanvasViewport.zoomAroundCenter`, whose zoom setter clamps at those limits; an enabled arrow can therefore become a no-op at 2%/6400% zoom. The paged toolbar already solved the equivalent accessibility problem with `toolbarZoomStepEnabled`. This affects disabled-button semantics and user expectations, not the engine's clamp.
+
+**Bounded fix in Chat B-owned paths:**
+- `app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt`: Read the existing `editor.viewport` and reuse `toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, editor.zoomLocked, zoomIn = ...)` for each zoom arrow's `enabled` argument. No new zoom state, resources, dependencies, settings or interactions; `editor.zoomBy(1.0 / InfiniteEditor.ZOOM_STEP)`, `editor.zoomBy(InfiniteEditor.ZOOM_STEP)`, zoom readout and other toolbar controls are unchanged.
+- `app/src/test/java/com/notestaking/app/ui/ToolbarZoomAccessibilityTest.kt`: Added `infiniteCanvasDisablesZoomOnlyAtTheActualViewportBounds` checking the real `CanvasViewport()` zoom clamp at minimum/maximum, the opposite direction at each edge, and zoom lock in midrange. Existing paged tests remain. **Written but NOT executed locally**.
+
+**Source-only checks actually run from isolated Chat B worktree:**
+- `python tools/agents/check_lane.py` — **PASS** (17 owned paths since original coordination baseline).
+- `python tools/ci/check_project.py` — **PASS** (388 Kotlin sources, 234 Kotlin test sources, 22 XML files, 39 PNG, zero problems).
+- `python tools/ci/check_backup_privacy.py` — **PASS**.
+- `git diff --check` and staged `git diff --cached --check` — **PASS**.
+- Focused Python static assertions — **PASS** for live viewport bounds, existing zoom helper, unchanged callbacks/clamping, test source and locked/edge cases.
+- **NOT RUN:** local Gradle/JVM/JUnit, Android compiler/lint/APK, GitHub Actions, physical TalkBack/stylus/keyboard tests.
+
+**Coordinator acceptance (NOT RUN):** On an infinite-canvas note, with TalkBack and a hardware keyboard, zoom to minimum with repeated Zoom Out and verify the arrow becomes disabled; Zoom In remains available. Zoom to maximum and verify the opposite. In the middle, verify both arrows work and dynamically update; lock zoom and verify both are disabled. Confirm fit control and keyboard shortcuts behave as before and the spoken zoom readout reflects changes. Repeat on 320dp phone, 240dp split window, tablet, docked/floating toolbars and larger accessibility text. Run GitHub Kotlin/JUnit, Compose compilation, lint and Android build on the **exact integrated SHA**; retain NP-090 Open until device evidence.
+
+**Coordination note:** Another conversation committed Checkpoint 27 (`bb466b4`, `04a046d`) to the **same** Chat B branch during this checkpoint. This worker did not modify/revert those commits. The pending zoom files were checked against that new HEAD and committed only after an explicit branch SHA/path guard. This sharing creates an ongoing race risk; designate a **single writer** for this worktree before additional checkpoints. No parent checkout, Chat A/Gemini paths, protected resources, storage or remote branches were touched.
+
+**Twenty-eighth implementation + test commit:** `5043aa83fdc7cf64fd84b0d8ccd857a233fff1b8`. **Twenty-eighth status-only handoff commit:** this STATUS document at branch HEAD. Chat A should review and cherry-pick both after the prior 27 G08 checkpoint pairs, in ascending Git order. **PUSH: NO / MERGE: NO / PR: NO.**
