@@ -53,6 +53,10 @@ internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boole
 internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): Boolean =
     travel > 0f && (fraction + step).coerceIn(0f, 1f) != fraction
 
+/** Reset is only an accessibility action when it changes the stored position. */
+internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY: Float): Boolean =
+    x != defaultX || y != defaultY
+
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
  * pen, eraser, swatches, menus and the underlying canvas keep their original input handlers.
@@ -105,6 +109,7 @@ internal fun MovableFloatingToolbar(
         val upLabel = stringResource(R.string.toolbar_move_up)
         val downLabel = stringResource(R.string.toolbar_move_down)
         val resetLabel = stringResource(R.string.toolbar_move_reset)
+        val defaults = look.copy(floatingX = null, floatingY = null).floatingFractions
         val palette = LocalPalette.current
         val shape = MaterialTheme.shapes.extraLarge
         val grip: @Composable () -> Unit = {
@@ -125,13 +130,13 @@ internal fun MovableFloatingToolbar(
                                 add(CustomAccessibilityAction(upLabel) { nudge(0f, -0.1f) })
                             if (floatingGripCanNudge(travelY, y, 0.1f))
                                 add(CustomAccessibilityAction(downLabel) { nudge(0f, 0.1f) })
-                            add(CustomAccessibilityAction(resetLabel) {
-                                val defaults = look.copy(floatingX = null, floatingY = null).floatingFractions
-                                x = defaults.first
-                                y = defaults.second
-                                commit(x, y)
-                                true
-                            })
+                            if (floatingGripCanReset(x, y, defaults.first, defaults.second))
+                                add(CustomAccessibilityAction(resetLabel) {
+                                    x = defaults.first
+                                    y = defaults.second
+                                    commit(x, y)
+                                    true
+                                })
                         }
                     }
                     .pointerInput(travelX, travelY) {
