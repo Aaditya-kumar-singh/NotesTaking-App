@@ -77,14 +77,14 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 HorizontalDivider()
                 Text(stringResource(R.string.pdf_reader_tools), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                QuickActionRow(stringResource(R.string.pdf_read_mode), enabled = editor.tool != Tool.PAN) {
+                QuickActionRow(stringResource(R.string.pdf_read_mode), enabled = editor.tool != Tool.PAN, isSelected = editor.tool == Tool.PAN) {
                     dismiss(); editor.setPdfReadingMode(true)
                 }
-                QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN) {
+                QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN, isSelected = editor.tool != Tool.PAN) {
                     dismiss(); editor.setPdfReadingMode(false)
                 }
                 QuickActionRow(stringResource(if (editor.preferences.fingerDraws)
-                    R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable)) {
+                    R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable), isSelected = editor.preferences.fingerDraws) {
                     dismiss(); editor.toggleFingerDrawing()
                 }
                 QuickActionRow(stringResource(R.string.tool_markup), isSelected = editor.tool == Tool.MARKUP) { dismiss(); editor.selectTool(Tool.MARKUP) }
