@@ -52,6 +52,41 @@ class SessionStoreTest {
         }
     }
 
+    @Test fun metadataOnlySaveRejectsEmptyDocumentAndFullSaveCanRecover() {
+        val dir = tempDir()
+        val pdf = pdfDir()
+        val images = imageDir()
+        try {
+            val store = SessionStore(dir, codec(), pdf, images)
+            assertTrue(store.save(
+                Document.blank(2), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            val sidecar = File(dir, "session.json")
+            val originalMetadata = sidecar.readBytes()
+            val slot = File(dir, "document.xnote")
+            assertTrue(slot.delete())
+            assertTrue(slot.createNewFile())
+
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(4), zoom = 1.75, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertEquals(0L, slot.length())
+            assertArrayEquals(originalMetadata, sidecar.readBytes())
+            assertTrue(store.save(
+                Document.blank(4), zoom = 1.75, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            assertEquals(4, store.load()!!.document.pages.size)
+            assertEquals(1.75, store.load()!!.zoom, 1e-9)
+        } finally {
+            dir.deleteRecursively()
+            pdf.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun failsClosedWhenSessionDocumentCannotBeReplaced() {
         val dir = tempDir()
         try {
