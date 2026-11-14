@@ -814,4 +814,20 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Unresolved ownership handoff:** `CanvasWaypointsPopup.kt` also exposes Fit All without respecting zoom lock and remains outside Chat B's permitted ownership. Chat A must allocate or address that path. G08 NP-089/090/092 overall acceptance remains open. No push/merge/PR, Android build or device test.
 
-**Thirty-sixth implementation commit:** `f3f010f1e496b166f0abc783df793b84c2cc0937`. **Thirty-sixth status-only handoff commit:** the following Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-sixth implementation commit:** `f3f010f1e496b166f0abc783df793b84c2cc0937`. **Thirty-sixth status-only handoff commit:** `f885a2ea19296bbba7cda8b88ca47fb5e996aa27`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Thirty-seventh G08 checkpoint - NP-092 redundant floating grip Reset action (2026-11-14)
+
+**Confirmed source issue:** `ui/FloatingToolbar.kt:MovableFloatingToolbar` always announced a TalkBack `Reset position` custom accessibility action even when the floating grip's normalized X/Y position already matched the toolbar's default position. Activating Reset in that state repeatedly committed the same fractions with no positional change. Other grip nudge actions already suppress no-op moves.
+
+**Smallest owned change:** Added `floatingGripCanReset(x, y, defaultX, defaultY)` to expose Reset only when either stored fraction differs. Compute the existing `ToolbarLook` default fractions once outside the action and reuse them for both availability and the original reset callback. Dragging, arrow nudge actions, viewport layout, persistence integration, sizing, ToolBarFrame, editor state, all other agents' files and resources were unchanged.
+
+**Regression test added, execution prohibited locally:** Extended the existing owned `app/src/test/java/com/notestaking/app/ui/FloatingGripAccessibilityTest.kt` with four cases covering an already-default TOP and RIGHT grip, changed X and changed Y. The new Kotlin/JUnit test file was written and source-checked but **not executed** because lane policy forbids local Kotlin/JUnit execution. Existing test cases and assertions remained intact.
+
+**Checks actually passed:** `python tools/agents/check_lane.py` PASS (21 owned paths vs lane baseline); `python tools/ci/check_project.py` PASS (388 Kotlin source files, 234 Kotlin test source files, 22 XML files, 39 PNGs; zero problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS; targeted Python assertions PASS confirming the conditional reset, single default calculation, and presence of new JUnit cases. No Gradle, Android builds, Kotlin test execution, Android lint, APK generation, CI or real device testing performed.
+
+**Acceptance for Chat A / device lane (NOT RUN):** In a floating toolbar initially at its configured default TOP/BOTTOM/LEFT/RIGHT position, confirm TalkBack offers no Reset action. Move the grip with stylus/finger or TalkBack directional actions and confirm Reset becomes available; activate once and verify the expected default position and the action disappears. Repeat with narrow pane/split-screen, full window, resized/rotated layouts, Compact/Regular/Comfortable sizes, and keyboard/TalkBack focus. Verify no extra persistence writes on a no-op Reset and no change to the drag handler. Release only after exact integrated SHA GitHub Kotlin/JUnit/Compose/lint/APK CI and physical device QA.
+
+**Outstanding ownership risk:** `CanvasWaypointsPopup.kt` still exposes Fit All during zoom lock; it is outside Chat B ownership and awaits Chat A allocation. Keyboard section reordering still requires the unowned `PreferencesPane.kt`. NP-089/NP-090/NP-092 remain unaccepted until CI/device evidence.
+
+**Thirty-seventh implementation commit:** `f55f7309b2cc1fb21b00ce3895d0c811ebbeeed8`. **Thirty-seventh STATUS-only handoff commit:** the next local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
