@@ -858,4 +858,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining ownership/integration issues:** `CanvasWaypointsPopup.kt` still offers Fit All under zoom lock; `PreferencesPane.kt` owns section reordering and keyboard movement coordination. Both need Chat A allocation or handling. NP-089/NP-090/NP-092 are not accepted pending integrated CI and device QA. No push, merge, PR, APK or protected branch edits.
 
-**Thirty-ninth implementation commit:** `8347ca4564a8fdf71ee221495cea6831ab3c09dc`. **Thirty-ninth STATUS-only handoff commit:** immediately following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Thirty-ninth implementation commit:** `8347ca4564a8fdf71ee221495cea6831ab3c09dc`. **Thirty-ninth STATUS-only handoff commit:** `84cd8c86b9285ab5a2aafaa955610555fcf6ad2e`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Fortieth G08 checkpoint — NP-090/NP-092 horizontal infinite title and failure-message keyboard access (2026-11-14)
+
+**Confirmed source issue:** Checkpoint 38 made the infinite-canvas *vertical* title and GL/OOM warning indicators keyboard-focusable and tooltip-readable, but the same horizontal toolbar still rendered plain `Label` text. `Label` uses `maxLines = 1` and ellipsis, and the horizontal content had no keyboard focus or full-text tooltip. Long note names and the out-of-memory warning could be difficult to inspect without touch/hover.
+
+**Minimal owned fix:** In `app/src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt`, horizontal Title now uses the same existing localized `Title: <name>` description as the vertical title, with `Tooltip`, `.toolbarFocusOutline(MaterialTheme.shapes.extraSmall)`, explicit semantic description and `.focusable()`. Horizontal GL/OOM warnings receive `Tooltip(message)`, the same focus ring/semantic description and `.focusable()`, retaining `liveRegion = LiveRegionMode.Polite`. Existing visible one-line labels, vertical title/error icons, messages, error signaling, tool operations and note data remain unchanged. No fake clickable or editable action, new dependency, resource, or unowned file. Only `InfiniteToolbar.kt` changed.
+
+**Local checks actually passed:** `python tools/agents/check_lane.py` PASS (21 owned paths vs lane baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 Kotlin test sources, 22 XML, 39 PNG; 0 problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS; targeted Python static assertions PASS checking matching horizontal/vertical Title and warning tooltips/focus, preserved polite live regions and absence of click handlers. No new JUnit test for the declarative Compose modifier bindings; no Gradle/JUnit execution, Compose compilation, lint, Android CI/APK or physical-device test.
+
+**Acceptance outstanding (NOT RUN):** In an infinite note with long title, dock top/bottom and Tab/Shift+Tab to the visible name; verify focus indicator and full tooltip without rename or drawing. Simulate GL unavailable and out-of-memory states and check full warning tooltip, screen-reader semantics and polite announcement, and compare vertical left/right behavior unchanged. Confirm narrow window/split pane, large font, mouse/stylus hover and focus order without clipped popup. Actual Compose focus behavior is not proved by Python checks. Chat A must run exact integrated SHA CI and downstream device/TalkBack acceptance.
+
+**Still blocked by ownership:** `CanvasWaypointsPopup.kt` Fit All zoom-lock guard and `PreferencesPane.kt` keyboard section reorder require Chat A allocation. NP-089/090/092 overall acceptance is pending integrated CI and device evidence; do not merge/publish based on static checks alone.
+
+**Fortieth implementation commit:** `bdcf182c133f7fe3ff65bdeee4ddcedac4bbb62c`. **Fortieth STATUS-only handoff commit:** immediately following Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
