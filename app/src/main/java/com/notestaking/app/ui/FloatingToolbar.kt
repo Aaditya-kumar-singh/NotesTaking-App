@@ -27,6 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -57,6 +63,15 @@ internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): 
 /** Reset is only an accessibility action when it changes the stored position. */
 internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY: Float): Boolean =
     x != defaultX || y != defaultY
+
+/** Use the same normalized nudge increments for keyboard and TalkBack movement. */
+internal fun floatingGripKeyStep(key: Key): Pair<Float, Float>? = when (key) {
+    Key.DirectionLeft -> -0.1f to 0f
+    Key.DirectionRight -> 0.1f to 0f
+    Key.DirectionUp -> 0f to -0.1f
+    Key.DirectionDown -> 0f to 0.1f
+    else -> null
+}
 
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
@@ -139,6 +154,16 @@ internal fun MovableFloatingToolbar(
                                     commit(x, y)
                                     true
                                 })
+                        }
+                    }
+                    .onKeyEvent { event ->
+                        if (event.isAltPressed || event.isCtrlPressed || event.isMetaPressed) false
+                        else {
+                            val step = floatingGripKeyStep(event.key)
+                            if (step == null) false else {
+                                if (event.type == KeyEventType.KeyDown) nudge(step.first, step.second)
+                                true // Consume arrows at the edge instead of turning pages or panning ink.
+                            }
                         }
                     }
                     .focusable()
