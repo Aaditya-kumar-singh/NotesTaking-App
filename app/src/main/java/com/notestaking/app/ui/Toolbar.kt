@@ -504,7 +504,7 @@ private const val GLIDE_MAX_MS = 300
 
 /** Keyboard focus must be visible even when a toolbar control suppresses ripple feedback. */
 @Composable
-private fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
+internal fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
     var focused by remember { mutableStateOf(false) }
     val accent = LocalPalette.current.accent.toComposeColor()
     return this

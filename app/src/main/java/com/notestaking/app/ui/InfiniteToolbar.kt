@@ -1,9 +1,11 @@
 package com.notestaking.app.ui
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -108,7 +110,10 @@ fun InfiniteToolbar(
                             val description = "${stringResource(R.string.toolbar_title)}: $title"
                             Tooltip(description) {
                                 Box(
-                                    Modifier.size(LocalBar.current.button).semantics { contentDescription = description },
+                                    Modifier.size(LocalBar.current.button)
+                                        .toolbarFocusOutline(CircleShape)
+                                        .semantics { contentDescription = description }
+                                        .focusable(),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
@@ -250,10 +255,13 @@ private fun InfiniteCanvasWarning(message: String) {
     if (LocalBar.current.vertical) {
         Tooltip(message) {
             Box(
-                Modifier.size(LocalBar.current.button).semantics {
-                    contentDescription = message
-                    liveRegion = LiveRegionMode.Polite
-                },
+                Modifier.size(LocalBar.current.button)
+                    .toolbarFocusOutline(CircleShape)
+                    .semantics {
+                        contentDescription = message
+                        liveRegion = LiveRegionMode.Polite
+                    }
+                    .focusable(),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
