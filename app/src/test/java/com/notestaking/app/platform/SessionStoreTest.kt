@@ -7,6 +7,7 @@ import com.notestaking.app.core.FakeTextMeasurer
 import com.notestaking.app.core.model.Document
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.format.DocumentCodec
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -48,21 +49,54 @@ class SessionStoreTest {
                 Document.blank(3), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
                 zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
             ))
+            val oldDocument = File(dir, "document.xnote").readBytes()
             val metadata = File(dir, "session.json")
+            val oldMetadata = metadata.readBytes()
             assertTrue(metadata.delete())
             assertTrue(metadata.mkdir()) // Force metadata commit to fail without deleting the note.
             org.junit.Assert.assertFalse(store.save(
                 Document.blank(4), zoom = 2.0, scrollX = 0.0, scrollY = 0.0,
                 zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
             ))
-            assertEquals(4, store.load()!!.document.pages.size)
+            assertArrayEquals(oldDocument, File(dir, "document.xnote").readBytes())
+            assertEquals(3, store.load()!!.document.pages.size)
             assertTrue(metadata.delete())
+            metadata.writeBytes(oldMetadata)
+            assertEquals(1.0, store.load()!!.zoom, 1e-9)
             assertTrue(store.save(
                 Document.blank(4), zoom = 2.0, scrollX = 0.0, scrollY = 0.0,
-                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
             ))
             assertEquals(4, store.load()!!.document.pages.size)
             assertEquals(2.0, store.load()!!.zoom, 1e-9)
+        } finally {
+            dir.deleteRecursively()
+            pdf.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
+    @Test fun invalidViewMetadataCannotReplaceTheLastGoodDocument() {
+        val dir = tempDir()
+        val pdf = pdfDir()
+        val images = imageDir()
+        try {
+            val store = SessionStore(dir, codec(), pdf, images)
+            assertTrue(store.save(
+                Document.blank(2), zoom = 1.5, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            val oldDocument = File(dir, "document.xnote").readBytes()
+            val oldMetadata = File(dir, "session.json").readBytes()
+            // JSONObject rejects NaN; failure must occur before publishing new note bytes.
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(5), zoom = Double.NaN, scrollX = 30.0, scrollY = 40.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            assertArrayEquals(oldDocument, File(dir, "document.xnote").readBytes())
+            assertArrayEquals(oldMetadata, File(dir, "session.json").readBytes())
+            assertEquals(2, store.load()!!.document.pages.size)
+            assertEquals(1.5, store.load()!!.zoom, 1e-9)
         } finally {
             dir.deleteRecursively()
             pdf.deleteRecursively()

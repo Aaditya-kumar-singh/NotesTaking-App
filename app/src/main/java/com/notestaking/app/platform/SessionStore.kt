@@ -17,7 +17,8 @@ import java.io.FileInputStream
 class SessionStore(private val dir: File, private val codec: DocumentCodec, private val pdfDir: File, private val imageDir: File) {
 
     private val docFile = File(dir, "document.xnote")
-    private val meta = JsonStore(File(dir, "session.json"))
+    private val metaFile = File(dir, "session.json")
+    private val meta = JsonStore(metaFile)
 
     class Snapshot(
         val document: Document,
@@ -40,9 +41,8 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
         writeDocument: Boolean,
     ): Boolean {
         return try {
-            if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
-            }
+            // A known-invalid sidecar must not replace the last recoverable document.
+            if (metaFile.exists() && !metaFile.isFile) return false
             val m = JSONObject()
                 .put("dirty", document.dirty)
                 .put("zoom", zoom)
@@ -51,7 +51,11 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
                 .put("zoomLocked", zoomLocked)
             document.path?.let { m.put("path", it) }
             document.displayName?.let { m.put("displayName", it) }
-            meta.writeChecked(ViewOverridesJson.write(m, viewOverrides))
+            val metadata = ViewOverridesJson.write(m, viewOverrides)
+            if (writeDocument || !docFile.exists()) {
+                if (!SafeFileWriter.write(docFile) { output -> codec.write(document, output) }) return false
+            }
+            meta.writeChecked(metadata)
         } catch (_: Exception) {
             false
         }
