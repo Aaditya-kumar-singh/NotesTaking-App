@@ -1,6 +1,7 @@
 package com.notestaking.app.core.model
 
 import com.notestaking.app.core.shapes.ShapeKind
+import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.Tool
 
 /**
@@ -47,4 +48,20 @@ object EraseRule {
     fun erasable(item: CanvasItem, markerOnly: Boolean = false): Boolean =
         !item.locked && item !is ImageItem && item !is TextItem && item !is AudioItem &&
             (!markerOnly || (item is Stroke && item.tool == Tool.HIGHLIGHTER))
+
+    /** Explicit object type filter: a selective eraser never falls back to an all-ink erase. */
+    fun erasable(item: CanvasItem, mode: EraseMode): Boolean =
+        erasable(item) && when (mode) {
+            EraseMode.STROKE, EraseMode.AREA -> true
+            EraseMode.MARKER -> item is Stroke && item.tool == Tool.HIGHLIGHTER
+            EraseMode.TAPE -> item is TapeItem
+            EraseMode.SHAPE -> item is ShapeItem
+            EraseMode.CONNECTOR -> item is ConnectorItem
+        }
+
+    /** Shape-only erasing also selects a filled shape from inside its fill, removing it whole. */
+    fun takes(item: CanvasItem, cx: Double, cy: Double, r: Double, mode: EraseMode): Boolean =
+        erasable(item, mode) &&
+            (touchesLine(item, cx, cy, r) || wholeTouched(item, cx, cy, r) ||
+                (mode == EraseMode.SHAPE && touchesFill(item, cx, cy, r)))
 }

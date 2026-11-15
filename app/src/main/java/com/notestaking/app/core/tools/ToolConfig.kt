@@ -7,14 +7,20 @@ import com.notestaking.app.core.model.TapePattern
 
 /**
  * Eraser behaviour (spec 04 §2): STROKE removes a whole stroke on contact; AREA cuts
- * fragments, and MARKER removes only highlighter ink (and PDF highlights on paged notes).
- * Persisted as [id].
+ * fragments, MARKER removes highlighter ink (and PDF highlights on paged notes), and
+ * TAPE/SHAPE/CONNECTOR remove only the named object kind. Persisted as [id].
  */
 enum class EraseMode(val id: String) {
     STROKE("stroke"),
     AREA("area"),
     /** Erase only highlighter strokes and PDF highlights, not ordinary ink or shapes. */
-    MARKER("marker");
+    MARKER("marker"),
+    /** Remove only tapes, never the ink they cover. */
+    TAPE("tape"),
+    /** Remove complete geometric shapes without touching ordinary ink. */
+    SHAPE("shape"),
+    /** Remove complete connectors without touching shapes or ordinary ink. */
+    CONNECTOR("connector");
 
     companion object {
         fun fromId(id: String?): EraseMode = entries.firstOrNull { it.id == id } ?: STROKE
