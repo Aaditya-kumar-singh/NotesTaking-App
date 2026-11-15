@@ -2,6 +2,10 @@
 
 Use **one prompt in each separate ChatGPT conversation**. A replacement chat must explicitly supersede the previous slot first; never let two live conversations write to the same worktree. ChatGPT cannot automatically launch/drive these chats. All three use the existing LocalMCP plugin for `C:\\Users\\WHITE-SNAKE\\Desktop\\xnotes-android`.
 
+## Optional local headless dispatcher
+
+The [auto-dispatcher](AUTO_DISPATCHER.md) is for an explicitly started local Gemini CLI process, not a browser ChatGPT session. Never have both active in the same A/B/C slot. Before switching, stop old chat writers, finish/hand off active tasks, and perform exclusive `triad.py replace` with new auto-* sessions. The local provider is not currently authenticated, so treat its dry-run as a plan, not a running coding agent. The dispatcher never integrates, marks device QA or approves CI.
+
 ## Coordinator-reserved tasks for idle contributors
 
 > If no new task appears, check `python tools/agents/triad.py status` for `reserved_allocations`, then run `triad.py next --slot B/C --session <registered-id> --include-optional` using your own worktree. A coordinator may reserve a previously COORD-owned P1 accessibility task for B, but this **never expands B's source ownership**: inspect other UI files read-only, add tests only in B-owned `app/src/test/java/com/notestaking/app/ui/**`, and report any needed coordinator-owned production change. A C-owned optional geometry task can be explicitly prioritized. Only the intended B/C chat claims the reservation; the integrator never impersonates its session. Preserve all old handoffs and do not wait for unrelated CI.

@@ -61,6 +61,10 @@ python tools/agents/triad.py checklist
 
 **LANE-A active** likewise remains a separate legacy reservation; its current owner may claim A-Z tasks in its own file scope. A *new* conversation must first complete explicit `triad.py replace` with the previous chat stopped; never treat an old `legacy-a` session as permission for two simultaneous A writers. The new ledger does not replace original A/B/Gemini ownership or device QA gates.
 
+## Optional autonomous local worker process
+
+The [A/B/C auto-dispatcher](AUTO_DISPATCHER.md) is a separate **opt-in local Gemini CLI process**, not ChatGPT browser automation. It can pick, atomically claim, source-check, locally commit and hand off successive eligible tasks across three isolated worktrees. It can reserve a narrowly preapproved coordinator-owned read-only UI audit for idle B without changing file ownership. It never uses browser sessions; the user must first stop those chat writers, explicitly replace each session with a unique `auto-a-*`/`auto-b-*`/`auto-c-*` token, and configure/trust an authenticated headless model. The live machine's Gemini CLI currently fails authentication (UNSUPPORTED_CLIENT), so no autonomous coding is running. CI/device acceptance, CI incident approval, merges and publishing remain separately gated. Running the script without `--execute` only previews tasks; with `--execute`, workers must obey the same Git hooks and ownership checks. It does not install a service or run when the Windows process is stopped.
+
 ## When a chat has no remaining eligible tasks
 
 The original 130-task A-Z catalog is immutable. If a slot has submitted its work, the coordinator may **allocate a still-pending task** without changing its batch or giving away another worker's files. Only tasks in `pending` state can be allocated; tasks assigned to Gemini, another agent or device QA cannot be taken over. Allocations are recorded atomically in the live SQLite ledger; an allocation is **not a claim**, and the worker must claim it with its own registered session. The original catalog `owner` field remains unchanged, while the live task row records the reserved slot and exact scope.
