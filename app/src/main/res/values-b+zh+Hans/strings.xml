@@ -1232,4 +1232,8 @@
     <string name="toolbar_size_compact">Compact</string>
     <string name="toolbar_size_regular">Regular</string>
     <string name="toolbar_size_comfortable">Comfortable</string>
+    <string name="annotation_list_tab">批注</string>
+    <string name="annotation_list_count">批注（%1$d）</string>
+    <string name="annotation_list_empty_current">当前页面没有批注。</string>
+    <string name="annotation_list_empty_all">这篇笔记没有批注。</string>
 </resources>

@@ -1251,4 +1251,8 @@
     <string name="toolbar_size_compact">Compact</string>
     <string name="toolbar_size_regular">Regular</string>
     <string name="toolbar_size_comfortable">Comfortable</string>
+    <string name="annotation_list_tab">Annotations</string>
+    <string name="annotation_list_count">Annotations (%1$d)</string>
+    <string name="annotation_list_empty_current">No annotations on this page.</string>
+    <string name="annotation_list_empty_all">No annotations in this note.</string>
 </resources>

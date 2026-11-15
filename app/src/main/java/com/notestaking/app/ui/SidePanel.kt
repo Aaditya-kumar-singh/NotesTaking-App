@@ -243,7 +243,7 @@ fun SidePanel(
                         .clip(RoundedCornerShape(12.dp))
                         .background(if (tab == SidePanelTab.ANNOTATIONS) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
                         .semantics { selected = tab == SidePanelTab.ANNOTATIONS },
-                ) { Text("Annotations") }
+                ) { Text(stringResource(R.string.annotation_list_tab)) }
             }
         }
         if (tab == SidePanelTab.PAGES) {
@@ -1032,13 +1032,13 @@ private fun AnnotationsTab(editor: Editor) {
             )
         }
         Text(
-            "Annotations (${entries.size})",
+            stringResource(R.string.annotation_list_count, entries.size),
             color = palette.textDim.toComposeColor(),
             fontSize = 12.sp,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
         if (entries.isEmpty()) {
-            EmptyHint("No annotations on ${if (currentOnly) "this page" else "these pages"}.")
+            EmptyHint(stringResource(if (currentOnly) R.string.annotation_list_empty_current else R.string.annotation_list_empty_all))
         } else {
             LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
                 itemsIndexed(entries) { _, entry ->
