@@ -13,7 +13,10 @@ internal class PenContactRouter {
 
     fun route(event: MotionEvent, onTakeOver: () -> Unit): MotionEvent? {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            pointerId = -1
+            // A pen-first gesture must stay single-pointer when a palm lands later.
+            pointerId = if (PenContact.isPen(event.getToolType(0), MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER))
+                event.getPointerId(0) else -1
+            penDownTime = event.downTime
             return event
         }
         if (pointerId < 0) {
