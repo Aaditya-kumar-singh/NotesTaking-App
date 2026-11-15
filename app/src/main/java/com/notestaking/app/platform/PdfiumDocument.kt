@@ -14,6 +14,15 @@ import java.util.concurrent.atomic.AtomicInteger
 /** Why a PDF did not open, from PDFium's FPDF_ERR_* codes. */
 enum class PdfOpenError { FILE, FORMAT, PASSWORD, SECURITY, UNKNOWN }
 
+/** PDFium's FPDF_ERR_* codes; a protected file needs a password, not a format-repair attempt. */
+internal fun pdfOpenErrorOf(code: Int): PdfOpenError = when (code) {
+    2 -> PdfOpenError.FILE
+    3 -> PdfOpenError.FORMAT
+    4 -> PdfOpenError.PASSWORD
+    5 -> PdfOpenError.SECURITY
+    else -> PdfOpenError.UNKNOWN
+}
+
 /** Reject broken native page maps before they can turn saved annotation positions into NaN. */
 internal fun checkedNativePageGeometry(values: DoubleArray?): PdfPageGeometry? {
     if (values == null || values.size != 6 || values.any { !it.isFinite() }) return null
@@ -59,7 +68,7 @@ class PdfiumDocument private constructor(
         val t0 = System.nanoTime()
         val out = IntArray(2)
         val h = PdfiumNative.nativeOpen(file.path, out)
-        if (h == 0L) return Opened(0, errorOf(out[0]))
+        if (h == 0L) return Opened(0, pdfOpenErrorOf(out[0]))
         handle = h
         openCount.incrementAndGet()
         lastOpenMs = (System.nanoTime() - t0) / 1_000_000
@@ -208,12 +217,5 @@ class PdfiumDocument private constructor(
                 if (lastTextMs < 0) "-" else "$lastTextMs ms",
             )
 
-        private fun errorOf(code: Int): PdfOpenError = when (code) {
-            2 -> PdfOpenError.FILE
-            3 -> PdfOpenError.FORMAT
-            4 -> PdfOpenError.PASSWORD
-            5 -> PdfOpenError.SECURITY
-            else -> PdfOpenError.UNKNOWN
-        }
     }
 }
