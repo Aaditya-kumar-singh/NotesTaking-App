@@ -35,10 +35,28 @@ class ToolbarMetricsTest {
         for (size in ToolbarSize.entries) {
             val button = barMetrics(size).button.value
             assertTrue("$size: 320dp split pane needs reachable tools", toolbarScrollsTrailing(false, 320f, button))
-            assertTrue(toolbarScrollsTrailing(false, button * 7f - 1f, button))
-            assertFalse("$size: full-size docked bar keeps quick actions pinned", toolbarScrollsTrailing(false, button * 7f, button))
+            val boundary = (button + 8f) * 7f + 1f
+            assertTrue(toolbarScrollsTrailing(false, boundary - 1f, button))
+            assertFalse("$size: full-size docked bar keeps quick actions pinned", toolbarScrollsTrailing(false, boundary, button))
             assertFalse(toolbarScrollsTrailing(false, 600f, button))
             assertTrue(toolbarScrollsTrailing(true, 600f, button))
+        }
+    }
+
+    @Test
+    fun splitPaneBudgetsAllPinnedButtonsBeforeKeepingQuickActionsFixed() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value
+            for (pins in 0..3) {
+                val boundary = (button + 8f) * (6 + pins) + (if (pins > 0) 1f else 0f)
+                assertTrue("$size pinned=$pins: short pane scrolls trailing tools",
+                    toolbarScrollsTrailing(false, boundary - 1f, button, pins))
+                assertFalse("$size pinned=$pins: matching pane can pin trailing tools",
+                    toolbarScrollsTrailing(false, boundary, button, pins))
+                assertTrue(toolbarScrollsTrailing(true, boundary + 200f, button, pins))
+            }
+            assertTrue("$size: second fixed control must trigger scrolling earlier",
+                toolbarScrollsTrailing(false, (button + 8f) * 8f, button, 2))
         }
     }
 

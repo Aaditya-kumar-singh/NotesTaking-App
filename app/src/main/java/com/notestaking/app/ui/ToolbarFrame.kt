@@ -77,12 +77,16 @@ internal val LocalMenuOffset = compositionLocalOf { DpOffset.Zero }
 /** How far a floating bar sits in from the canvas edge. */
 private val FLOAT_MARGIN = 8.dp
 
-/** Reserve room for one tool, five quick actions and Close Pane in a docked strip. */
+/** Count padded icons and pinned actions so split panes scroll before buttons collide. */
 internal fun toolbarScrollsTrailing(
     floating: Boolean,
     availableAxisDp: Float = Float.POSITIVE_INFINITY,
     buttonDp: Float = 48f,
-): Boolean = floating || availableAxisDp < buttonDp * 7f
+    pinnedButtons: Int = 1,
+): Boolean {
+    val reserved = (buttonDp + 8f) * (6 + pinnedButtons.coerceAtLeast(0))
+    return floating || availableAxisDp < reserved + (if (pinnedButtons > 0) 1f else 0f)
+}
 
 /** What a floating bar covers of the canvas, for overlays that must stay out from under it. */
 internal val LocalToolbarCover = compositionLocalOf { PaddingValues(0.dp) }
@@ -147,6 +151,7 @@ internal fun ToolbarFrame(
     armed: Any?,
     trailing: (@Composable () -> Unit)? = null,
     pinned: (@Composable () -> Unit)? = null,
+    pinnedButtons: Int = 1,
     content: @Composable () -> Unit,
 ) {
     val look = LocalToolbarLook.current
@@ -154,7 +159,7 @@ internal fun ToolbarFrame(
     val glide = remember { ToolGlide() }
     var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
     val availableAxisDp = with(LocalDensity.current) { availableAxisPx.toDp().value }
-    val scrollTrailing = toolbarScrollsTrailing(look.floating, availableAxisDp, bar.button.value)
+    val scrollTrailing = toolbarScrollsTrailing(look.floating, availableAxisDp, bar.button.value, pinnedButtons)
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.extraLarge
     val divider = palette.border.toComposeColor()

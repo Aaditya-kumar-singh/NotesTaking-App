@@ -154,6 +154,7 @@ fun Toolbar(
     // PDF Read/Annotate and split-pane Close remain visible while the tool strip scrolls.
     ToolbarFrame(
         armed = editor.tool,
+        pinnedButtons = (if (editor.hasPdf) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { PagedCanvasQuickAccess(editor, onInsertImage, onImportTemplate, null) },
         pinned = {
             if (editor.hasPdf) PdfModeButton(editor)

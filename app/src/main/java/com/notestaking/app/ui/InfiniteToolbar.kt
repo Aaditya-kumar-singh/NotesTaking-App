@@ -101,6 +101,7 @@ fun InfiniteToolbar(
     // Keep critical failures visible alongside Close Pane, even when toolbar items scroll.
     ToolbarFrame(
         armed = editor.tool,
+        pinnedButtons = (if (failureMessage != null) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { InfiniteCanvasQuickAccess(editor, onInsertImage, null) },
         pinned = {
             failureMessage?.let { InfiniteCanvasWarning(it) }
