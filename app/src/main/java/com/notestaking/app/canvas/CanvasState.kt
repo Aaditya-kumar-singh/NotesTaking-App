@@ -548,10 +548,14 @@ class CanvasState(
      * Single = one page per row, Double = pairs (1-2, 3-4, …), Cover = the first page
      * alone, then pairs (2-3, 4-5, …) so facing pages line up like a book.
      */
+    private var rowCacheCount = -1
+    private var rowCacheMode: ViewingMode? = null
+    private var rowCache: List<IntRange> = emptyList()
+
     fun rowRanges(): List<IntRange> {
         val n = document.pages.size
-        if (n == 0) return emptyList()
-        return when (viewingMode) {
+        if (n == rowCacheCount && viewingMode == rowCacheMode) return rowCache
+        val rows = if (n == 0) emptyList() else when (viewingMode) {
             ViewingMode.SINGLE -> (0 until n).map { it..it }
             ViewingMode.DOUBLE -> (0 until n step 2).map { it..min(it + 1, n - 1) }
             ViewingMode.COVER -> buildList {
@@ -563,6 +567,10 @@ class CanvasState(
                 }
             }
         }
+        rowCacheCount = n
+        rowCacheMode = viewingMode
+        rowCache = rows
+        return rows
     }
 
     /** The layout row containing [pageIndex]. */
@@ -1724,10 +1732,21 @@ class CanvasState(
             val v = visibleContentRect()
             fun top(r: Int) = rows[r].minOf { pageRects[it].top }
             fun bottom(r: Int) = rows[r].maxOf { pageRects[it].bottom }
-            first = 0
-            while (first < rows.size && bottom(first) < v.top) first++
-            last = rows.lastIndex
-            while (last >= 0 && top(last) > v.bottom) last--
+            // Row bounds are ordered; avoid walking 200+ PDF rows on each draw.
+            var low = 0
+            var high = rows.size
+            while (low < high) {
+                val mid = (low + high) / 2
+                if (bottom(mid) < v.top) low = mid + 1 else high = mid
+            }
+            first = low
+            low = 0
+            high = rows.size
+            while (low < high) {
+                val mid = (low + high) / 2
+                if (top(mid) <= v.bottom) low = mid + 1 else high = mid
+            }
+            last = low - 1
             hi = last + 1
             while (hi < rows.lastIndex && top(hi + 1) <= v.bottom + v.h) hi++
             lo = first - 1
