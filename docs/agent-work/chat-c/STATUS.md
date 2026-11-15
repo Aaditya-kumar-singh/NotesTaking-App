@@ -74,6 +74,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - No speculative runtime change to already-implemented input routing. Added `canvas/FreePointerTest.kt` regression table for all 13 ink/eraser/gesture tools in both toggle states, and for navigation/typing/placement tools unaffected by the preference. This catches regressions if new drawing tools accidentally bypass the stylus-only gate.
 - Only Chat C-owned test and status paths changed. Pending gates: Kotlin/JUnit GitHub exact-SHA CI, physical S Pen/phone NT-025 (finger pan vs ink, two-finger zoom, stylus tip and button eraser), and UI preference persistence across relaunch. Do not claim device verification or acceptance from source tests.
 
+## NP-027 — two/three-finger gestures and pinch zoom (Batch F, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `64654d2a77f99da8dd0f18ea7b3219f83232bf6d` (NP-026 remains in coordinator review). Claimed atomically without touching earlier reviewed SHAs.
+- Inspected `canvas/{CanvasView,MultiFingerTap,InteractionController,CanvasState,PenContactRouter}.kt` and read-only `gl/InfiniteCanvasView.kt`, `ui/InfiniteInteraction.kt`, editor gesture preference bindings and existing zoom/gesture tests. Both surfaces use the shared `MultiFingerTap` detector; paged/infinite pinch handlers already anchor zoom to the initial finger midpoint in content space.
+- Fixed a definite false-action path: movement was only checked on ACTION_MOVE, so a quick pinch/swipe reported at POINTER_DOWN, POINTER_UP, or final UP could fire a two/three-finger tap and cancel the pinch. Now transitions and terminal coordinates are checked, short significant span changes are rejected, cancelled lifts are rejected, and the detector resets after terminal UP/CANCEL. A replacement third finger cannot be counted as a clean two-finger tap. The Android MotionEvent adapter is reused across MOVE frames.
+- Added `canvas/MultiFingerTapTest.kt` pure JVM source tests for clean two/three-finger action once, movement at pointer transitions and final lift without MOVE, short pinch-span drift, replacement pointer IDs, stylus/mouse mixed gestures, cancelled lifts, long press, and four-finger noninterference. No other lane source or preferences/format files changed.
+- Permitted A-Z catalog, source, privacy, C-ownership and whitespace checks must pass before committing. Kotlin/JUnit/Android execution, exact-SHA GitHub CI, and physical phone/tablet multi-finger tap/pinch anchor/no-phantom-ink acceptance remain unverified. No local build or push.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
