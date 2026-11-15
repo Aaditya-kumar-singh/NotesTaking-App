@@ -36,6 +36,29 @@ internal object BoundedBytes {
         }
     }
 
+    /** Stream untrusted media to disk, never trusting a provider's advertised length. */
+    class TooLarge : IOException("Imported item exceeds size limit")
+
+    @Throws(IOException::class)
+    fun copy(input: InputStream, output: java.io.OutputStream, maxBytes: Long): Long {
+        require(maxBytes > 0)
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        var emptyReads = 0
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) return total
+            if (n == 0) {
+                if (++emptyReads > 16) throw IOException("Import stream stalled")
+                continue
+            }
+            emptyReads = 0
+            if (n.toLong() > maxBytes - total) throw TooLarge()
+            output.write(buffer, 0, n)
+            total += n
+        }
+    }
+
     /** Drain an unrecognized archive member without allocating it or bypassing the size budget. */
     @Throws(IOException::class)
     fun discard(input: InputStream, maxBytes: Long): Long {

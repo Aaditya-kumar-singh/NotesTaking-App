@@ -35,26 +35,19 @@ object AudioFiles {
         }.getOrNull()
         if ((display?.second ?: -1L) > MAX_BYTES) return Result.TooBig
         val file = runCatching { File.createTempFile("aud", null, dir) }.getOrNull() ?: return Result.Unreadable
-        val copied = runCatching {
+        val copied = try {
             resolver.openInputStream(uri)?.use { input ->
-                FileOutputStream(file).use { out ->
-                    val buf = ByteArray(64 * 1024)
-                    var total = 0L
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        total += n
-                        if (total > MAX_BYTES) return@runCatching false
-                        out.write(buf, 0, n)
-                    }
-                }
-                true
-            } ?: false
-        }.getOrDefault(false)
-        if (!copied) {
-            val tooBig = file.length() > MAX_BYTES - 64 * 1024
+                FileOutputStream(file).use { out -> BoundedBytes.copy(input, out, MAX_BYTES) }
+            } != null
+        } catch (_: BoundedBytes.TooLarge) {
             file.delete()
-            return if (tooBig) Result.TooBig else Result.Unreadable
+            return Result.TooBig
+        } catch (_: Exception) {
+            false
+        }
+        if (!copied) {
+            file.delete()
+            return Result.Unreadable
         }
         val duration = durationOf(file)
         if (duration == null || duration <= 0) {

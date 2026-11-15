@@ -2494,8 +2494,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * The file is copied and checked off the main thread, and its waveform is read after it lands.
      */
     fun attachAudio(uri: android.net.Uri) {
+        val wasCanvas = canvasOpen
+        val target = if (wasCanvas) infiniteOrNull?.document else state.document
         autosaveScope.launch {
             val result = withContext(Dispatchers.IO) { com.notestaking.app.platform.AudioFiles.attach(appContext, uri, imageDir) }
+            if (!noteOpen || canvasOpen != wasCanvas ||
+                (if (wasCanvas) infiniteOrNull?.document else state.document) !== target
+            ) {
+                if (result is com.notestaking.app.platform.AudioFiles.Result.Ok) result.file.delete()
+                return@launch
+            }
             when (result) {
                 is com.notestaking.app.platform.AudioFiles.Result.Ok -> {
                     val data = com.notestaking.app.core.model.AudioData(result.file, result.ext, result.durationMs, ByteArray(0))
