@@ -4910,6 +4910,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val target = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, targetParentDocId)
         val src = android.net.Uri.parse(sourceUri)
         val srcName = queryDisplayName(src) ?: return@runCatching null
+        val existing = browseChildren(treeUri, targetParentDocId).mapTo(HashSet()) { documentKey(it.documentUri) }
         // Native copy first: it succeeds outright when there's no name clash (e.g. a different folder).
         // Wrapped on its own, because providers *throw* (rather than return null) on a same-name clash —
         // we must catch that here so it falls through to making a renamed duplicate below instead of
@@ -4917,7 +4918,11 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val direct = runCatching {
             android.provider.DocumentsContract.copyDocument(appContext.contentResolver, src, target)
         }.getOrNull()
-        if (direct != null) return@runCatching queryDisplayName(direct) ?: srcName
+        if (direct != null) {
+            val copiedKey = documentKey(direct.toString())
+            return@runCatching if (copiedKey != documentKey(sourceUri) && copiedKey !in existing)
+                queryDisplayName(direct) ?: srcName else null
+        }
         // The clash case (usually pasting into the same folder): duplicate under a free "… copy" name.
         val isDir = appContext.contentResolver.getType(src) == android.provider.DocumentsContract.Document.MIME_TYPE_DIR
         val taken = browseChildren(treeUri, targetParentDocId).mapTo(HashSet()) { it.name.lowercase() }
@@ -4928,6 +4933,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             val newUri = android.provider.DocumentsContract.createDocument(
                 appContext.contentResolver, target, "application/octet-stream", newName,
             ) ?: return@runCatching null
+            if (documentKey(newUri.toString()) in existing ||
+                documentKey(newUri.toString()) == documentKey(sourceUri) ||
+                !com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(appContext.contentResolver, newUri)
+            ) return@runCatching null // Never truncate or delete a provider-reused document.
             val copied = com.notestaking.app.platform.ProviderCopy.save(
                 { appContext.contentResolver.openInputStream(src) },
                 { appContext.contentResolver.openOutputStream(newUri, "wt") },
@@ -4941,14 +4950,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Copies [entries] into [targetParentDocId], colour codes included; returns how many were copied. IO. */
     fun copyEntriesInto(treeUri: String, entries: List<BrowseEntry>, targetParentDocId: String): Int {
         val colors = HashMap<String, Rgba?>()
-        var copied = 0
-        for (e in entries) {
-            val name = copyDocumentAs(treeUri, e.documentUri, targetParentDocId) ?: continue
-            copied++
-            e.color?.let { colors[name] = it }
+        val result = com.notestaking.app.platform.BulkSelection.run(
+            entries, { documentKey(it.documentUri) }, { it.isDir },
+        ) { e ->
+            if (e.isDir && com.notestaking.app.core.util.DocKeys.within(
+                    targetParentDocId, browseDocId(e.documentUri),
+                )) false
+            else {
+                val name = copyDocumentAs(treeUri, e.documentUri, targetParentDocId)
+                if (name == null) false else {
+                    e.color?.let { colors[name] = it }
+                    true
+                }
+            }
         }
         setItemColors(treeUri, targetParentDocId, colors)
-        return copied
+        return result.completed.size
     }
 
     /**
@@ -4959,19 +4976,27 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun moveEntriesInto(treeUri: String, entries: List<BrowseEntry>, targetParentDocId: String): Int {
         val carried = HashMap<String, Rgba?>()
         val cleared = HashMap<String, HashMap<String, Rgba?>>()
-        var moved = 0
-        for (e in entries) {
-            if (e.parentDocId == targetParentDocId) { moved++; continue }
-            if (e.isDir && com.notestaking.app.core.util.DocKeys.within(targetParentDocId, browseDocId(e.documentUri))) continue
-            if (!moveDocumentInto(treeUri, e.documentUri, e.parentDocId, targetParentDocId)) continue
-            moved++
-            val c = e.color ?: continue
-            carried[e.name] = c
-            cleared.getOrPut(e.parentDocId) { HashMap() }[e.name] = null
+        val result = com.notestaking.app.platform.BulkSelection.run(
+            entries, { documentKey(it.documentUri) }, { it.isDir },
+        ) { e ->
+            when {
+                e.parentDocId == targetParentDocId -> true
+                e.isDir && com.notestaking.app.core.util.DocKeys.within(
+                    targetParentDocId, browseDocId(e.documentUri),
+                ) -> false
+                !moveDocumentInto(treeUri, e.documentUri, e.parentDocId, targetParentDocId) -> false
+                else -> {
+                    e.color?.let { c ->
+                        carried[e.name] = c
+                        cleared.getOrPut(e.parentDocId) { HashMap() }[e.name] = null
+                    }
+                    true
+                }
+            }
         }
         for ((parent, changes) in cleared) setItemColors(treeUri, parent, changes)
         setItemColors(treeUri, targetParentDocId, carried)
-        return moved
+        return result.completed.size
     }
 
     /**
@@ -4980,9 +5005,14 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * Best-effort: returns false if any child failed (a partial copy is left in place). IO, call off-thread.
      */
     private fun copyFolderAs(treeUri: String, srcFolder: android.net.Uri, targetParent: android.net.Uri, newName: String): Boolean {
+        val targetId = android.provider.DocumentsContract.getDocumentId(targetParent)
+        val existing = browseChildren(treeUri, targetId).mapTo(HashSet()) { documentKey(it.documentUri) }
         val dest = android.provider.DocumentsContract.createDocument(
             appContext.contentResolver, targetParent, android.provider.DocumentsContract.Document.MIME_TYPE_DIR, newName,
         ) ?: return false
+        if (documentKey(dest.toString()) in existing ||
+            documentKey(dest.toString()) == documentKey(srcFolder.toString())
+        ) return false // Do not write into or delete a provider-reused folder.
         val srcDocId = android.provider.DocumentsContract.getDocumentId(srcFolder)
         var ok = true
         for (child in childDocumentUris(treeUri, srcDocId)) {
@@ -6053,11 +6083,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun trashEntries(treeUri: String, entries: List<BrowseEntry>): Pair<List<TrashItem>, List<BrowseEntry>> {
         val tree = android.net.Uri.parse(treeUri)
         val resolver = appContext.contentResolver
-        val trash = runCatching { trashDir(treeUri, create = true) }.getOrNull() ?: return emptyList<TrashItem>() to entries
+        val trash = runCatching { trashDir(treeUri, create = true) }.getOrNull()
+            ?: return emptyList<TrashItem>() to com.notestaking.app.platform.BulkSelection.run(
+                entries, { documentKey(it.documentUri) }, { it.isDir },
+            ) { false }.failedOperations
         val trashed = ArrayList<TrashItem>()
-        val failed = ArrayList<BrowseEntry>()
         val cleared = HashMap<String, HashMap<String, Rgba?>>()
-        for (e in entries) {
+        val result = com.notestaking.app.platform.BulkSelection.run(
+            entries, { documentKey(it.documentUri) }, { it.isDir },
+        ) { e ->
             val item = runCatching {
                 val now = System.currentTimeMillis()
                 val wrapper = android.provider.DocumentsContract.createDocument(
@@ -6093,16 +6127,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 dropRecentsWithin(moved.toString())
                 TrashItem(wrapperId, e.copy(documentUri = moved.toString(), parentDocId = wrapperId), path, now)
             }.getOrNull()
-            if (item == null) {
-                failed.add(e)
-            } else {
+            if (item == null) false else {
                 trashed.add(item)
                 if (e.color != null) cleared.getOrPut(e.parentDocId) { HashMap() }[e.name] = null
+                true
             }
         }
         for ((parent, changes) in cleared) setItemColors(treeUri, parent, changes)
         refreshTrashCount(treeUri)
-        return trashed to failed
+        return trashed to result.failedOperations
     }
 
     /** What waits in Trash, newest first; unreadable/ambiguous wrappers are preserved. IO. */
