@@ -886,7 +886,7 @@ class DocumentCodec(
             timing?.compactMs = (System.nanoTime() - compactStart) / 1_000_000L
         }
         return doc
-        } catch (error: Exception) {
+        } catch (error: Throwable) {
             extracted.forEach { runCatching { it.delete() } }
             throw error
         }

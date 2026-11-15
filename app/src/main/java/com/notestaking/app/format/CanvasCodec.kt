@@ -560,7 +560,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
         m.glue.resolve()
         doc.addAll(items)
         return doc
-        } catch (error: Exception) {
+        } catch (error: Throwable) {
             extracted.forEach { runCatching { it.delete() } }
             throw error
         }
