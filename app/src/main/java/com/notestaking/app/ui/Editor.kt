@@ -4437,30 +4437,28 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         raw: String,
         kind: com.notestaking.app.core.util.DocumentKind,
     ): String {
-        val ext = kind.suffix
-        val taken = browseChildren(treeUri, parentDocId).map { it.name.lowercase() }.toSet()
+        val taken = browseChildren(treeUri, parentDocId).map { it.name }
         val base = com.notestaking.app.core.util.DocumentKind.stripSuffix(raw.trim()).trim()
-        if (base.isEmpty()) {
-            val stem = newNoteStem(taken)
-            if ("${stem.lowercase()}$ext" !in taken) return "$stem$ext"
-            var n = 1
-            while ("${stem.lowercase()}_$n$ext" in taken) n++
-            return "${stem}_$n$ext"
-        }
-        if ("${base.lowercase()}$ext" !in taken) return "$base$ext"
-        var n = 1
-        while ("${base.lowercase()}_$n$ext" in taken) n++
-        return "${base}_$n$ext"
+        val stem = if (base.isEmpty()) newNoteStem(taken.map { it.lowercase() }.toSet()) else base
+        return com.notestaking.app.platform.DocumentNames.unique(stem, kind, taken)
     }
 
     /** Creates a new `.xnote` named [name] under [parentDocId], written by [write]; returns its URI, or null.
      *  If [write] throws (an IO error, or a cancelled import), the half-written file is deleted so a failed
      *  import never leaves an empty/partial note behind. */
     private fun createNoteFile(treeUri: String, parentDocId: String, name: String, write: (OutputStream) -> Unit): String? {
+        if (!com.notestaking.app.platform.DocumentNames.validRename(name)) return null
         val parent = android.provider.DocumentsContract.buildDocumentUriUsingTree(android.net.Uri.parse(treeUri), parentDocId)
+        val existing = browseChildren(treeUri, parentDocId).mapTo(HashSet()) { documentKey(it.documentUri) }
         val uri = runCatching {
             android.provider.DocumentsContract.createDocument(appContext.contentResolver, parent, "application/octet-stream", name)
         }.getOrNull() ?: return null
+        if (documentKey(uri.toString()) in existing ||
+            !com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(appContext.contentResolver, uri)
+        ) {
+            // A reused/opaque provider URI is not ours to truncate or delete.
+            return null
+        }
         return runCatching {
             com.notestaking.app.platform.ProviderOutput.write(
                 appContext.contentResolver.openOutputStream(uri, "wt"), write,
@@ -4742,6 +4740,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Renames a document (file or folder) to [newName]; follows the open note. IO, call off-thread. */
     fun renameDocument(docUri: String, newName: String): Boolean {
+        if (!com.notestaking.app.platform.DocumentNames.validRename(newName)) return false
+        val root = browseRoot
+        val parent = parentDocIdOf(docUri)
+        if (root != null && parent != null && browseChildren(root, parent).any {
+            it.name.equals(newName, ignoreCase = true) && documentKey(it.documentUri) != documentKey(docUri)
+        }) return false
         val result = runCatching {
             android.provider.DocumentsContract.renameDocument(appContext.contentResolver, android.net.Uri.parse(docUri), newName)
         }
@@ -4808,7 +4812,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun renameCurrentDocument(rawName: String): Boolean {
         val name = rawName.trim()
         if (name.isEmpty()) return false
-        val fileName = if (name.endsWith(".xnote", ignoreCase = true)) name else "$name.xnote"
+        val fileName = "${com.notestaking.app.platform.DocumentNames.stem(name)}.xnote"
         val uri = currentUri
         return if (uri != null) {
             renameDocument(uri, fileName)
