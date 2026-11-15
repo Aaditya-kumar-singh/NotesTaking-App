@@ -35,6 +35,59 @@ class TriadTests(unittest.TestCase):
         self.assertTrue(all(sum(t["batch"] == c for t in tasks) == 5
                             for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 
+    def test_coordinator_allocates_pending_ui_task_without_taking_b_session(self):
+        item="NP-019"  # P1 task originally routed to COORD
+        scope=("Read-only audit of Backstage/NewNoteScreen create and empty-library "
+               "behaviour; add regression tests only under "
+               "app/src/test/java/com/notestaking/app/ui/ and B-owned status; "
+               "do not modify shared production UI, A/C files or Gemini Quick Scratch.")
+        with patch.object(triad,"assert_coordinator"):
+            result=triad.allocate(self.db,item,"B",scope,self.data,triad.ROOT)
+        self.assertEqual(result["status"],"pending")
+        self.assertEqual(result["slot"],"B")
+        self.assertEqual(self.db.execute("SELECT session FROM triad_slots WHERE slot='B'").fetchone()[0],"legacy-b")
+        first=triad.next_tasks(self.db,"B","legacy-b",self.data)[0]
+        self.assertEqual(first["task"],item)
+        self.assertTrue(first["allocated"])
+        self.assertIn("Backstage",first["scope"])
+        with self.assertRaises(triad.Blocked):
+            triad.claim(self.db,"C","legacy-b",item,self.data)
+        triad.claim(self.db,"B","legacy-b",item,self.data)
+        with patch.object(triad,"assert_coordinator"):
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,item,"B",scope,self.data,triad.ROOT)
+
+    def test_pin_next_canvas_task_without_changing_source_catalog(self):
+        item="NP-036"
+        scope=("Audit shape recognition and hold-to-snap in C-owned canvas/core "
+               "source with pure regression tests. Preserve freehand stroke data and "
+               "undo/redo; no editor, toolbar, formats, shared resources or other files.")
+        with patch.object(triad,"assert_coordinator"):
+            triad.allocate(self.db,item,"C",scope,self.data,triad.ROOT)
+        self.db.execute("UPDATE triad_slots SET session='test-c' WHERE slot='C'")
+        next_items=triad.next_tasks(self.db,"C","test-c",self.data,include_optional=True)
+        self.assertEqual(next_items[0]["task"],item)
+        self.assertEqual(self.data["tasks"][0]["id"],"NP-020")  # original order unchanged
+        triad.claim(self.db,"C","test-c",item,self.data)
+        self.assertEqual(self.db.execute("SELECT status FROM triad_tasks WHERE task_id='NP-024'").fetchone()[0],"pending")
+
+    def test_allocate_rejects_unowned_source_and_gemini_or_device_tasks(self):
+        scope=("Read-only audit and tests within app/src/test/java/com/notestaking/app/ui/ "
+               "only; no source edits outside B-owned files. Report cross-owner fixes.")
+        with patch.object(triad,"assert_coordinator"):
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,"NP-004","B",scope,self.data,triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,"REL-09","B",scope,self.data,triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,"NP-024","B",scope,self.data,triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,"NP-019","B","Test everything",self.data,triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.allocate(self.db,"NP-019","B",
+                    "Implement inside app/src/main/java/com/notestaking/app/ui/Backstage.kt "
+                    "despite nonowned file limitations; shared code rewrite.",self.data,triad.ROOT)
+
     def test_bootstrap_preserves_live_claims(self):
         self.db.execute("CREATE TABLE claims(task_id TEXT PRIMARY KEY, agent TEXT, phase TEXT)")
         self.db.execute("INSERT INTO claims VALUES ('LANE-B','chat-b','active')")

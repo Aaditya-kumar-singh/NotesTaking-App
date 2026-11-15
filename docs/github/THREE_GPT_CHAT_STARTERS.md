@@ -2,6 +2,10 @@
 
 Use **one prompt in each separate ChatGPT conversation**. A replacement chat must explicitly supersede the previous slot first; never let two live conversations write to the same worktree. ChatGPT cannot automatically launch/drive these chats. All three use the existing LocalMCP plugin for `C:\\Users\\WHITE-SNAKE\\Desktop\\xnotes-android`.
 
+## Coordinator-reserved tasks for idle contributors
+
+> If no new task appears, check `python tools/agents/triad.py status` for `reserved_allocations`, then run `triad.py next --slot B/C --session <registered-id> --include-optional` using your own worktree. A coordinator may reserve a previously COORD-owned P1 accessibility task for B, but this **never expands B's source ownership**: inspect other UI files read-only, add tests only in B-owned `app/src/test/java/com/notestaking/app/ui/**`, and report any needed coordinator-owned production change. A C-owned optional geometry task can be explicitly prioritized. Only the intended B/C chat claims the reservation; the integrator never impersonates its session. Preserve all old handoffs and do not wait for unrelated CI.
+
 ## Nonblocking rule for every current or replacement chat
 
 > **Do not wait for a running/failed CI job or another checkpoint under review to start an independent local task.** The legacy `LANE-B` review locks approval and publication of that checkpoint, not the entire B worktree forever. Work through `tools/agents/triad.py claim` (not the old `coord.py claim-next`) after confirming a valid slot session, a clean worktree, a preserved ancestor checkpoint and disjoint file ownership. Keep the legacy claim and handoff SHA unchanged while the next A-Z task is implemented and committed locally. Use the next eligible task from any batch; do not force consecutive batch completion. Any A/B/C chat can exclusively claim a failed CI incident and help diagnose/fix it without taking another lane's files. Only the serialized coordinator publishes; a failed previous exact-SHA CI gate holds publishing but not local coding.

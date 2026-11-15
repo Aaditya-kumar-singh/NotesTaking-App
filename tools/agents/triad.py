@@ -222,14 +222,45 @@ def catalog_tasks(data):
 
 def next_tasks(db, slot: str, session: str, data: dict, include_optional=False):
     assert_session(db, slot, session)
-    states = {r["task_id"]: r["status"] for r in db.execute("SELECT task_id,status FROM triad_tasks")}
-    return [
+    states = {r["task_id"]: r for r in db.execute(
+        "SELECT task_id,status,slot,evidence FROM triad_tasks")}
+    available = [
         {"task": t["id"], "batch": t["batch"], "title": t["title"],
-         "priority": t["priority"], "status": states[t["id"]]}
+         "priority": t["priority"], "status": "pending",
+         "allocated": states[t["id"]]["slot"] == slot,
+         "scope": states[t["id"]]["evidence"] if states[t["id"]]["slot"] else None}
         for t in data["tasks"]
-        if t["owner"] == slot and states[t["id"]] == "pending"
+        if states[t["id"]]["status"] == "pending"
+        and (states[t["id"]]["slot"] or t["owner"]) == slot
         and (include_optional or t["release_scope"] == "required")
-    ][:10]
+    ]
+    return sorted(available, key=lambda task: not task["allocated"])[:10]
+
+
+def allocate(db, task_id: str, slot: str, scope: str, data: dict, repo: Path) -> dict:
+    """Coordinator reserves one still-pending task without taking a worker's session."""
+    assert_coordinator(repo)
+    task = catalog_tasks(data).get(task_id)
+    if not task or task["kind"] != "feature" or slot not in BRANCHES:
+        raise Blocked("Only existing feature tasks may be allocated to A/B/C")
+    if task["owner"] not in ("COORD", slot):
+        raise Blocked("Cannot steal a task owned by another contributor, Gemini or device QA")
+    if len(scope.strip()) < 80:
+        raise Blocked("Allocation must explain exact allowed scope and forbidden ownership")
+    if task["owner"] == "COORD" and slot == "B":
+        if ("app/src/test/java/com/notestaking/app/ui/" not in scope
+                or "read-only" not in scope.lower()):
+            raise Blocked("Chat B COORD reallocation must be read-only UI source audit plus owned tests")
+    with transaction(db):
+        row = db.execute("SELECT status,slot FROM triad_tasks WHERE task_id=?", (task_id,)).fetchone()
+        if not row or row["status"] != "pending" or row["slot"] is not None:
+            raise Blocked("Task already reserved, claimed, reviewed or no longer pending")
+        db.execute("UPDATE triad_tasks SET slot=?,evidence=?,updated_at=? "
+                   "WHERE task_id=? AND status='pending' AND slot IS NULL",
+                   (slot, "Coordinator allocation: " + scope, now(), task_id))
+        emit(db, "COORD", "task-allocate", f"{task_id} -> {slot}: {scope}")
+    return {"task": task_id, "slot": slot, "status": "pending",
+            "scope": scope, "note": "Reserved, NOT claimed. Assigned chat must claim with its own session."}
 
 
 def legacy_review_lineage(db: sqlite3.Connection, slot: str, repo: Path) -> str | None:
@@ -260,16 +291,20 @@ def legacy_review_lineage(db: sqlite3.Connection, slot: str, repo: Path) -> str 
 
 def claim(db, slot, session, task_id, data, repo: Path | None = None):
     t = catalog_tasks(data).get(task_id)
-    if not t or t["owner"] != slot:
-        raise Blocked("Task missing or not routed to this slot; request coordinator allocation")
+    if not t:
+        raise Blocked("Unknown task ID")
     with transaction(db):
         assert_session(db, slot, session)
+        route = db.execute("SELECT status,slot FROM triad_tasks WHERE task_id=?",
+                           (task_id,)).fetchone()
+        if not route or route["status"] != "pending" or (route["slot"] or t["owner"]) != slot:
+            raise Blocked("Task is not pending or allocated to this session's slot")
         preserved = legacy_review_lineage(db, slot, repo) if repo is not None else None
         if db.execute("SELECT 1 FROM triad_tasks WHERE slot=? AND status='active'", (slot,)).fetchone():
             raise Blocked("This slot already has an active task; hand it off first")
         r = db.execute("UPDATE triad_tasks SET status='active',slot=?,session=?,updated_at=? "
-                       "WHERE task_id=? AND status='pending'",
-                       (slot, session, now(), task_id))
+                       "WHERE task_id=? AND status='pending' AND (slot IS NULL OR slot=?)",
+                       (slot, session, now(), task_id, slot))
         if r.rowcount != 1:
             raise Blocked("Task was concurrently claimed, reviewed or deferred")
         emit(db, slot, "task-claim", task_id)
@@ -555,6 +590,9 @@ def status(db, data):
         "batches": by_batch,
         "open_task_claims": [dict(r) for r in db.execute(
             "SELECT * FROM triad_tasks WHERE status IN ('active','review') ORDER BY task_id")],
+        "reserved_allocations": [dict(r) for r in db.execute(
+            "SELECT task_id,slot,evidence,updated_at FROM triad_tasks "
+            "WHERE status='pending' AND slot IS NOT NULL ORDER BY updated_at")],
         "ci_incidents": [dict(r) for r in db.execute(
             "SELECT * FROM triad_incidents WHERE status != 'closed' ORDER BY run_id")],
         "publish": [dict(r) for r in db.execute("SELECT * FROM triad_publish")],
@@ -584,6 +622,10 @@ def main() -> int:
     c = sub.add_parser("ci-close")
     c.add_argument("run_id")
     c.add_argument("--evidence",required=True)
+    al = sub.add_parser("allocate")
+    al.add_argument("task")
+    al.add_argument("--slot", required=True, choices=BRANCHES)
+    al.add_argument("--scope", required=True)
     n = sub.add_parser("next")
     n.add_argument("--slot", required=True, choices=BRANCHES)
     n.add_argument("--session", required=True)
@@ -650,6 +692,8 @@ def main() -> int:
             out = ci_close(db,args.run_id,args.evidence,repo)
         elif args.command == "next":
             out = next_tasks(db, args.slot, args.session, data, args.include_optional)
+        elif args.command == "allocate":
+            out = allocate(db,args.task,args.slot,args.scope,data,repo)
         elif args.command == "replace":
             out = replace_session(db, args.slot, args.previous, args.session, args.reason, repo)
         elif args.command == "heartbeat":

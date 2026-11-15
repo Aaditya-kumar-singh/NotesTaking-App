@@ -61,6 +61,14 @@ python tools/agents/triad.py checklist
 
 **LANE-A active** likewise remains a separate legacy reservation; its current owner may claim A-Z tasks in its own file scope. A *new* conversation must first complete explicit `triad.py replace` with the previous chat stopped; never treat an old `legacy-a` session as permission for two simultaneous A writers. The new ledger does not replace original A/B/Gemini ownership or device QA gates.
 
+## When a chat has no remaining eligible tasks
+
+The original 130-task A-Z catalog is immutable. If a slot has submitted its work, the coordinator may **allocate a still-pending task** without changing its batch or giving away another worker's files. Only tasks in `pending` state can be allocated; tasks assigned to Gemini, another agent or device QA cannot be taken over. Allocations are recorded atomically in the live SQLite ledger; an allocation is **not a claim**, and the worker must claim it with its own registered session. The original catalog `owner` field remains unchanged, while the live task row records the reserved slot and exact scope.
+
+Example for B: `python tools/agents/triad.py allocate NP-019 --slot B --scope "Read-only create menu audit of coordinator-owned Backstage/NewNoteScreen; add regression tests only under app/src/test/java/com/notestaking/app/ui/; do not edit shared production UI, A/C paths, or Gemini Quick Scratch"`. B may inspect out-of-lane source **read-only** and write only its own allowed UI test/status files. If a real fix needs `Backstage.kt`, `NewNoteScreen.kt`, strings or another lane's code, B reports the exact dependency; the coordinator applies or assigns that production fix separately. The existing `tools/agents/check_lane.py` remains authoritative. For C, `allocate NP-036 --slot C --scope "..."` prioritizes an already C-owned optional task without stealing another claim.
+
+A reserved task appears before unreserved eligible tasks in `triad.py next`; use `--include-optional` for P2/P3 tasks. The `triad.py status` output shows `reserved_allocations` and keeps `pending/review/local_ready/verified` counts honest. Five tasks still form an A-Z review batch, but each slot may work on independent tasks across batches. No previously reviewed commit is changed, no CI gate is bypassed, and nothing runs without the contributor's next user turn.
+
 ## When the old chat finishes, a NEW chat replaces its slot
 
 **Do not create a second writer worktree for the same role.** A new conversation becomes the successor of the old A/B/C slot **only by explicit coordinator replacement**, never just by copying the prompt. ChatGPT cannot observe another chat ending. The user must stop the old conversation or ensure it will make no further edits.
