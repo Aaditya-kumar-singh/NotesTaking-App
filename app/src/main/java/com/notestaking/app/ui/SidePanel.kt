@@ -167,7 +167,16 @@ fun SidePanel(
     val palette = LocalPalette.current
     val tab = editor.sidePanelTab
     var pickingCover by remember { mutableStateOf(false) }
-    var exportStart by remember(editor) { mutableStateOf<PageExportStart?>(null) }
+    var exportStart by remember(editor, editor.state.document) { mutableStateOf<PageExportStart?>(null) }
+    var exportPagesAtOpen by remember(editor, editor.state.document) { mutableStateOf<List<Page>>(emptyList()) }
+    var exportDocumentAtOpen by remember(editor, editor.state.document) { mutableStateOf(editor.state.document) }
+    fun beginExport(start: PageExportStart) {
+        exportPagesAtOpen = editor.pagesSnapshot()
+        exportDocumentAtOpen = editor.state.document
+        exportStart = start
+    }
+    val pdfExportError = stringResource(R.string.err_export_pdf)
+    val imageExportError = stringResource(R.string.err_save_images)
     exportStart?.let { start ->
         PageExportDialog(
             start = start,
@@ -175,7 +184,13 @@ fun SidePanel(
             onDismiss = { exportStart = null },
             onExport = { pages, format, destination ->
                 exportStart = null
-                when {
+                val stillSamePages = editor.state.document === exportDocumentAtOpen &&
+                    com.notestaking.app.platform.ExportPageSelection.matchesSnapshot(
+                        exportPagesAtOpen, editor.pagesSnapshot(), pages,
+                    )
+                if (!stillSamePages) {
+                    editor.message = if (format == PageExportFormat.PDF) pdfExportError else imageExportError
+                } else when {
                     destination == PageExportDestination.SHARE -> onSharePages(pages, format == PageExportFormat.PDF)
                     format == PageExportFormat.PDF -> onSavePagesAsPdf(pages)
                     else -> onSavePagesAsImages(pages)
@@ -214,7 +229,7 @@ fun SidePanel(
         }
         if (tab == SidePanelTab.PAGES) {
             PagePanelHeader(editor, onInsertPdf) {
-                exportStart = PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL)
+                beginExport(PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL))
             }
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -222,7 +237,7 @@ fun SidePanel(
                 SidePanelTab.PAGES -> PagesTab(
                     editor,
                     onStartExport = { page, destination ->
-                        exportStart = PageExportStart(page, editor.selectedPageIndices(), PageExportScope.THIS, destination)
+                        beginExport(PageExportStart(page, editor.selectedPageIndices(), PageExportScope.THIS, destination))
                     },
                     onInsertPdf = onInsertPdf,
                     onPickCover = { pickingCover = true },
@@ -234,9 +249,9 @@ fun SidePanel(
         }
         if (tab == SidePanelTab.PAGES && editor.inPageSelectionMode) {
             PageSelectionBar(editor) { destination ->
-                exportStart = PageExportStart(
+                beginExport(PageExportStart(
                     editor.pageIndex, editor.selectedPageIndices(), PageExportScope.SELECTED, destination,
-                )
+                ))
             }
         }
     }

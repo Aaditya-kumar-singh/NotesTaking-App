@@ -7539,13 +7539,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         onProgress: (Int, Int) -> Unit = { _, _ -> },
         isCancelled: () -> Boolean = { false },
     ) {
-        val pages = indices.distinct().sorted().mapNotNull { pageAt(it) }
-        if (pages.isEmpty()) return
-        val sub = Document(dpi = state.document.dpi, pdfFile = state.document.pdfFile)
+        val doc = state.document
+        val pages = com.notestaking.app.platform.ExportPageSelection.resolve(doc.pages.toList(), indices)
+        val sub = Document(dpi = doc.dpi, pdfFile = doc.pdfFile)
         sub.pages.addAll(pages) // share the page objects; export only reads them
-        sub.style = state.document.style // carry the note's "all pages" style into the subset export
-        sub.templates = state.document.templates
-        sub.templatePackages = state.document.templatePackages
+        sub.style = doc.style // carry the note's "all pages" style into the subset export
+        sub.templates = doc.templates
+        sub.templatePackages = doc.templatePackages
         // A private source per export, see [exportPdf]. The shared PDF file is read-only and owned
         // by the open document, so closing src won't delete it.
         val src = sub.pdfFile?.let { com.notestaking.app.platform.PdfSource.create(it) }
@@ -7555,8 +7555,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 { exportPaper(sub, it) },
                 { page, r -> paintExportRuling(sub, page, r) },
                 onProgress, isCancelled,
-                // The subset shares the open note's page objects, so its flow lines map through.
-                flow = flowExportHooks(state.document),
+                // The subset shares the captured note's page objects, so its flow lines map through.
+                flow = flowExportHooks(doc),
                 title = title,
                 headingBookmarks = settings.prefs.pdfHeadingBookmarks,
             )
