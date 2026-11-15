@@ -630,7 +630,7 @@ internal fun Swatch(
     val bar = LocalBar.current
     val colourLabel = stringResource(R.string.colour)
     val accessibleLabel = if (ink != null) "$colourLabel ${Rgba.toHex(ink)}" else colourLabel
-    Tooltip(accessibleLabel) {
+    Tooltip(accessibleLabel, hint = if (active) stringResource(R.string.material_custom_colour) else null) {
         Box(
             modifier = Modifier
                 .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
