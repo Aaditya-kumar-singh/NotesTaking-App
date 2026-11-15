@@ -159,7 +159,9 @@ class PdfMarkupSafetyTest {
             val pdfPage = PDPage(PDRectangle(600f, 400f)).apply { rotation = 90 }
             pdf.addPage(pdfPage)
             val frame = PageFrame.of(0.0, 0.0, 600.0, 400.0, 90, 1.0)
-            PdfMarkups.write(PdfExportContext(pdf), pdfPage, page.markups, frame)
+            val ctx = PdfExportContext(pdf)
+            PdfMarkups.write(ctx, pdfPage, page.markups, frame)
+            ctx.finish() // A markup-only PDF must never start Android-only text shaping.
             assertEquals(3, pdfPage.annotations.size)
             val bytes = ByteArrayOutputStream().also { pdf.save(it) }.toByteArray()
             PDDocument.load(bytes).use { reopened ->

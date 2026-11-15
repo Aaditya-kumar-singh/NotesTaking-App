@@ -11,8 +11,9 @@ import kotlin.math.roundToInt
  */
 internal class PdfExportContext(val doc: PDDocument) {
 
-    /** The export's text fonts, filled as pages set text and written out by [finish]. */
-    val text = PdfText(doc)
+    /** Text resources initialize only if text is drawn; markup-only export needs no Android text shaper. */
+    private val deferredText = lazy { PdfText(doc) }
+    val text: PdfText get() = deferredText.value
 
     /** The document's logical structure when the export is tagged; set before the first page. */
     var tags: PdfTags? = null
@@ -21,7 +22,7 @@ internal class PdfExportContext(val doc: PDDocument) {
 
     /** Complete everything built up while drawing. Call once, after the last page and before saving. */
     fun finish() {
-        text.finish()
+        if (deferredText.isInitialized()) deferredText.value.finish()
         tags?.finish()
     }
 
