@@ -4,7 +4,9 @@
 **Updated:** 2026-10-29.
 **Rule:** **Development continues during CI.** GitHub CI is an acceptance gate for a particular commit, not a signal to stop writing the next feature.
 
-**2026-11-13 two-ChatGPT addendum:** When two ChatGPT conversations use the **same LocalMCP connection**, each must use a separate in-root Git worktree, ownership guard and status file defined in [DUAL_GPT_LOCALMCP.md](DUAL_GPT_LOCALMCP.md). Its role and path rules override the older assumption below that parallel work requires switching branches in one working tree. Only the coordinator may integrate and publish.
+**2026-11-15 three-ChatGPT rule:** [THREE_GPT_APK_WORKFLOW.md](THREE_GPT_APK_WORKFLOW.md) supersedes the old two-chat wording below for A/B/C worktrees, session replacements, A-Z five-task batches and CI incident claims. A new task is source-editable while unrelated CI runs, fails or is offline; only publication/integration waits for required exact-SHA verification. No autonomous ChatGPT work is implied.
+
+**2026-11-13 two-ChatGPT addendum (historical):** When two ChatGPT conversations use the **same LocalMCP connection**, each must use a separate in-root Git worktree, ownership guard and status file defined in [DUAL_GPT_LOCALMCP.md](DUAL_GPT_LOCALMCP.md). Its role and path rules override the older assumption below that parallel work requires switching branches in one working tree. Only the coordinator may integrate and publish.
 
 This document is the operating plan for future `next` / `proceed` requests. It complements [BATCHED_CI_POLICY.md](BATCHED_CI_POLICY.md) and [WORKFLOWS.md](WORKFLOWS.md), which define the actual GitHub triggers.
 

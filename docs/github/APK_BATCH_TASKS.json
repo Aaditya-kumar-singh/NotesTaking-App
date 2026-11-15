@@ -1,0 +1,1985 @@
+{
+  "version": 1,
+  "project": "NotesTaking-App",
+  "source": [
+    "docs/notein-parity/FEATURE_MATRIX.md",
+    "docs/notein-parity/TEST_PLAN.md"
+  ],
+  "description": "Snapshot of 110 NP feature checks plus 20 release gates, exactly five tasks per A-Z batch.",
+  "status_authority": "SQLite in common Git directory, not this snapshot",
+  "tasks": [
+    {
+      "id": "NP-020",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Stylus takes exclusive ink ownership",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify full pen-down→up route with pen, palm, second finger",
+      "acceptance": "No stroke broken by incidental touch or pinch",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-019"
+      ],
+      "batch": "A",
+      "order": 1
+    },
+    {
+      "id": "NP-021",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Finger-first then stylus-first mixed pointer handoff",
+      "source_state": "SOURCE",
+      "next_evidence": "Review pointer-ID history and cancel cases across canvases",
+      "acceptance": "Stylus starts/finishes normally with resting finger",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "A",
+      "order": 2
+    },
+    {
+      "id": "NP-022",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Stylus/eraser tip bypasses page scrollbar drag",
+      "source_state": "PUBLISHED",
+      "next_evidence": "B09 `5072725` pushed; CI [#42966793225](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/42966793225) running, tablet QA pending",
+      "acceptance": "Pen and eraser draw beside scrollbar; finger scrolling still works",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-020",
+        "NT-021",
+        "NT-022"
+      ],
+      "batch": "A",
+      "order": 3
+    },
+    {
+      "id": "NP-023",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Pressure-sensitive pen strokes",
+      "source_state": "SOURCE",
+      "next_evidence": "Profile pressure values and low/high-pressure continuity",
+      "acceptance": "Pressure affects resulting stroke at 25–400% zoom",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-023"
+      ],
+      "batch": "A",
+      "order": 4
+    },
+    {
+      "id": "NP-039",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Point/area eraser splits ink into surviving segments",
+      "source_state": "SOURCE",
+      "next_evidence": "Check swept clipping, pressure interpolation and double crossing",
+      "acceptance": "Middle removed, ends remain editable at all zooms",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-031"
+      ],
+      "batch": "A",
+      "order": 5
+    },
+    {
+      "id": "NP-040",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Whole-stroke eraser removes full intersected line",
+      "source_state": "SOURCE",
+      "next_evidence": "Preserve separate mode and its current persisted preference",
+      "acceptance": "Touch removes entire stroke, no neighboring strokes",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-032"
+      ],
+      "batch": "B",
+      "order": 1
+    },
+    {
+      "id": "NP-047",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Area eraser flicker under dense ink",
+      "source_state": "LOCAL",
+      "next_evidence": "B15 bounded repaint for plain pen strokes added; dense-PDF flicker reproduction and hardware traces still required",
+      "acceptance": "No flash/blank region while continuous erasing",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-038"
+      ],
+      "batch": "B",
+      "order": 2
+    },
+    {
+      "id": "NP-053",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Import PDF with Android Storage Access Framework",
+      "source_state": "PARTIAL",
+      "next_evidence": "B29 CI passed for page-size validation and resource cleanup; B30 CI-verified multi-import progress/outcome accuracy; B31 CI-verified early single-import cancellation; B32 CI-verified invalid page-geometry rejection; B33 CI-verified specific PDF staging failures; B34 CI-verified inserted-PDF geometry and cleanup; B35 CI-verified bounded page-size reads; B36 locally rejects oversized combined PDF joins and malformed join geometry before PDFBox; test providers and large PDFs",
+      "acceptance": "Import preserves original source and can reopen",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-043"
+      ],
+      "batch": "B",
+      "order": 3
+    },
+    {
+      "id": "NP-055",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "PDF page overlay coordinates at any zoom/rotation",
+      "source_state": "SOURCE",
+      "next_evidence": "Reproduce crop/rotation/margin cases with landmark ink",
+      "acceptance": "Ink stays on landmark at 50–400% zoom/reopen/export",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-044",
+        "NT-045"
+      ],
+      "batch": "B",
+      "order": 4
+    },
+    {
+      "id": "NP-071",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Native .xnote/.xcanvas saves preserve editable strokes",
+      "source_state": "SOURCE",
+      "next_evidence": "Retain current native format; B37 adds extracted `.xnote` ink/asset roundtrip regression; still test old fixtures and `.xcanvas` on device",
+      "acceptance": "Sample/pressure/page content identical after reopen",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-054"
+      ],
+      "batch": "B",
+      "order": 5
+    },
+    {
+      "id": "NP-081",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "SAF Save As/Share URI, MIME and write completion",
+      "source_state": "PARTIAL",
+      "next_evidence": "B21/B23–B28 CI-verified null-stream, provider output, partial cleanup and occupied/unreadable destination guards; B42 stalled-zero-read detection and byte-integrity regression passed CI; B43 zero-size SAF destination verification passed CI; device compatibility QA pending; Chat A provider-sidecar null-stream guard passed GitHub CI #43572100224 on `cfadefe`; provider retry and device acceptance remain open",
+      "acceptance": "Only report success after durable, complete bytes",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-060"
+      ],
+      "batch": "C",
+      "order": 1
+    },
+    {
+      "id": "NP-082",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Export progress, cancel and temporary file cleanup",
+      "source_state": "PARTIAL",
+      "next_evidence": "B25/B26 staged PDF/PNG cleanup and B38 Extract/Merge native asset cancellation passed CI; B42 provider-copy stalled-read detection and error cleanup passed GitHub CI; B44 final PDF/ZIP destination-copy cancellation passed GitHub CI at `9729c7c`; device cancel, disk-full and provider tests pending",
+      "acceptance": "No corrupt output or abandoned large staging files",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-061"
+      ],
+      "batch": "C",
+      "order": 2
+    },
+    {
+      "id": "NP-083",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Safe native ZIP import and resource limits",
+      "source_state": "SOURCE",
+      "next_evidence": "BoundedZipInputStream exists; execute malformed/traversal/bomb fixtures in CI",
+      "acceptance": "Traversal rejected; original/staging untouched",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-062"
+      ],
+      "batch": "C",
+      "order": 3
+    },
+    {
+      "id": "NP-084",
+      "kind": "feature",
+      "priority": "P0",
+      "title": "Atomic local save and document recovery",
+      "source_state": "PARTIAL",
+      "next_evidence": "B18 recovery/overwrite tests and B27–B28 occupied SAF protection passed CI; B39 zero-byte atomic-save protection passed CI; B41 bulk-byte asset output passed CI at `fd72e00`; Chat A B45/B46 metadata preflight and native ZIP structure checks passed GitHub CI #43566218915 on `0ac256e`; Chat A B47/B48 blocked-directory and empty-native-file metadata-only preflight passed GitHub CI #43570476224 on `1280b8b`; document-plus-sidecar writes still are not a cross-file atomic transaction; force-stop and low-storage device QA remain",
+      "acceptance": "Old valid note survives interrupted write",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-063"
+      ],
+      "batch": "C",
+      "order": 4
+    },
+    {
+      "id": "NP-001",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "No mandatory sign-in for core note creation",
+      "source_state": "SOURCE",
+      "next_evidence": "Preserve guest/offline access; never copy Notein's account gate",
+      "acceptance": "Create and reopen an offline note without network/account",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-010"
+      ],
+      "batch": "C",
+      "order": 5
+    },
+    {
+      "id": "NP-003",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Fast launch into recent/home library",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate home state persistence and fast first editable stroke",
+      "acceptance": "Reopen last note or create one in fewer than three actions",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-011"
+      ],
+      "batch": "D",
+      "order": 1
+    },
+    {
+      "id": "NP-004",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Quick Scratch new blank note affordance",
+      "source_state": "GAP",
+      "next_evidence": "Add one-tap quick-note creation using existing new-note flow",
+      "acceptance": "Tap opens writable note; back saves/asks safely",
+      "owner": "GEMINI",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "D",
+      "order": 2
+    },
+    {
+      "id": "NP-005",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Standard Note and Infinite Canvas creation",
+      "source_state": "SOURCE",
+      "next_evidence": "Keep both clear in creation sheet",
+      "acceptance": "Both create valid documents in portrait and landscape",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-012"
+      ],
+      "batch": "D",
+      "order": 3
+    },
+    {
+      "id": "NP-006",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Create folders and rename/move notes",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate nested operations and permission failures",
+      "acceptance": "Move/rename no duplicate/lost content",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "D",
+      "order": 4
+    },
+    {
+      "id": "NP-009",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Paper/cover template preview",
+      "source_state": "SOURCE",
+      "next_evidence": "B05 added preview; verify real phone/tablet layout",
+      "acceptance": "Preview equals created cover/paper appearance",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-013"
+      ],
+      "batch": "D",
+      "order": 5
+    },
+    {
+      "id": "NP-013",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Search library by title/type",
+      "source_state": "SOURCE",
+      "next_evidence": "Check empty recovery, clear filter, keyboard search",
+      "acceptance": "Exact/partial search yields correct note",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-014"
+      ],
+      "batch": "E",
+      "order": 1
+    },
+    {
+      "id": "NP-017",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Recent items and Trash recovery",
+      "source_state": "PARTIAL",
+      "next_evidence": "B19 restores truthful success/failure/partial-delete messages and busy state; real Trash behavior still requires provider QA",
+      "acceptance": "Restore note without lost attachments; delete is deliberate",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-016"
+      ],
+      "batch": "E",
+      "order": 2
+    },
+    {
+      "id": "NP-019",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Accessible create menu and empty-library recovery",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate 48dp controls, no dead-end empty screens",
+      "acceptance": "Create/Import accessible at phone/tablet sizes",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-018"
+      ],
+      "batch": "E",
+      "order": 3
+    },
+    {
+      "id": "NP-025",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Smooth in-progress ink with commit on pen-up",
+      "source_state": "SOURCE",
+      "next_evidence": "Test front buffer cancellation/flush and no double frame",
+      "acceptance": "No disappearing ink, doubling or late commit",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "E",
+      "order": 4
+    },
+    {
+      "id": "NP-026",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Stylus-only ink vs finger draw setting",
+      "source_state": "LOCAL",
+      "next_evidence": "B14 finger-write toggle + B16 state/overflow UX integrated locally; verify cloud build and real pen/finger gestures",
+      "acceptance": "Finger pans in stylus-only mode; can draw when enabled",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-025"
+      ],
+      "batch": "E",
+      "order": 5
+    },
+    {
+      "id": "NP-027",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Two/three finger gestures and pinch zoom",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify no synthetic tap or phantom ink; clear settings names",
+      "acceptance": "Gesture action triggers once; zoom keeps ink anchored",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "F",
+      "order": 1
+    },
+    {
+      "id": "NP-028",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Stylus side button/rear eraser mappings",
+      "source_state": "SOURCE",
+      "next_evidence": "Test reported button codes and tool switching on S Pen tablet",
+      "acceptance": "Configured action works and restores previous tool",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "F",
+      "order": 2
+    },
+    {
+      "id": "NP-029",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "One-tap Read/Pan vs Annotate on PDFs",
+      "source_state": "PUBLISHED",
+      "next_evidence": "B08 `5633d01` pushed; CI/device status must be checked",
+      "acceptance": "Read pans, Annotate restores actual last tool",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-026"
+      ],
+      "batch": "F",
+      "order": 3
+    },
+    {
+      "id": "NP-030",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Pen, dashed, calligraphy, taper and speed tools",
+      "source_state": "SOURCE",
+      "next_evidence": "Check each width/pressure/shape on phone and tablet",
+      "acceptance": "Strokes visually distinct and retain settings",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-027"
+      ],
+      "batch": "F",
+      "order": 4
+    },
+    {
+      "id": "NP-031",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Highlighter transparency and inverse mode",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate compositing against dark/light paper and PDF background",
+      "acceptance": "Highlight is consistent with/without inverted paper",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "F",
+      "order": 5
+    },
+    {
+      "id": "NP-032",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Three saved configurations per pen",
+      "source_state": "LOCAL",
+      "next_evidence": "B10 `65d1aaa` committed; verify settings roundtrip and popup",
+      "acceptance": "Save/apply/delete 3 slots per tool after restart",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-008",
+        "NT-028"
+      ],
+      "batch": "G",
+      "order": 1
+    },
+    {
+      "id": "NP-037",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Text, image, sticker, screenshot, hyperlink tools",
+      "source_state": "PARTIAL",
+      "next_evidence": "B19 preserves exported image URI files; B20 adds GL decode retry; verify clipboard and image roundtrip on Android",
+      "acceptance": "Each object can be edited, moved and restored",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "G",
+      "order": 2
+    },
+    {
+      "id": "NP-041",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Selection/lasso-based erasing semantics",
+      "source_state": "PARTIAL",
+      "next_evidence": "Lasso selection exists; clarify delete-selection vs eraser modes",
+      "acceptance": "Selected objects only are removed; undo one step",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-033"
+      ],
+      "batch": "G",
+      "order": 3
+    },
+    {
+      "id": "NP-042",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Eraser size slider and cursor ring",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate ring matches effective width at changing zoom",
+      "acceptance": "Displayed radius matches removed segment width",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-034"
+      ],
+      "batch": "G",
+      "order": 4
+    },
+    {
+      "id": "NP-048",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "One erase sweep is one undo transaction",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify multi-crossing and cancel paths",
+      "acceptance": "Undo once restores all pieces; Redo identical",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-039"
+      ],
+      "batch": "G",
+      "order": 5
+    },
+    {
+      "id": "NP-049",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Separate Undo/Redo stack and branch policy",
+      "source_state": "SOURCE",
+      "next_evidence": "Check per-pane focus and redo invalidation",
+      "acceptance": "Undo/redo deterministic, no other pane modified",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-040"
+      ],
+      "batch": "H",
+      "order": 1
+    },
+    {
+      "id": "NP-052",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Selection and eraser accessibility labels",
+      "source_state": "PARTIAL",
+      "next_evidence": "Verify tool names, spoken selection state and 48dp hit boxes",
+      "acceptance": "TalkBack announces mode/size and can switch both",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "H",
+      "order": 2
+    },
+    {
+      "id": "NP-054",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Protected or malformed PDF failure handling",
+      "source_state": "PARTIAL",
+      "next_evidence": "B29 CI passed incomplete geometry rejection; B30 CI-verified batch failure/cancellation feedback; B31 CI-verified stale password-error reset; B32 CI-verified malformed MediaBox rejection; B33 CI-verified source/format/size/password feedback; B34 CI-verified malformed page rejection during insertion; B35 CI-verified exact native geometry slices; B36 locally rejects malformed PDF join inputs before mutation; physical provider QA remains pending",
+      "acceptance": "Wrong password/invalid file never corrupts note",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "H",
+      "order": 3
+    },
+    {
+      "id": "NP-056",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Vector-backed PDF background render",
+      "source_state": "SOURCE",
+      "next_evidence": "Keep source PDF vector and bounded memory; measure on device",
+      "acceptance": "Text stays sharp, no 200-page OOM",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "H",
+      "order": 4
+    },
+    {
+      "id": "NP-057",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Single/multi-page thumbnail navigation",
+      "source_state": "SOURCE",
+      "next_evidence": "B06 page manager improved; verify page index after reorder",
+      "acceptance": "Thumbnail jumps correctly with stable cover handling",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-046"
+      ],
+      "batch": "H",
+      "order": 5
+    },
+    {
+      "id": "NP-058",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Insert blank/template pages into PDF note",
+      "source_state": "PARTIAL",
+      "next_evidence": "B34 CI-verified inserted-PDF geometry and failed-join cleanup; verify destination order, sizes, undo and original source integrity",
+      "acceptance": "Mixed PDF/blank pages persist and export",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "I",
+      "order": 1
+    },
+    {
+      "id": "NP-062",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Save selected page(s) as a new editable note",
+      "source_state": "SOURCE",
+      "next_evidence": "Existing Extract to new note menu supports single/multi-page native `.xnote`; B37 locally guards cancellation and adds embedded-asset roundtrip tests; real provider QA pending",
+      "acceptance": "New note independent; original unchanged",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-048"
+      ],
+      "batch": "I",
+      "order": 2
+    },
+    {
+      "id": "NP-065",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "PDF text search and search-result jump",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify PDFium text with non-Latin and rotated pages",
+      "acceptance": "Next/previous jumps to correct visible hit",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "I",
+      "order": 3
+    },
+    {
+      "id": "NP-066",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Reading mode hand/Pan tool shortcuts",
+      "source_state": "PUBLISHED",
+      "next_evidence": "B08 `5633d01`; keep PDF zoom and bookmark states",
+      "acceptance": "Switching Read/Annotate does not reset view",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-050"
+      ],
+      "batch": "I",
+      "order": 4
+    },
+    {
+      "id": "NP-070",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "200+ page PDF performance and viewport retention",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "B35 CI-verified geometry limit; B36 locally prevents over-limit PDFBox joins/subsets; still measure memory, scroll latency and cache thrash on device",
+      "acceptance": "No repeated full re-render or lost pen gesture",
+      "owner": "C",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-053"
+      ],
+      "batch": "I",
+      "order": 5
+    },
+    {
+      "id": "NP-072",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Export this/selected/all/custom page ranges",
+      "source_state": "PARTIAL",
+      "next_evidence": "B07 scope selector; B26 CI-verified truthful multi-PNG counts on partial provider failure; verify page order, invalid inputs and device output",
+      "acceptance": "Exact PDF/PNG page count, no partial range export",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-009",
+        "NT-055"
+      ],
+      "batch": "J",
+      "order": 1
+    },
+    {
+      "id": "NP-073",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "PDF vs editable native-note explanation",
+      "source_state": "LOCAL",
+      "next_evidence": "B11: shareable PDF copy now explains native stroke editability; pending CI and phone review",
+      "acceptance": "User understands what can be edited after saving",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-056"
+      ],
+      "batch": "J",
+      "order": 2
+    },
+    {
+      "id": "NP-074",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Separate truly editable PDF annotation export",
+      "source_state": "PARTIAL",
+      "next_evidence": "**R-PDF-ANNOT research verified:** Existing PDFBox export writes independent highlight, underline, strikeout and squiggle text-markup annotations. Ordinary pen strokes, shapes and text are page content, not editable annotation objects; raster fallback also flattens. Next: design opt-in simple-stroke `/Ink` annotations with existing PDFBox, preserve standard PDF export and native notes, add PDF structure/reopen tests and Acrobat/Xodo edit/save/reopen QA. This is research only, not an implemented ink export or device acceptance.",
+      "acceptance": "Exported annotations independently editable in other readers",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-057"
+      ],
+      "batch": "J",
+      "order": 3
+    },
+    {
+      "id": "NP-085",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Save Page As creates independent native note",
+      "source_state": "SOURCE",
+      "next_evidence": "Existing `extractPages`/`writeCargoNote` uses PageCargo and native DocumentCodec; B37 asset roundtrip and B38 early Cancel/overlapping Extract/Merge safeguards passed CI; phone/tablet provider and Move QA pending",
+      "acceptance": "New page note is editable; source remains unchanged",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-064"
+      ],
+      "batch": "J",
+      "order": 4
+    },
+    {
+      "id": "NP-089",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "48dp touch regions on primary actions",
+      "source_state": "PARTIAL",
+      "next_evidence": "B01–B07 increased many; B45 paged toolbar title/page/zoom 48dp text targets passed CI (device QA pending); full-app phone/tablet audit remains",
+      "acceptance": "All finger actions have ≥48dp hit area",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-067"
+      ],
+      "batch": "J",
+      "order": 5
+    },
+    {
+      "id": "NP-090",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "TalkBack labels and active/selected state",
+      "source_state": "PARTIAL",
+      "next_evidence": "B40 selected-state semantics passed GitHub CI; B50 page/zoom spoken values passed GitHub CI #43568212147 on `3df2b04`; B64 swatch hex tooltip passed exact-SHA CI #43674159527 on `894cae6`; B65 Waypoints Fit All passed CI #43675081285 on `8105a40`; B66 keyboard/TalkBack section reordering passed CI #43675960404 on `23026f4`; B67 sticker-picker tile focus/labels/grid passed CI #43679116911 on `75d89ba` (device QA pending); TalkBack device QA and remaining icon/preset/dialog audit pending",
+      "acceptance": "Every icon is discoverable, action/state spoken",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-068"
+      ],
+      "batch": "K",
+      "order": 1
+    },
+    {
+      "id": "NP-091",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Phone/tablet/landscape responsive editor",
+      "source_state": "SOURCE",
+      "next_evidence": "Measure portrait/landscape, split/multi-window and keyboard",
+      "acceptance": "No clipped toolbar or inaccessible Save",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-069"
+      ],
+      "batch": "K",
+      "order": 2
+    },
+    {
+      "id": "NP-092",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Large-font settings and keyboard/back navigation",
+      "source_state": "PARTIAL",
+      "next_evidence": "B46 CI-passed stacked tooltip shortcuts at ≥1.3 font scale; B47 CI-passed floating quick-action scroll with split Close Pane pinned; B48 CI-passed collapsed Expand accessibility for narrow panes; B49 keyboard toggle and Compose imports passed CI #43416921904; B51 keyboard focus outline passed CI #43569440413 on `b751ff1`; B52 shared toolbar focus passed CI #43573157803 on `d4741c8`; B53 Add Section focus/role passed CI #43573959181 on `efd1e58`; B54 grip movement availability passed CI #43576715502 on `c86ce7c`; B55 Reset suppression passed CI #43581363803 on `79f7700`; B56 infinite All Tools Fit guard passed CI #43584553499 on `d3de83b`; B57 paged Rename label/IME Done passed CI #43585453675 on `e844af0`; B58 paged/PDF Fit zoom-lock guard passed CI #43586268815 on `66d70b0`; B59 vertical canvas warnings passed CI #43587081045 on `58cbed0`; B60 vertical note-title passed CI #43588674901 on `e863c2a`; B61 vertical title/warning focus passed CI #43589804366 on `d0ec195`; B62 horizontal focus/tooltips CI passed #43590738780 at `42069f2`; B63 grip-arrow routing CI passed #43594334659 at `0f892fc`; B64 swatch tooltip passed CI #43674159527 on `894cae6`; B66 toolbar-section Move Up/Down controls passed CI #43675960404 on `23026f4`; B67 sticker tile focus/labels/grid passed CI #43679116911 on `75d89ba`; 320dp/1.3x/2x keyboard and TalkBack device QA still pending; settings, focus and system Back remain open",
+      "acceptance": "No truncated critical action at 320dp",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-070"
+      ],
+      "batch": "K",
+      "order": 3
+    },
+    {
+      "id": "NP-100",
+      "kind": "feature",
+      "priority": "P1",
+      "title": "Accurate save, undo, export status and feedback",
+      "source_state": "PARTIAL",
+      "next_evidence": "B59 vertical GL/low-memory warnings published for CI #43587081045; remaining error/success/cancellation UI audit open",
+      "acceptance": "No false success, clear retry on provider failure",
+      "owner": "B",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "K",
+      "order": 4
+    },
+    {
+      "id": "NP-002",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Optional short onboarding with Skip",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Audit actual first-run flow; add dismissible guidance only if needed",
+      "acceptance": "Skip is visible, survives restart, no consent automatically granted",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "K",
+      "order": 5
+    },
+    {
+      "id": "NP-007",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Import documents directly from Create menu",
+      "source_state": "SOURCE",
+      "next_evidence": "Expose PDF + supported types, warn about unsupported formats",
+      "acceptance": "Import valid PDF/notes; fail cleanly on unsupported DOCX",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "L",
+      "order": 1
+    },
+    {
+      "id": "NP-008",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Import image/media into editor",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify SAF URI limits and foreground result",
+      "acceptance": "Image/audio embedded and survives reopen",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-017"
+      ],
+      "batch": "L",
+      "order": 2
+    },
+    {
+      "id": "NP-010",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "A4, custom sizes and orientation",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify mm settings, portrait/landscape and PDF mixes",
+      "acceptance": "Custom page dimensions persist across reopen/export",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "L",
+      "order": 3
+    },
+    {
+      "id": "NP-011",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Ruled, dotted, grid and blank template choices",
+      "source_state": "SOURCE",
+      "next_evidence": "Audit template catalog, two-column layouts, accessibility labels",
+      "acceptance": "All available templates render and persist consistently",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "L",
+      "order": 4
+    },
+    {
+      "id": "NP-012",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Notebook title and safe naming",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate reserved names, collisions and cancel",
+      "acceptance": "Named note opens without overwriting another",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "L",
+      "order": 5
+    },
+    {
+      "id": "NP-014",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Sort and grid/gallery/list toggles",
+      "source_state": "SOURCE",
+      "next_evidence": "Preserve sorting and view choice per folder",
+      "acceptance": "Correct order and no lost selection after toggle",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "M",
+      "order": 1
+    },
+    {
+      "id": "NP-015",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Favorites/stars for notes (not favorite pens)",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Confirm note-level flag/store; implement only if absent",
+      "acceptance": "Starred filter updates and persists across relaunch",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-015"
+      ],
+      "batch": "M",
+      "order": 2
+    },
+    {
+      "id": "NP-016",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Labels/tags and color filters",
+      "source_state": "PARTIAL",
+      "next_evidence": "Color filters present; label/tag model needs independent design",
+      "acceptance": "Tag add/remove/filter with safe migration and multi-note handling",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "M",
+      "order": 3
+    },
+    {
+      "id": "NP-018",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Bulk copy/move/export/delete in library",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify selection actions and partial failures",
+      "acceptance": "N selected documents processed exactly once with errors",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "M",
+      "order": 4
+    },
+    {
+      "id": "NP-024",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Tilt/orientation brush response",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Confirm raw axis handling before adding tilt curve UI",
+      "acceptance": "Supported tablet responds; unsupported device degrades safely",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-024"
+      ],
+      "batch": "M",
+      "order": 5
+    },
+    {
+      "id": "NP-033",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Floating favorite pen dock",
+      "source_state": "SOURCE",
+      "next_evidence": "B03 implementation; validate grip, collapsed width and overlap",
+      "acceptance": "Dock remains tappable across orientations",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-029"
+      ],
+      "batch": "N",
+      "order": 1
+    },
+    {
+      "id": "NP-034",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Color overrides, custom colors and recents",
+      "source_state": "SOURCE",
+      "next_evidence": "Ensure saved pen color remains fixed when toolbar color changes",
+      "acceptance": "Color override and recents survive reopening",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "N",
+      "order": 2
+    },
+    {
+      "id": "NP-035",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Movable toolbar and visible tool states",
+      "source_state": "SOURCE",
+      "next_evidence": "B01/B02; verify dragging never leaves screen or draws ink",
+      "acceptance": "Tool drag is separate from canvas ink",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "N",
+      "order": 3
+    },
+    {
+      "id": "NP-036",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Shape recognition/hold-to-snap",
+      "source_state": "SOURCE",
+      "next_evidence": "Test false positives, undo and page transforms",
+      "acceptance": "Intentional hold shapes recognized; freehand retained otherwise",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-030"
+      ],
+      "batch": "N",
+      "order": 4
+    },
+    {
+      "id": "NP-038",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Audio recording and synchronized playback",
+      "source_state": "SOURCE",
+      "next_evidence": "Validate permission denial and clip lifecycle",
+      "acceptance": "Playback works after relaunch; no lost recording",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "N",
+      "order": 5
+    },
+    {
+      "id": "NP-043",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Pressure-sensitive eraser size",
+      "source_state": "GAP",
+      "next_evidence": "Design optional pressure width after hardware calibration",
+      "acceptance": "Pressure on/off has measured reversible effect",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-035"
+      ],
+      "batch": "O",
+      "order": 1
+    },
+    {
+      "id": "NP-044",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Erase only marker/highlighter content",
+      "source_state": "GAP",
+      "next_evidence": "Add independent content filter without deleting PDF source",
+      "acceptance": "Marker removed while pen and source PDF unchanged",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-036"
+      ],
+      "batch": "O",
+      "order": 2
+    },
+    {
+      "id": "NP-045",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Erase only tape/selected object types",
+      "source_state": "GAP",
+      "next_evidence": "Provide safe type filters with explicit active indication",
+      "acceptance": "Only permitted types erased in mixed layer test",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "O",
+      "order": 3
+    },
+    {
+      "id": "NP-046",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Eraser affects PDF markup when opted in",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify toggle and that source PDF text remains untouched",
+      "acceptance": "Markup erased/not erased exactly per setting",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-037"
+      ],
+      "batch": "O",
+      "order": 4
+    },
+    {
+      "id": "NP-050",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Layer management UI, hide, lock and reorder",
+      "source_state": "PARTIAL",
+      "next_evidence": "PageLayers render ordering exists; full named-layer editor needs audit",
+      "acceptance": "Hidden/locked layer preserved and excluded from erase",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-041"
+      ],
+      "batch": "O",
+      "order": 5
+    },
+    {
+      "id": "NP-051",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Lasso select/resize/recolor/copy to another page",
+      "source_state": "SOURCE",
+      "next_evidence": "Test transform and object IDs in history",
+      "acceptance": "Editable selected objects retain positions and undo",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-042"
+      ],
+      "batch": "P",
+      "order": 1
+    },
+    {
+      "id": "NP-059",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Duplicate, move, rotate and delete page",
+      "source_state": "SOURCE",
+      "next_evidence": "Check undo and protected cover action",
+      "acceptance": "Correct order, stable annotations and source copy",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "P",
+      "order": 2
+    },
+    {
+      "id": "NP-060",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Multi-select page operations",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify Save As, copy/delete actions and clear selection",
+      "acceptance": "Selected pages only affected; undo works",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "P",
+      "order": 3
+    },
+    {
+      "id": "NP-061",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Page manager annotation list/tab",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Notein has All Pages/Annotations; audit NotesTaking sidebar coverage",
+      "acceptance": "Annotation list navigates and filters by page",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-047"
+      ],
+      "batch": "P",
+      "order": 4
+    },
+    {
+      "id": "NP-063",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Page Bookmarks, contents and outline navigation",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify row state after insertion and PDF bookmark import",
+      "acceptance": "Jump uses correct page and survives reopen",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-049"
+      ],
+      "batch": "P",
+      "order": 5
+    },
+    {
+      "id": "NP-064",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "PDF text highlighting, underline, strikeout",
+      "source_state": "SOURCE",
+      "next_evidence": "Check actual markup geometry and export semantics",
+      "acceptance": "Markup aligns after rotations and undo",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "Q",
+      "order": 1
+    },
+    {
+      "id": "NP-067",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Split two notes side-by-side",
+      "source_state": "SOURCE",
+      "next_evidence": "Test divider hit areas, pane focus and gesture ownership",
+      "acceptance": "Each pane retains independent page/undo",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-051"
+      ],
+      "batch": "Q",
+      "order": 2
+    },
+    {
+      "id": "NP-068",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Page margins, crop/rotation template overlays",
+      "source_state": "SOURCE",
+      "next_evidence": "Check inserted paper size and PDF page turn matrix",
+      "acceptance": "Annotations and thumbnail/export align",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-052"
+      ],
+      "batch": "Q",
+      "order": 3
+    },
+    {
+      "id": "NP-069",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Internal links and page hyperlinks",
+      "source_state": "SOURCE",
+      "next_evidence": "Verify tap/open/copy and PDF export links",
+      "acceptance": "Link works without corrupting stored note",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "Q",
+      "order": 4
+    },
+    {
+      "id": "NP-075",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "JPEG single/multi-page export format",
+      "source_state": "GAP",
+      "next_evidence": "Add JPEG only after format encoder + MIME/SAF support",
+      "acceptance": "Actual JPEG opens in gallery, correct colors/quality",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-058"
+      ],
+      "batch": "Q",
+      "order": 5
+    },
+    {
+      "id": "NP-076",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Export background/paper inclusion toggle",
+      "source_state": "GAP",
+      "next_evidence": "Implement renderer option and preview; don't fake toggle",
+      "acceptance": "PDF/png includes or excludes background accurately",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-059"
+      ],
+      "batch": "R",
+      "order": 1
+    },
+    {
+      "id": "NP-077",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Export outlines/bookmarks and markup inclusion flags",
+      "source_state": "PARTIAL",
+      "next_evidence": "Existing PDF exporter preserves bookmarks; add selectable flags if safe",
+      "acceptance": "Each flag alters exported output, not stored note",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "R",
+      "order": 2
+    },
+    {
+      "id": "NP-078",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Export strokes/images/text inclusion toggle",
+      "source_state": "GAP",
+      "next_evidence": "Add independently tested render flags",
+      "acceptance": "Chosen categories excluded without source mutation",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "R",
+      "order": 3
+    },
+    {
+      "id": "NP-079",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Extra page margins inclusion option",
+      "source_state": "GAP",
+      "next_evidence": "Define geometry and output page size independent of stored page",
+      "acceptance": "PDF page boxes and overlay positions match choice",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "R",
+      "order": 4
+    },
+    {
+      "id": "NP-086",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Version history/recovery snapshot UI",
+      "source_state": "GAP",
+      "next_evidence": "Design local version snapshots with quotas and restore preview",
+      "acceptance": "Restore past version without touching unrelated notes",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-065"
+      ],
+      "batch": "R",
+      "order": 5
+    },
+    {
+      "id": "NP-087",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Local backup, settings restore and conflict resolution",
+      "source_state": "PARTIAL",
+      "next_evidence": "B12 `a8647c5` locally hardens settings ZIP read/skip budgets; native note-level backup/restore and provider QA remain open",
+      "acceptance": "Restore into test folder, no silent overwrite",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "S",
+      "order": 1
+    },
+    {
+      "id": "NP-093",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Organize many toolbar settings by category/search",
+      "source_state": "GAP",
+      "next_evidence": "Group visibility/action settings with preview and optional search",
+      "acceptance": "Core tools located quickly, no preference reset",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-071"
+      ],
+      "batch": "S",
+      "order": 2
+    },
+    {
+      "id": "NP-094",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Reading-first UI without toolbox overlap",
+      "source_state": "PARTIAL",
+      "next_evidence": "B08 Read/Annotate is tool switch; full immersive layout deferred",
+      "acceptance": "Reading leaves ample page room; no hidden navigation",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-072"
+      ],
+      "batch": "S",
+      "order": 3
+    },
+    {
+      "id": "NP-095",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Light, Dark, OLED, dynamic and custom colors",
+      "source_state": "SOURCE",
+      "next_evidence": "Retain saved theme roles; measure contrast on device",
+      "acceptance": "Accessible text/icons in each supported theme",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-073"
+      ],
+      "batch": "S",
+      "order": 4
+    },
+    {
+      "id": "NP-096",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Reduced motion and interruption-safe animations",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Check system animation-scale handling before adding transitions",
+      "acceptance": "No delay or ink interruption; reduce-motion honored",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-074"
+      ],
+      "batch": "S",
+      "order": 5
+    },
+    {
+      "id": "NP-097",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Tooltips and contextual first-use guidance",
+      "source_state": "PARTIAL",
+      "next_evidence": "Provide optional, dismissible guidance for writing/gesture/eraser",
+      "acceptance": "Novice can write/erase/export without blocking canvas",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-075"
+      ],
+      "batch": "T",
+      "order": 1
+    },
+    {
+      "id": "NP-098",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Responsive split-pane divider and easy switch",
+      "source_state": "PARTIAL",
+      "next_evidence": "Audit effective 48dp drag affordance, toolbar edges",
+      "acceptance": "Divider resizes without drawing or switching unintended pane",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-076"
+      ],
+      "batch": "T",
+      "order": 2
+    },
+    {
+      "id": "NP-099",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Color/width/pressure preview with accessible names",
+      "source_state": "PARTIAL",
+      "next_evidence": "Existing pen popup; B10 saved styles; test label and previews",
+      "acceptance": "Preset names and value changes announced",
+      "owner": "B",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "T",
+      "order": 3
+    },
+    {
+      "id": "NP-101",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Offline printed/scanned PDF OCR",
+      "source_state": "GAP",
+      "next_evidence": "Feasibility/design privacy: bundled/downloaded model and page-index contract",
+      "acceptance": "Offline OCR text searchable with confidence and rotation",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-077"
+      ],
+      "batch": "T",
+      "order": 4
+    },
+    {
+      "id": "NP-106",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Note lock or secure notebook",
+      "source_state": "GAP",
+      "next_evidence": "Design key management, backup/recovery, encryption at rest",
+      "acceptance": "Correct lock/unlock without data-loss or false security claims",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "T",
+      "order": 5
+    },
+    {
+      "id": "NP-109",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "True tablet/S Pen benchmark suite",
+      "source_state": "INVESTIGATE",
+      "next_evidence": "Hardware test across stylus pressure, palm, zoom and low memory",
+      "acceptance": "Device logs/screenshots and timings per TEST_PLAN",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "U",
+      "order": 1
+    },
+    {
+      "id": "NP-110",
+      "kind": "feature",
+      "priority": "P2",
+      "title": "Independent app artwork, icons and motion",
+      "source_state": "SOURCE",
+      "next_evidence": "Keep NotesTaking branding; never copy Notein graphics/assets",
+      "acceptance": "Own visual identity across dark/light/launcher",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "U",
+      "order": 2
+    },
+    {
+      "id": "NP-080",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Watermark text/image for exported PDF",
+      "source_state": "GAP",
+      "next_evidence": "Add optional previewed watermark only with verified PDF path",
+      "acceptance": "Correct watermark at all page sizes, no source alteration",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "U",
+      "order": 3
+    },
+    {
+      "id": "NP-088",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Optional cloud backup/sync",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Needs separate secure backend, consent, E2E policy and conflict model",
+      "acceptance": "Offline remains fully functional; sync opt-in only",
+      "owner": "A",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-066"
+      ],
+      "batch": "U",
+      "order": 4
+    },
+    {
+      "id": "NP-102",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Stylus handwriting-to-text recognition",
+      "source_state": "GAP",
+      "next_evidence": "Research model availability and input grouping for English/Hindi",
+      "acceptance": "Converts test strokes without replacing originals",
+      "owner": "C",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-078"
+      ],
+      "batch": "U",
+      "order": 5
+    },
+    {
+      "id": "NP-103",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "AI summarization or assistant",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Do not require cloud login/API; define explicit privacy and costs first",
+      "acceptance": "Core note app remains usable with feature disabled",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [
+        "NT-079"
+      ],
+      "batch": "V",
+      "order": 1
+    },
+    {
+      "id": "NP-104",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "AI-created templates or study flashcards",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Consider local template generator separate from AI network features",
+      "acceptance": "Reproducible editable output with offline fallback",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "V",
+      "order": 2
+    },
+    {
+      "id": "NP-105",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Translation and smart study selection",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Reuse selectable PDF text; no account requirement",
+      "acceptance": "English/Hindi result while preserving original selection",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "V",
+      "order": 3
+    },
+    {
+      "id": "NP-107",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Subscription/storefront and commercial packs",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Not part of offline-first core parity; do not add by default",
+      "acceptance": "No checkout/paywall introduced unintentionally",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "V",
+      "order": 4
+    },
+    {
+      "id": "NP-108",
+      "kind": "feature",
+      "priority": "P3",
+      "title": "Account, Google/Microsoft login",
+      "source_state": "OPTIONAL",
+      "next_evidence": "Only if a separately specified sync identity product is approved",
+      "acceptance": "Guest mode unaffected; privacy/security reviewed",
+      "owner": "COORD",
+      "release_scope": "defer_by_decision",
+      "nt_ids": [],
+      "batch": "V",
+      "order": 5
+    },
+    {
+      "id": "REL-01",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Audit exact developer SHA and required CI jobs",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-001"
+      ],
+      "batch": "W",
+      "order": 1
+    },
+    {
+      "id": "REL-02",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Reconcile three agent sessions and active file claims",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-002"
+      ],
+      "batch": "W",
+      "order": 2
+    },
+    {
+      "id": "REL-03",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Review all P0/P1 feature evidence and open exceptions",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-003"
+      ],
+      "batch": "W",
+      "order": 3
+    },
+    {
+      "id": "REL-04",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Reopen old xnote/xcanvas/xtemplate fixtures without migration loss",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-004"
+      ],
+      "batch": "W",
+      "order": 4
+    },
+    {
+      "id": "REL-05",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Verify hostile ZIP, encrypted PDF and limit regression coverage",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-005"
+      ],
+      "batch": "W",
+      "order": 5
+    },
+    {
+      "id": "REL-06",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Test PDF import/export and source preservation with SAF",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-006"
+      ],
+      "batch": "X",
+      "order": 1
+    },
+    {
+      "id": "REL-07",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Test force-stop, zero-byte and low-storage save recovery",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "A",
+      "release_scope": "required",
+      "nt_ids": [
+        "NT-007"
+      ],
+      "batch": "X",
+      "order": 2
+    },
+    {
+      "id": "REL-08",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Measure 200-page PDFs and memory/jank with Perfetto",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "X",
+      "order": 3
+    },
+    {
+      "id": "REL-09",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Validate palm rejection, mixed touch and stylus pressure",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "X",
+      "order": 4
+    },
+    {
+      "id": "REL-10",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Validate eraser segments, dense ink and undo/redo",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "X",
+      "order": 5
+    },
+    {
+      "id": "REL-11",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Validate zoom, crop, rotation, split pane and page anchoring",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Y",
+      "order": 1
+    },
+    {
+      "id": "REL-12",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Check TalkBack, keyboard, touch targets and large fonts",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Y",
+      "order": 2
+    },
+    {
+      "id": "REL-13",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Check offline startup, localization and permission-denial cases",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "DEVICE",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Y",
+      "order": 3
+    },
+    {
+      "id": "REL-14",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Run and verify full-ABI GitHub CI on exact release candidate SHA",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Y",
+      "order": 4
+    },
+    {
+      "id": "REL-15",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Review privacy, backup, dependencies and secret hygiene",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Y",
+      "order": 5
+    },
+    {
+      "id": "REL-16",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Record device QA evidence, outstanding defects and waivers",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Z",
+      "order": 1
+    },
+    {
+      "id": "REL-17",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Reconcile unique main/master changes; create rollback refs",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Z",
+      "order": 2
+    },
+    {
+      "id": "REL-18",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Verify release version, tag, keystore secrets and key continuity",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Z",
+      "order": 3
+    },
+    {
+      "id": "REL-19",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Run signed release workflow; verify signature, ABI and SHA256",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Z",
+      "order": 4
+    },
+    {
+      "id": "REL-20",
+      "kind": "release",
+      "priority": "P0",
+      "title": "Review release notes, package distribution and final signoff",
+      "source_state": "NOT_VERIFIED",
+      "next_evidence": "Record exact reproducible evidence and pass/fail, never assume acceptance.",
+      "acceptance": "Evidence signed off by coordinator; missing physical tests recorded as blockers.",
+      "owner": "COORD",
+      "release_scope": "required",
+      "nt_ids": [],
+      "batch": "Z",
+      "order": 5
+    }
+  ]
+}

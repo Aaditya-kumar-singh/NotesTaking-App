@@ -1,6 +1,8 @@
 # Batched GitHub CI policy
 
-**Scope:** NotesTaking App development on the `main` integration branch. The Windows machine is for editing, source inspection, and dry-run checks only: **no local Gradle, Kotlin test execution, lint, native compilation, APK builds, or device installation**. **Running CI must never pause independent local development**; follow `LOCAL_FIRST_PARALLEL_WORKFLOW.md` to manage parallel work and the next task.
+**Current 2026-11-15 A/B/C extension:** [THREE_GPT_APK_WORKFLOW.md](THREE_GPT_APK_WORKFLOW.md) is authoritative for three isolated ChatGPT slots and five-task A-Z batches on the current active **`developer`** branch. This document retains the original `main`/PR policy as a historical/release integration reference. A failed, queued or network-unavailable CI run **never prevents unrelated local task claims/commits**; it blocks only the dependent publish/merge/release gate. CI incidents may be exclusively claimed by any GPT slot for diagnosis, while file-ownership guards remain mandatory.
+
+**Historical scope:** NotesTaking App development on the `main` integration branch. The Windows machine is for editing, source inspection, and dry-run checks only: **no local Gradle, Kotlin test execution, lint, native compilation, APK builds, or device installation**. **Running CI must never pause independent local development**; follow `LOCAL_FIRST_PARALLEL_WORKFLOW.md` to manage parallel work and the next task.
 
 ## When an Android build runs
 

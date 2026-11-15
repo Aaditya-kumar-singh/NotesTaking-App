@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refuse commits that cross ownership boundaries between two LocalMCP GPT worktrees.
+"""Refuse commits that cross ownership boundaries between three LocalMCP GPT worktrees.
 
 This is a local source-level guard. It does not replace code review or Android CI.
 Run from the intended worktree: python tools/agents/check_lane.py
@@ -42,6 +42,19 @@ LANES = {
             "docs/agent-work/chat-b/",
         ),
     },
+    "chat-c": {
+        "branch": "agent/chat-c-core-canvas-reliability",
+        # Pinned at Chat C provisioning, not the moving origin/developer ref.
+        "base_ref": "refs/heads/agent/chat-c-start-20261115",
+        "files": (),
+        "prefixes": (
+            "app/src/main/java/com/notestaking/app/core/",
+            "app/src/main/java/com/notestaking/app/canvas/",
+            "app/src/test/java/com/notestaking/app/core/",
+            "app/src/test/java/com/notestaking/app/canvas/",
+            "docs/agent-work/chat-c/",
+        ),
+    },
 }
 
 
@@ -64,9 +77,9 @@ def git(root: Path, *args: str) -> bytes:
     return proc.stdout
 
 
-def changed_paths(root: Path) -> set[str]:
+def changed_paths(root: Path, base_ref: str = COORDINATOR_REF) -> set[str]:
     commands = (
-        ("diff", "--name-only", "--no-renames", "-z", f"{COORDINATOR_REF}..HEAD"),
+        ("diff", "--name-only", "--no-renames", "-z", f"{base_ref}..HEAD"),
         ("diff", "--name-only", "--no-renames", "--cached", "-z"),
         ("diff", "--name-only", "--no-renames", "-z"),
         ("ls-files", "--others", "--exclude-standard", "-z"),
@@ -86,12 +99,17 @@ def self_test() -> None:
     assert permitted("chat-b", "app/src/main/java/com/notestaking/app/ui/Toolbar.kt")
     assert permitted("chat-b", "app/src/test/java/com/notestaking/app/ui/ToolbarMetricsTest.kt")
     assert not permitted("chat-b", "app/src/main/java/com/notestaking/app/ui/Editor.kt")
+    assert permitted("chat-c", "app/src/main/java/com/notestaking/app/core/geometry/EraserSweep.kt")
+    assert permitted("chat-c", "app/src/test/java/com/notestaking/app/canvas/PenContactTest.kt")
+    assert not permitted("chat-c", "app/src/main/java/com/notestaking/app/ui/Toolbar.kt")
+    assert not permitted("chat-a", "app/src/main/java/com/notestaking/app/core/geometry/EraserSweep.kt")
+    assert not permitted("chat-b", "app/src/main/java/com/notestaking/app/canvas/PenContactRouter.kt")
     for lane in LANES:
         assert not permitted(lane, "app/src/main/java/com/notestaking/app/ui/Backstage.kt")
         assert not permitted(lane, "app/src/main/res/values/strings.xml")
         assert not permitted(lane, "docs/notein-parity/PROGRESS.md")
         assert not permitted(lane, "tools/agents/check_lane.py")
-    print("PASS: dual-chat file ownership self-test")
+    print("PASS: three-chat file ownership self-test")
 
 
 def main() -> int:
@@ -105,7 +123,7 @@ def main() -> int:
     root = Path(__file__).resolve().parents[2]
     lane = root.name
     if root.parent.name != ".agent-worktrees" or lane not in LANES:
-        print("BLOCKED: run from .agent-worktrees/chat-a or .agent-worktrees/chat-b", file=sys.stderr)
+        print("BLOCKED: run from one of .agent-worktrees/chat-a, chat-b or chat-c", file=sys.stderr)
         return 2
     try:
         true_root = Path(git(root, "rev-parse", "--show-toplevel").decode().strip()).resolve()
@@ -114,14 +132,15 @@ def main() -> int:
         actual_branch = git(root, "branch", "--show-current").decode().strip()
         if actual_branch != LANES[lane]["branch"]:
             raise RuntimeError(f"branch {actual_branch!r} is not {LANES[lane]['branch']!r}")
-        git(root, "merge-base", "--is-ancestor", COORDINATOR_REF, "HEAD")
-        changes = changed_paths(root)
+        baseline = LANES[lane].get("base_ref", COORDINATOR_REF)
+        git(root, "merge-base", "--is-ancestor", baseline, "HEAD")
+        changes = changed_paths(root, baseline)
         blocked = sorted(path for path in changes if not permitted(lane, path))
         if blocked:
             print(f"BLOCKED: {lane} changed {len(blocked)} unowned file(s):", file=sys.stderr)
             for path in blocked:
                 print(f"  {path}", file=sys.stderr)
-            print("Stop and ask Chat A/integrator to reassign ownership; do not bypass the hook.", file=sys.stderr)
+            print("Stop and ask the coordinator to reassign ownership; do not bypass the hook.", file=sys.stderr)
             return 2
         print(f"PASS: {lane} branch and file ownership ({len(changes)} changed path(s))")
         return 0

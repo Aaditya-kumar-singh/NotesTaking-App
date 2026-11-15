@@ -1,4 +1,8 @@
-# Two GPT chats on one NotesTaking App repository (LocalMCP)
+# Historical two-GPT pilot (superseded for new work)
+
+**New mandatory policy (2026-11-15):** [THREE_GPT_APK_WORKFLOW.md](THREE_GPT_APK_WORKFLOW.md) with 26 five-task A-Z batches, a third isolated Chat C lane, explicit replacement-session fencing, and CI incident claims. Preserve the existing A/B worktrees and original ownership; do not treat this historical two-chat snapshot as permission to bypass the newer protocol.
+
+## Archived initial setup: Two GPT chats on one NotesTaking App repository (LocalMCP)
 
 **Setup date:** 2026-11-13. **Integration target:** `developer`. **Baseline:** exact published B38 commit `b2e38f37cc0518c3886f3712951715a4b0d04c84`.
 This plan is for **two separate ChatGPT conversations using one LocalMCP server**. It does not create a second MCP connection or allow one conversation to control another. Both chats share a Git object database, **not** a working tree, index, or branch. Each chat must be run on a user turn; nothing happens asynchronously.
