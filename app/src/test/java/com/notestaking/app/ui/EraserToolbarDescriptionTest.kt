@@ -12,6 +12,9 @@ class EraserToolbarDescriptionTest {
         assertEquals(R.string.eraser_stroke, eraserModeLabelRes(EraseMode.STROKE))
         assertEquals(R.string.eraser_area, eraserModeLabelRes(EraseMode.AREA))
         assertEquals(R.string.eraser_marker, eraserModeLabelRes(EraseMode.MARKER))
+        assertEquals(R.string.eraser_tape, eraserModeLabelRes(EraseMode.TAPE))
+        assertEquals(R.string.eraser_shape, eraserModeLabelRes(EraseMode.SHAPE))
+        assertEquals(R.string.eraser_connector, eraserModeLabelRes(EraseMode.CONNECTOR))
     }
 
     @Test fun markerModeIsAvailableToBothEraserSurfaces() {
@@ -21,6 +24,9 @@ class EraserToolbarDescriptionTest {
         ).first { it.isFile }.readText()
         val popup = source("Popups.kt")
         assertTrue(popup.contains("eraseMode = EraseMode.MARKER; emit()"))
+        for (mode in listOf("TAPE", "SHAPE", "CONNECTOR")) {
+            assertTrue(popup.contains("eraseMode = EraseMode.$mode; emit()"))
+        }
         assertTrue(popup.contains("R.string.eraser_marker"))
         val infinite = source("InfiniteInteraction.kt")
         assertTrue(infinite.contains("eraseModeForGesture = configFor(Tool.ERASER).eraseMode"))

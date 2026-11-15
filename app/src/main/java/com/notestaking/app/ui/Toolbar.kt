@@ -624,6 +624,9 @@ internal fun eraserModeLabelRes(mode: EraseMode): Int = when (mode) {
     EraseMode.STROKE -> R.string.eraser_stroke
     EraseMode.AREA -> R.string.eraser_area
     EraseMode.MARKER -> R.string.eraser_marker
+    EraseMode.TAPE -> R.string.eraser_tape
+    EraseMode.SHAPE -> R.string.eraser_shape
+    EraseMode.CONNECTOR -> R.string.eraser_connector
 }
 
 internal fun eraserAccessibilityText(name: String, mode: String, sizeLabel: String, size: Double): String =

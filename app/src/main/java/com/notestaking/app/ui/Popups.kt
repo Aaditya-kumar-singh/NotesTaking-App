@@ -1008,6 +1008,9 @@ fun EraserConfigPopup(editor: ToolPopupHost, onDismiss: () -> Unit) {
                 ModeChip(stringResource(R.string.eraser_stroke), selected = eraseMode == EraseMode.STROKE) { eraseMode = EraseMode.STROKE; emit() }
                 ModeChip(stringResource(R.string.eraser_area), selected = eraseMode == EraseMode.AREA) { eraseMode = EraseMode.AREA; emit() }
                 ModeChip(stringResource(R.string.eraser_marker), selected = eraseMode == EraseMode.MARKER) { eraseMode = EraseMode.MARKER; emit() }
+                ModeChip(stringResource(R.string.eraser_tape), selected = eraseMode == EraseMode.TAPE) { eraseMode = EraseMode.TAPE; emit() }
+                ModeChip(stringResource(R.string.eraser_shape), selected = eraseMode == EraseMode.SHAPE) { eraseMode = EraseMode.SHAPE; emit() }
+                ModeChip(stringResource(R.string.eraser_connector), selected = eraseMode == EraseMode.CONNECTOR) { eraseMode = EraseMode.CONNECTOR; emit() }
             }
             val r = ToolConversions.widthRange(Tool.ERASER)
             SliderRow(stringResource(R.string.caption_size), size, r.start.toFloat()..r.endInclusive.toFloat()) { size = it; emit() }
