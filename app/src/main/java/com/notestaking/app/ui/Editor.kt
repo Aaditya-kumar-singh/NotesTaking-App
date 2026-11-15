@@ -3330,6 +3330,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Replace [newPageSize]; saved with the note but, like a style change, not an undo step. */
     fun setNewPageSize(size: PageSizeChoice?) {
+        if (size != null && !com.notestaking.app.platform.PageSizeSafety.valid(size)) return
         if (state.document.newPageSize == size) return
         state.document.newPageSize = size
         state.document.dirty = true
@@ -4491,11 +4492,14 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Creates a `.xnote` under [parentDocId] as [setup] describes, a cover first when it has one; returns its URI, or null. IO. */
     fun createNoteFile(treeUri: String, parentDocId: String, rawName: String, setup: NewNoteSetup): String? {
-        val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
         val dpi = PageSize.DEFAULT_DPI
+        val size = com.notestaking.app.platform.PageSizeSafety.forNewNote(setup.widthMm, setup.heightMm, dpi)
+            ?: return null
+        val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
         val w = PageSize.mmToPx(setup.widthMm, dpi)
         val h = PageSize.mmToPx(setup.heightMm, dpi)
         val doc = Document.blankPixels(Document.DEFAULT_NEW_PAGES, w, h, dpi).also { it.created = System.currentTimeMillis() }
+        doc.newPageSize = size
         doc.style = setup.style
         TemplateLibrary.embed(doc, setup.style.template, imageDir)
         (settings.newNoteFlow ?: factoryFlow).applyTo(doc.flow)
@@ -7438,6 +7442,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * page grows again. PDF pages keep theirs.
      */
     fun resizePages(indices: List<Int>, choice: PageSizeChoice) {
+        if (!com.notestaking.app.platform.PageSizeSafety.valid(choice)) return
         val all = indices.distinct().sorted().mapNotNull { pageAt(it) }
         val plain = all.filter { it.pdfPage == null }
         if (plain.size < all.size) message = appContext.getString(R.string.pdf_pages_keep_size)
