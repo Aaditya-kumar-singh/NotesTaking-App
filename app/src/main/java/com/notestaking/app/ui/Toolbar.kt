@@ -762,6 +762,7 @@ private fun StickerTile(file: java.io.File, onInsert: () -> Unit, onRemove: () -
     Box(
         modifier = Modifier
             .size(72.dp)
+            .toolbarFocusOutline(MaterialTheme.shapes.small)
             .clip(MaterialTheme.shapes.small)
             .border(1.dp, palette.border.toComposeColor(), MaterialTheme.shapes.small)
             .combinedClickable(onClick = onInsert, onLongClick = onRemove),
