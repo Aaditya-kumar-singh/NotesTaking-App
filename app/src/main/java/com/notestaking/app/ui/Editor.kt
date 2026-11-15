@@ -4524,7 +4524,20 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 stampNewNoteDefaults(doc)
                 doc.created = System.currentTimeMillis()
                 val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-                createNoteFile(treeUri, parentDocId, name) { codec.write(doc, it) { importCancelled.get() } }
+                val digest = java.security.MessageDigest.getInstance("SHA-256")
+                val uri = createNoteFile(treeUri, parentDocId, name) { output ->
+                    codec.write(doc, java.security.DigestOutputStream(output, digest)) { importCancelled.get() }
+                } ?: return null
+                val created = android.net.Uri.parse(uri)
+                val verified = com.notestaking.app.platform.NativeNoteReadback.verify(
+                    { appContext.contentResolver.openInputStream(created) },
+                    codec, doc.pages.size, true, digest.digest(), { importCancelled.get() },
+                )
+                if (verified && !importCancelled.get()) uri else {
+                    // A provider can acknowledge close before making a complete native note readable.
+                    runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, created) }
+                    null
+                }
             }
         } catch (e: java.util.concurrent.CancellationException) {
             throw e
