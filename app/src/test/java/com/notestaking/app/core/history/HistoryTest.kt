@@ -75,6 +75,42 @@ class HistoryTest {
         assertEquals(listOf<CanvasItem>(f), right.items)
     }
 
+    @Test fun wholeStrokeSweepRestoresOriginalOrderAcrossPagesAndOneUndo() {
+        val a = strokeAt(1.0)
+        val b = strokeAt(2.0)
+        val c = strokeAt(3.0)
+        val d = strokeAt(4.0)
+        val e = strokeAt(5.0)
+        val f = strokeAt(6.0)
+        val left = Page(100.0, 100.0, mutableListOf<CanvasItem>(a, b, c, d))
+        val right = Page(100.0, 100.0, mutableListOf<CanvasItem>(e, f))
+        val removed = mutableListOf<Triple<Page, Int, CanvasItem>>()
+        fun erase(page: Page, item: CanvasItem) {
+            val index = page.items.indexOfFirst { it === item }
+            removed.add(Triple(page, index, item))
+            page.items.removeAt(index)
+        }
+        erase(left, c) // later removals refer to already-shortened item lists
+        erase(right, e)
+        erase(left, b)
+        erase(left, d)
+
+        val history = History()
+        history.push(EraseItems.fromSweep(removed))
+        assertEquals(listOf<CanvasItem>(a), left.items)
+        assertEquals(listOf<CanvasItem>(f), right.items)
+        history.undo()
+        assertEquals(listOf<CanvasItem>(a, b, c, d), left.items)
+        assertEquals(listOf<CanvasItem>(e, f), right.items)
+        assertFalse("the whole drag is one command", history.canUndo)
+        history.redo()
+        assertEquals(listOf<CanvasItem>(a), left.items)
+        assertEquals(listOf<CanvasItem>(f), right.items)
+        history.undo()
+        assertEquals(listOf<CanvasItem>(a, b, c, d), left.items)
+        assertEquals(listOf<CanvasItem>(e, f), right.items)
+    }
+
     @Test fun moveItemsRoundTrip() {
         val img = ImageItem(ImageData(java.io.File("test-image"),10, 10), Rect(0.0, 0.0, 10.0, 10.0))
         val cmd = MoveItems(listOf(img), 5.0, 7.0)
