@@ -6,12 +6,15 @@ import com.notestaking.app.core.model.TapeMode
 import com.notestaking.app.core.model.TapePattern
 
 /**
- * Eraser behaviour (spec 04 §2): STROKE removes a whole stroke on contact; AREA removes only the
- * portion of a stroke the eraser passes over, splitting it into fragments. Persisted as [id].
+ * Eraser behaviour (spec 04 §2): STROKE removes a whole stroke on contact; AREA cuts
+ * fragments, and MARKER removes only highlighter ink (and PDF highlights on paged notes).
+ * Persisted as [id].
  */
 enum class EraseMode(val id: String) {
     STROKE("stroke"),
-    AREA("area");
+    AREA("area"),
+    /** Erase only highlighter strokes and PDF highlights, not ordinary ink or shapes. */
+    MARKER("marker");
 
     companion object {
         fun fromId(id: String?): EraseMode = entries.firstOrNull { it.id == id } ?: STROKE
