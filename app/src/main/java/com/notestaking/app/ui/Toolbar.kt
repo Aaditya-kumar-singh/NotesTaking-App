@@ -630,25 +630,27 @@ internal fun Swatch(
     val bar = LocalBar.current
     val colourLabel = stringResource(R.string.colour)
     val accessibleLabel = if (ink != null) "$colourLabel ${Rgba.toHex(ink)}" else colourLabel
-    Box(
-        modifier = Modifier
-            .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
-            .size(bar.button)
-            .toolbarFocusOutline(CircleShape)
-            .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
-            .semantics { contentDescription = accessibleLabel; selected = active }
-            .clickable(onClickLabel = if (active) stringResource(R.string.material_custom_colour) else null, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    Tooltip(accessibleLabel) {
         Box(
-            Modifier
-                .size(bar.swatch)
-                // The selection ring takes the swatch's own colour, not the theme accent.
-                .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(color),
-        )
+            modifier = Modifier
+                .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
+                .size(bar.button)
+                .toolbarFocusOutline(CircleShape)
+                .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
+                .semantics { contentDescription = accessibleLabel; selected = active }
+                .clickable(onClickLabel = if (active) stringResource(R.string.material_custom_colour) else null, role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .size(bar.swatch)
+                    // The selection ring takes the swatch's own colour, not the theme accent.
+                    .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(color),
+            )
+        }
     }
 }
 
