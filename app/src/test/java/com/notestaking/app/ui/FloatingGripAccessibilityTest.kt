@@ -32,6 +32,16 @@ class FloatingGripAccessibilityTest {
     }
 
     @Test
+    fun dragClampsToolbarInsidePaneAndIgnoresStationaryAxes() {
+        assertEquals(0.75f, floatingGripDragFraction(0.5f, 25f, 100f), 0f)
+        assertEquals(0.25f, floatingGripDragFraction(0.5f, -25f, 100f), 0f)
+        assertEquals(0f, floatingGripDragFraction(0.5f, -500f, 100f), 0f)
+        assertEquals(1f, floatingGripDragFraction(0.5f, 500f, 100f), 0f)
+        assertEquals(0.5f, floatingGripDragFraction(0.5f, 500f, 0f), 0f)
+        assertEquals(0.5f, floatingGripDragFraction(0.5f, -500f, -10f), 0f)
+    }
+
+    @Test
     fun resetIsOfferedOnlyWhenThePositionDiffersFromTheDefault() {
         assertFalse(floatingGripCanReset(0.5f, 0f, 0.5f, 0f))
         assertFalse(floatingGripCanReset(1f, 0.5f, 1f, 0.5f))

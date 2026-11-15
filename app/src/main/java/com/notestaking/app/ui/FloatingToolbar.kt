@@ -60,6 +60,10 @@ internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boole
 internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): Boolean =
     travel > 0f && (fraction + step).coerceIn(0f, 1f) != fraction
 
+/** Dragging uses normalized, pane-bounded coordinates; a stationary axis cannot move. */
+internal fun floatingGripDragFraction(fraction: Float, deltaPx: Float, travelPx: Float): Float =
+    if (travelPx > 0f) (fraction + deltaPx / travelPx).coerceIn(0f, 1f) else fraction
+
 /** Reset is only an accessibility action when it changes the stored position. */
 internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY: Float): Boolean =
     x != defaultX || y != defaultY
@@ -174,8 +178,8 @@ internal fun MovableFloatingToolbar(
                             onDragCancel = { x = dragStartX; y = dragStartY },
                         ) { change, delta ->
                             change.consume()
-                            if (travelX > 0f) x = (x + delta.x / travelX).coerceIn(0f, 1f)
-                            if (travelY > 0f) y = (y + delta.y / travelY).coerceIn(0f, 1f)
+                            x = floatingGripDragFraction(x, delta.x, travelX)
+                            y = floatingGripDragFraction(y, delta.y, travelY)
                         }
                     },
                 contentAlignment = Alignment.Center,
