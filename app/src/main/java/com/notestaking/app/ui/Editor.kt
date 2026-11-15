@@ -8829,8 +8829,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             message = appContext.getString(R.string.err_import_settings)
             return
         }
+        // A failed persistent write must not be presented as a successful restore.
+        if (!com.notestaking.app.platform.JsonStore.settings(appContext).writeChecked(next.toJson())) {
+            message = appContext.getString(R.string.err_import_settings)
+            return
+        }
         settings = next
-        settingsRepo.save(next)
         for (editor in listOfNotNull(this, sibling)) {
             editor.applySettings()
             editor.explorerView = next.explorerView
