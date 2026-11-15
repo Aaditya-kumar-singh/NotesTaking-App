@@ -914,4 +914,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Ownership/risk:** The section keyboard reorder in `PreferencesPane.kt` and zoom-lock Fit All in `CanvasWaypointsPopup.kt` remain Chat A/coordinator-owned. No protected branch, push, PR or merge.
 
-**Forty-third implementation commit:** `003fbd01aa9923dbbc45628a9a883fc48f57b2e5`. **Forty-third STATUS-only handoff commit:** following local commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Forty-third implementation commit:** `003fbd01aa9923dbbc45628a9a883fc48f57b2e5`. **Forty-third STATUS-only handoff commit:** `59356f9321fe6eab877d157fc13bf99208626e53`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Forty-fourth G08 checkpoint — NP-090 discoverable custom-color action on selected swatches (2026-11-15)
+
+**Confirmed source issue:** In the shared `Toolbar.kt:Swatch` control, a keyboard user or mouse/stylus hover sees the color name and hex through `Tooltip(accessibleLabel)`, but the same swatch opens the custom-color picker when it is already active; the re-tap action was named only by TalkBack's `onClickLabel`, not the visible tooltip. Both paged and infinite canvas call the shared `Swatch`; their selected-swatch callbacks already have identical picker behavior. The localized `R.string.material_custom_colour` already says "Choose a custom colour".
+
+**Smallest owned fix:** Added the existing localized action as a second-line tooltip hint only for the active swatch: `Tooltip(accessibleLabel, hint = if (active) stringResource(R.string.material_custom_colour) else null)`. No change to the color hex name, selected state, button role, drag-to-fill gesture, click callback, popup state, keyboard focus border, layout, resources, storage, or other agents' code. One-line source change in `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`.
+
+**Verification performed:** Focused Python source assertion PASS for active-state conditional hint matching the existing accessible click label, preserved `Rgba.toHex`, `colorDragSource`, selected semantics, and both toolbar callers. `python tools/agents/check_lane.py` PASS (21 changed paths since baseline, owned); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 Kotlin tests, 22 XML, 39 PNG, 0 problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS. No new JUnit required for one-line declarative hint wiring; **Kotlin/JUnit was not executed**. No Gradle/Compose compilation, Android CI/lint/APK, or physical-device test was performed.
+
+**Device acceptance still required:** In top/bottom/side/floating paged and infinite toolbars, select a non-active color; hover or hardware-focus a non-active swatch to confirm only the color hex appears. Hover/focus the now-active swatch; expect "Choose a custom colour" and the current color hex, with text readable at 1.3x and 2x scale, 240dp/320dp split panes. Verify double-activation/second tap opens the picker exactly once and mouse/stylus dragging still fills, with TalkBack content and action labels matching. Verify long labels and nearby focus navigation. Exact integrated-SHA CI and phone/tablet QA remain prerequisites for NP-089/090/092 acceptance.
+
+**Ownership:** `CanvasWaypointsPopup.kt` Fit All zoom-lock and `PreferencesPane.kt` keyboard section reordering still require coordinator allocation or Chat A handling. No push, merge, PR, APK, protected-branch modifications or device testing.
+
+**Forty-fourth implementation commit:** `f92cc9fe33e509dc3922960a5fb6a2472ff3ee92`. **Forty-fourth STATUS-only handoff commit:** following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
