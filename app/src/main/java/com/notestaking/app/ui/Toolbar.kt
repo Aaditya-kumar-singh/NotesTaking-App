@@ -679,8 +679,8 @@ internal fun Swatch(
             Box(
                 Modifier
                     .size(bar.swatch)
-                    // The selection ring takes the swatch's own colour, not the theme accent.
-                    .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
+                    // Use a themed contrast ring so black or white ink remains selected on matching chrome.
+                    .then(if (active) Modifier.border(2.dp, LocalPalette.current.text.toComposeColor(), CircleShape) else Modifier)
                     .padding(4.dp)
                     .clip(CircleShape)
                     .background(color),
