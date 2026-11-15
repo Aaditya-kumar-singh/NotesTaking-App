@@ -45,11 +45,12 @@ internal fun PageExportDialog(
     start: PageExportStart,
     totalPages: Int,
     onDismiss: () -> Unit,
-    onExport: (List<Int>, PageExportFormat, PageExportDestination) -> Unit,
+    onExport: (List<Int>, PageExportFormat, PageExportDestination, Boolean) -> Unit,
 ) {
     var scope by remember(start) { mutableStateOf(start.scope) }
     var format by remember(start) { mutableStateOf(PageExportFormat.PDF) }
     var destination by remember(start) { mutableStateOf(start.destination) }
+    var editableInk by remember(start) { mutableStateOf(false) }
     var range by remember(start) { mutableStateOf("") }
     val selected = remember(start, totalPages) {
         start.selected.filter { it in 0 until totalPages }.distinct().sorted()
@@ -87,10 +88,20 @@ internal fun PageExportDialog(
                     )
                 }
                 Text(
-                    stringResource(if (format == PageExportFormat.PDF) R.string.page_export_pdf_hint else R.string.page_export_png_hint),
+                    stringResource(if (format == PageExportFormat.PNG) R.string.page_export_png_hint else if (editableInk) R.string.page_export_pdf_editable_hint else R.string.page_export_pdf_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = textColor,
                 )
+
+                if (format == PageExportFormat.PDF) {
+                    FilterChip(
+                        selected = editableInk,
+                        onClick = { editableInk = !editableInk },
+                        label = { Text(stringResource(R.string.page_export_pdf_editable_ink)) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+
+                }
 
                 Text(stringResource(R.string.page_export_pages), style = MaterialTheme.typography.titleSmall)
                 FlowRow(
@@ -168,7 +179,7 @@ internal fun PageExportDialog(
         confirmButton = {
             Button(
                 enabled = ready,
-                onClick = { indices?.takeIf { it.isNotEmpty() }?.let { onExport(it, format, destination) } },
+                onClick = { indices?.takeIf { it.isNotEmpty() }?.let { onExport(it, format, destination, format == PageExportFormat.PDF && editableInk) } },
             ) {
                 Text(stringResource(if (destination == PageExportDestination.SAVE) R.string.save else R.string.share))
             }

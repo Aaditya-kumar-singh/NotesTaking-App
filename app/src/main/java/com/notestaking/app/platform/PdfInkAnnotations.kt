@@ -12,7 +12,7 @@ import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB
-import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationInk
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary
@@ -71,7 +71,8 @@ internal object PdfInkAnnotations {
             val pad = max(width, 1f)
             val box = PDRectangle(left - pad, bottom - pad, max(1f, right - left + 2 * pad), max(1f, top - bottom + 2 * pad))
             val color = stroke.renderColor
-            val annot = PDAnnotationInk().apply {
+            val annot = PDAnnotationMarkup().apply {
+                cosObject.setName(COSName.SUBTYPE, PDAnnotationMarkup.SUB_TYPE_INK)
                 rectangle = box
                 inkList = arrayOf(points)
                 this.color = PDColor(floatArrayOf(color.r / 255f, color.g / 255f, color.b / 255f), PDDeviceRGB.INSTANCE)

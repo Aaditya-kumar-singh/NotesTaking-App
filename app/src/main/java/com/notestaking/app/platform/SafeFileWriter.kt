@@ -4,6 +4,10 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.FilterOutputStream
 import java.io.OutputStream
+import java.io.InputStreamReader
+import com.notestaking.app.format.JsonPull
+import java.util.zip.CRC32
+import java.util.zip.CheckedInputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.zip.ZipFile
@@ -59,6 +63,38 @@ internal object SafeFileWriter {
         ZipFile(file).use { zip ->
             val manifest = zip.getEntry("manifest.json")
             manifest != null && !manifest.isDirectory && manifest.size > 0L
+        }
+    }.getOrDefault(false)
+
+    /** Validate a complete native manifest without materializing large JSON or trusting the ZIP index alone. */
+    internal fun hasReadableNativeManifest(file: File, expectedFormat: String): Boolean = runCatching {
+        ZipFile(file).use { zip ->
+            val entry = zip.getEntry("manifest.json") ?: return@use false
+            if (entry.isDirectory || entry.size <= 0L || entry.size > 256L * 1024 * 1024) return@use false
+            CheckedInputStream(zip.getInputStream(entry), CRC32()).use { input ->
+                val json = JsonPull(InputStreamReader(input, Charsets.UTF_8))
+                var formatOk = false
+                var contentOk = false
+                json.beginObject()
+                while (json.hasNext()) {
+                    when (json.nextName()) {
+                        "format" -> formatOk = json.nextString() == expectedFormat
+                        "pages" -> {
+                            if (expectedFormat == "xnote" && json.peek() == JsonPull.Token.BEGIN_ARRAY) contentOk = true
+                            json.skipValue()
+                        }
+                        "items" -> {
+                            if (expectedFormat == "xcanvas" && json.peek() == JsonPull.Token.BEGIN_ARRAY) contentOk = true
+                            json.skipValue()
+                        }
+                        else -> json.skipValue()
+                    }
+                }
+                json.endObject()
+                val buffer = ByteArray(64 * 1024)
+                while (input.read(buffer) >= 0) { /* Complete the CRC even if parsing buffered ahead. */ }
+                formatOk && contentOk && input.checksum.value == entry.crc
+            }
         }
     }.getOrDefault(false)
 

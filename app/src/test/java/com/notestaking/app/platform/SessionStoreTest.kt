@@ -121,6 +121,19 @@ class SessionStoreTest {
             ))
             assertArrayEquals(oldMetadata, sidecar.readBytes())
             assertArrayEquals(withoutManifest.toByteArray(), slot.readBytes())
+            val malformed = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(malformed).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
+                zip.write("{\"format\":\"xnote\",\"pages\":[broken]}".toByteArray())
+                zip.closeEntry()
+            }
+            slot.writeBytes(malformed.toByteArray())
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(3), zoom = 2.0, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertArrayEquals(malformed.toByteArray(), slot.readBytes())
             assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
             assertTrue(store.save(
                 Document.blank(4), zoom = 2.5, scrollX = 5.0, scrollY = 6.0,

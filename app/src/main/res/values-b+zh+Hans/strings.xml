@@ -22,6 +22,8 @@
     <string name="page_export_format">文件格式</string>
     <string name="page_export_pdf">可分享的 PDF</string>
     <string name="page_export_png">PNG 图片</string>
+    <string name="page_export_pdf_editable_ink">可编辑的 PDF 墨迹（简单钢笔笔画）</string>
+    <string name="page_export_pdf_editable_hint">符合条件的钢笔笔画可以在兼容的 PDF 阅读器中单独编辑。请保留原始 .xnote 文件以进行完整编辑。</string>
     <string name="page_export_pdf_hint">生成一个用于查看和分享的 PDF。笔迹会显示在页面中，但不能在 PDF 阅读器里作为 NotesTaking 原生笔迹编辑。请保留原始 .xnote 文件，以便继续编辑。</string>
     <string name="page_export_png_hint">每页生成一张 PNG；保存多张图片时需要选择文件夹。</string>
     <string name="page_export_pages">选择页面</string>

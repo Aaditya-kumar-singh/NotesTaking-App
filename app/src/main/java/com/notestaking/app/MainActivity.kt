@@ -959,12 +959,12 @@ private fun EditorScreen(
     }
 
     // Share the selected side-panel pages: as one PDF, or as one/many PNGs (ACTION_SEND_MULTIPLE).
-    fun sharePages(from: Editor, pages: List<Int>, asPdf: Boolean) {
+    fun sharePages(from: Editor, pages: List<Int>, asPdf: Boolean, editableInk: Boolean = false) {
         if (pages.isEmpty()) return
         val stem = from.title
         if (asPdf) {
             runPdfExport(stem, shareDir = true,
-                render = { o, prog, cancel -> from.exportPagesToPdf(pages, o, prog, cancel) },
+                render = { o, prog, cancel -> from.exportPagesToPdf(pages, o, prog, cancel, editableInkAnnotations = editableInk) },
                 onReady = { temp -> runCatching { launchShare(temp, stem, "application/pdf") }.onFailure { editor.message = resources.getString(R.string.err_share_pages) } })
             return
         }
@@ -992,10 +992,10 @@ private fun EditorScreen(
         }
     }
 
-    fun savePagesAsPdf(from: Editor, pages: List<Int>) {
+    fun savePagesAsPdf(from: Editor, pages: List<Int>, editableInk: Boolean = false) {
         if (pages.isEmpty()) return
         runPdfExport(from.title, shareDir = false,
-            render = { o, prog, cancel -> from.exportPagesToPdf(pages, o, prog, cancel) },
+            render = { o, prog, cancel -> from.exportPagesToPdf(pages, o, prog, cancel, editableInkAnnotations = editableInk) },
             onReady = { temp -> pendingExportTemp = temp; savePdfLauncher.launch("${from.title}.pdf") })
     }
 
@@ -1195,8 +1195,8 @@ private fun EditorScreen(
                     pendingTemplateKind = kind
                     templateFromImageLauncher.launch(arrayOf("image/*"))
                 },
-                onSharePages = { pane, pages, asPdf -> sharePages(pane, pages, asPdf) },
-                onSavePagesAsPdf = { pane, pages -> savePagesAsPdf(pane, pages) },
+                onSharePages = { pane, pages, asPdf, editableInk -> sharePages(pane, pages, asPdf, editableInk) },
+                onSavePagesAsPdf = { pane, pages, editableInk -> savePagesAsPdf(pane, pages, editableInk) },
                 onSavePagesAsImages = { pane, pages -> savePagesAsImages(pane, pages) },
                 onInsertPdf = { pane, after ->
                     pendingPdfInsert = PendingPdfInsert(pane, after)
@@ -1408,8 +1408,8 @@ private class PaneActions(
     val onOpenFile: (Editor, String) -> Unit,
     val onImportTemplate: () -> Unit,
     val onTemplateFromImage: (com.notestaking.app.core.template.TemplateKind) -> Unit,
-    val onSharePages: (Editor, List<Int>, Boolean) -> Unit,
-    val onSavePagesAsPdf: (Editor, List<Int>) -> Unit,
+    val onSharePages: (Editor, List<Int>, Boolean, Boolean) -> Unit,
+    val onSavePagesAsPdf: (Editor, List<Int>, Boolean) -> Unit,
     val onSavePagesAsImages: (Editor, List<Int>) -> Unit,
     val onInsertPdf: (Editor, Int) -> Unit,
 )
@@ -1439,7 +1439,7 @@ private fun audioMime(ext: String): String = when (ext.lowercase()) {
 private const val MIN_PANE_RATIO = 0.18f
 
 /** How wide the divider is to a finger. Mostly empty around the line, so it is easy to catch. */
-private val DIVIDER = 16.dp
+private val DIVIDER = 48.dp
 
 /** The accent line drawn down the middle of the divider, the same weight as a pane's focus line. */
 private val DIVIDER_LINE = 2.dp
@@ -1653,8 +1653,8 @@ private fun EditorPane(
                         if (editor.sidebarVisible) {
                             com.notestaking.app.ui.SidePanel(
                                 editor,
-                                onSharePages = { pages, asPdf -> actions.onSharePages(editor, pages, asPdf) },
-                                onSavePagesAsPdf = { pages -> actions.onSavePagesAsPdf(editor, pages) },
+                                onSharePages = { pages, asPdf, editableInk -> actions.onSharePages(editor, pages, asPdf, editableInk) },
+                                onSavePagesAsPdf = { pages, editableInk -> actions.onSavePagesAsPdf(editor, pages, editableInk) },
                                 onSavePagesAsImages = { pages -> actions.onSavePagesAsImages(editor, pages) },
                                 onInsertPdf = { after -> actions.onInsertPdf(editor, after) },
                                 onImportTemplate = actions.onImportTemplate,

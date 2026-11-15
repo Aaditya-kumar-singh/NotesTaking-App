@@ -26,6 +26,8 @@
     <string name="page_export_format">File format</string>
     <string name="page_export_pdf">Shareable PDF</string>
     <string name="page_export_png">PNG images</string>
+    <string name="page_export_pdf_editable_ink">Editable PDF ink (simple pen strokes)</string>
+    <string name="page_export_pdf_editable_hint">Eligible pen strokes remain separately editable in compatible PDF readers. Keep the original .xnote for full editing.</string>
     <string name="page_export_pdf_hint">One PDF for viewing and sharing. Drawings appear on the pages but cannot be edited as NotesTaking pen strokes in a PDF reader. Keep your original .xnote to continue editing.</string>
     <string name="page_export_png_hint">One PNG per page. Saving several images asks for a folder.</string>
     <string name="page_export_pages">Pages to include</string>

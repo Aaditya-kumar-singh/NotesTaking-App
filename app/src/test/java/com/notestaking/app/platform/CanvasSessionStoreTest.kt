@@ -103,6 +103,16 @@ class CanvasSessionStoreTest {
             assertFalse(store.save(InfiniteDocument(dpi = 200), writeDocument = false))
             assertArrayEquals(oldMetadata, sidecar.readBytes())
             assertArrayEquals(withoutManifest.toByteArray(), slot.readBytes())
+            val malformed = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(malformed).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
+                zip.write("{\"format\":\"xcanvas\",\"items\":[broken]}".toByteArray())
+                zip.closeEntry()
+            }
+            slot.writeBytes(malformed.toByteArray())
+            assertFalse(store.save(InfiniteDocument(dpi = 200), writeDocument = false))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertArrayEquals(malformed.toByteArray(), slot.readBytes())
             assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
             assertTrue(store.save(InfiniteDocument(dpi = 300), writeDocument = true))
             assertEquals(300, store.load()!!.dpi)

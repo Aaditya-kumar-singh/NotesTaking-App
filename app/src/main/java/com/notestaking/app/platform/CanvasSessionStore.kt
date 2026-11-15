@@ -23,13 +23,13 @@ class CanvasSessionStore(private val dir: File, private val codec: CanvasCodec, 
             if (metaFile.exists() && !metaFile.isFile) return false
             if (docFile.exists() && !docFile.isFile) return false
             // Metadata-only success requires a recoverable existing native snapshot.
-            if (!writeDocument && docFile.isFile && !SafeFileWriter.hasNativeManifest(docFile)) return false
+            if (!writeDocument && docFile.isFile && !SafeFileWriter.hasReadableNativeManifest(docFile, "xcanvas")) return false
             val json = JSONObject()
             document.path?.let { json.put("path", it) }
             document.displayName?.let { json.put("display_name", it) }
             json.put("dirty", document.dirty)
             if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile, SafeFileWriter::hasNativeManifest) { output -> codec.write(document, output) }) return false
+                if (!SafeFileWriter.write(docFile, { SafeFileWriter.hasReadableNativeManifest(it, "xcanvas") }) { output -> codec.write(document, output) }) return false
             }
             meta.writeChecked(json)
         } catch (_: Exception) {

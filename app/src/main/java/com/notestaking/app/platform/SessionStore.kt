@@ -45,7 +45,7 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
             if (metaFile.exists() && !metaFile.isFile) return false
             if (docFile.exists() && !docFile.isFile) return false
             // Metadata-only success requires a recoverable existing native snapshot.
-            if (!writeDocument && docFile.isFile && !SafeFileWriter.hasNativeManifest(docFile)) return false
+            if (!writeDocument && docFile.isFile && !SafeFileWriter.hasReadableNativeManifest(docFile, "xnote")) return false
             val m = JSONObject()
                 .put("dirty", document.dirty)
                 .put("zoom", zoom)
@@ -56,7 +56,7 @@ class SessionStore(private val dir: File, private val codec: DocumentCodec, priv
             document.displayName?.let { m.put("displayName", it) }
             val metadata = ViewOverridesJson.write(m, viewOverrides)
             if (writeDocument || !docFile.exists()) {
-                if (!SafeFileWriter.write(docFile, SafeFileWriter::hasNativeManifest) { output -> codec.write(document, output) }) return false
+                if (!SafeFileWriter.write(docFile, { SafeFileWriter.hasReadableNativeManifest(it, "xnote") }) { output -> codec.write(document, output) }) return false
             }
             meta.writeChecked(metadata)
         } catch (_: Exception) {

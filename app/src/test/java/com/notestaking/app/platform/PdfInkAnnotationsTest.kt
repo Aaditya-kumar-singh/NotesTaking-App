@@ -9,7 +9,7 @@ import com.notestaking.app.core.tools.ToolConfig
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
-import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationInk
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -55,7 +55,8 @@ class PdfInkAnnotationsTest {
             val frame = PageFrame(Affine.IDENTITY, 0.0, 600.0, 1.0)
             PdfInkAnnotations.write(doc, page, listOf(stroke, second), frame)
             assertEquals(2, page.annotations.size)
-            val annotation = page.annotations.first() as PDAnnotationInk
+            val annotation = page.annotations.first() as PDAnnotationMarkup
+            assertEquals(PDAnnotationMarkup.SUB_TYPE_INK, annotation.subtype)
             assertEquals(1, annotation.inkList.size)
             assertNotNull(annotation.appearance?.normalAppearance)
             assertTrue(annotation.isPrinted)
@@ -70,8 +71,8 @@ class PdfInkAnnotationsTest {
             PDDocument.load(serialized).use { reopened ->
                 val saved = reopened.getPage(0).annotations
                 assertEquals(2, saved.size)
-                assertTrue(saved.all { it is PDAnnotationInk })
-                val actual = (saved[0] as PDAnnotationInk).inkList.single()
+                assertTrue(saved.all { it is PDAnnotationMarkup })
+                val actual = (saved[0] as PDAnnotationMarkup).inkList.single()
                 assertEquals(coordinates.size, actual.size)
                 for (i in coordinates.indices) assertEquals(coordinates[i], actual[i], 0.001f)
                 assertNotNull(saved[0].appearance?.normalAppearance)
@@ -86,7 +87,7 @@ class PdfInkAnnotationsTest {
             doc.addPage(page)
             val frame = PageFrame.of(10.0, 15.0, 110.0, 215.0, 90, 0.5)
             PdfInkAnnotations.write(doc, page, listOf(stroke), frame)
-            val coordinates = (page.annotations.single() as PDAnnotationInk).inkList.single()
+            val coordinates = (page.annotations.single() as PDAnnotationMarkup).inkList.single()
             val geometry = stroke.geometry()
             for (i in 0 until geometry.pointCount) {
                 val expected = frame.toUser(geometry.cx(i), geometry.cy(i))

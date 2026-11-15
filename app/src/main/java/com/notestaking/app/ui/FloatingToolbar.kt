@@ -27,8 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
@@ -69,6 +72,9 @@ internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY:
     x != defaultX || y != defaultY
 
 /** Use the same normalized nudge increments for keyboard and TalkBack movement. */
+internal fun floatingGripOwnsArrow(focused: Boolean, key: Key, alt: Boolean, ctrl: Boolean, meta: Boolean): Boolean =
+    focused && !alt && !ctrl && !meta && floatingGripKeyStep(key) != null
+
 internal fun floatingGripKeyStep(key: Key): Pair<Float, Float>? = when (key) {
     Key.DirectionLeft -> -0.1f to 0f
     Key.DirectionRight -> 0.1f to 0f
@@ -87,6 +93,7 @@ internal fun MovableFloatingToolbar(
     bar: @Composable () -> Unit,
     favorites: @Composable (Int) -> Unit,
     onDrop: (Float, Float) -> Unit,
+    onGripFocusChange: (Boolean) -> Unit = {},
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -160,6 +167,7 @@ internal fun MovableFloatingToolbar(
                                 })
                         }
                     }
+                    .onFocusChanged { onGripFocusChange(it.isFocused) }
                     .onKeyEvent { event ->
                         if (event.isAltPressed || event.isCtrlPressed || event.isMetaPressed) false
                         else {

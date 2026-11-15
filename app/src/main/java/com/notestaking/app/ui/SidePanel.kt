@@ -157,8 +157,8 @@ private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport
 @Composable
 fun SidePanel(
     editor: Editor,
-    onSharePages: (indices: List<Int>, asPdf: Boolean) -> Unit = { _, _ -> },
-    onSavePagesAsPdf: (indices: List<Int>) -> Unit = {},
+    onSharePages: (indices: List<Int>, asPdf: Boolean, editableInk: Boolean) -> Unit = { _, _, _ -> },
+    onSavePagesAsPdf: (indices: List<Int>, editableInk: Boolean) -> Unit = { _, _ -> },
     onSavePagesAsImages: (indices: List<Int>) -> Unit = {},
     onInsertPdf: (after: Int) -> Unit = {},
     onImportTemplate: () -> Unit = {},
@@ -182,7 +182,7 @@ fun SidePanel(
             start = start,
             totalPages = editor.pagesSnapshot().size,
             onDismiss = { exportStart = null },
-            onExport = { pages, format, destination ->
+            onExport = { pages, format, destination, editableInk ->
                 exportStart = null
                 val stillSamePages = editor.state.document === exportDocumentAtOpen &&
                     com.notestaking.app.platform.ExportPageSelection.matchesSnapshot(
@@ -191,8 +191,8 @@ fun SidePanel(
                 if (!stillSamePages) {
                     editor.message = if (format == PageExportFormat.PDF) pdfExportError else imageExportError
                 } else when {
-                    destination == PageExportDestination.SHARE -> onSharePages(pages, format == PageExportFormat.PDF)
-                    format == PageExportFormat.PDF -> onSavePagesAsPdf(pages)
+                    destination == PageExportDestination.SHARE -> onSharePages(pages, format == PageExportFormat.PDF, editableInk)
+                    format == PageExportFormat.PDF -> onSavePagesAsPdf(pages, editableInk)
                     else -> onSavePagesAsImages(pages)
                 }
             },

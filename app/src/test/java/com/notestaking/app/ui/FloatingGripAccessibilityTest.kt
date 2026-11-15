@@ -42,6 +42,17 @@ class FloatingGripAccessibilityTest {
     }
 
     @Test
+    fun focusedGripOwnsOnlyUnmodifiedArrowKeys() {
+        assertTrue(floatingGripOwnsArrow(true, Key.DirectionLeft, false, false, false))
+        assertTrue(floatingGripOwnsArrow(true, Key.DirectionDown, false, false, false))
+        assertFalse(floatingGripOwnsArrow(false, Key.DirectionLeft, false, false, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionRight, true, false, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionUp, false, true, false))
+        assertFalse(floatingGripOwnsArrow(true, Key.DirectionUp, false, false, true))
+        assertFalse(floatingGripOwnsArrow(true, Key.Enter, false, false, false))
+    }
+
+    @Test
     fun resetIsOfferedOnlyWhenThePositionDiffersFromTheDefault() {
         assertFalse(floatingGripCanReset(0.5f, 0f, 0.5f, 0f))
         assertFalse(floatingGripCanReset(1f, 0.5f, 1f, 0.5f))
