@@ -759,7 +759,7 @@ private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: (
         DropdownMenuItem(
             text = { Text(stringResource(R.string.add_stickers)) },
             leadingIcon = { Icon(NotesTakingIcons.plus, contentDescription = null, modifier = Modifier.size(18.dp)) },
-            onClick = onAddStickers,
+            onClick = { onDismiss(); onAddStickers() },
         )
         if (editor.stickers.isEmpty()) {
             Text(
