@@ -58,9 +58,11 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
     var viewOpen by remember { mutableStateOf(false) }
     var stylesOpen by remember { mutableStateOf(false) }
     var pageJumpOpen by remember { mutableStateOf(false) }
-    PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
-    if (editor.hasPdf) PinnedFingerDrawing(editor)
-    PinnedPageInsertion(editor)
+    if (!pdfReadingToolbarActive(editor.hasPdf, editor.tool)) {
+        PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
+        if (editor.hasPdf) PinnedFingerDrawing(editor)
+        PinnedPageInsertion(editor)
+    }
     CanvasAllTools(
         host = editor,
         selected = editor.tool,

@@ -84,6 +84,7 @@ import com.notestaking.app.R
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolbarItem
+import com.notestaking.app.core.tools.ToolbarLayout
 import com.notestaking.app.platform.ImageDecoder
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
@@ -96,6 +97,15 @@ import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+internal fun pdfReadingToolbarActive(hasPdf: Boolean, tool: Tool): Boolean = hasPdf && tool == Tool.PAN
+
+/** Reading PDF uses a short navigation-first strip; the saved annotation layout stays untouched. */
+internal fun pagedToolbarSections(layout: ToolbarLayout, readingPdf: Boolean): List<List<ToolbarItem>> =
+    if (readingPdf) listOf(listOf(
+        ToolbarItem.PAGE_NAV, ToolbarItem.SIDEBAR, ToolbarItem.FIT,
+        ToolbarItem.FULLSCREEN, ToolbarItem.HOME,
+    )) else layout.visibleSections.map { section -> section.visibleEntries.map { it.item } }
 
 @Composable
 fun Toolbar(
@@ -133,6 +143,13 @@ fun Toolbar(
     var configForTool by remember { mutableStateOf<Tool?>(null) }
     var switcherIndex by remember { mutableStateOf<Int?>(null) }
     var renaming by remember { mutableStateOf(false) }
+    val readingPdf = pdfReadingToolbarActive(editor.hasPdf, editor.tool)
+    LaunchedEffect(readingPdf) {
+        if (readingPdf) {
+            configForTool = null
+            switcherIndex = null
+        }
+    }
     // PDF Read/Annotate and split-pane Close remain visible while the tool strip scrolls.
     ToolbarFrame(
         armed = editor.tool,
@@ -142,14 +159,14 @@ fun Toolbar(
             onClosePane?.let { ClosePaneButton(it) }
         },
     ) {
-        // The bar is driven by the user-customisable layout; separators sit between non-empty
+        // Annotate follows the saved layout; Read uses essential navigation. Separators sit between non-empty
         // sections, and each item dispatches to its renderer (see ToolbarItemView).
-        editor.toolbarLayout.visibleSections.forEachIndexed { si, section ->
+        pagedToolbarSections(editor.toolbarLayout, readingPdf).forEachIndexed { si, section ->
             if (si > 0) Separator()
-            section.visibleEntries.forEach { entry ->
+            section.forEach { item ->
                 ToolbarItemView(
                     editor = editor,
-                    item = entry.item,
+                    item = item,
                     toolIcons = toolIcons,
                     configForTool = configForTool,
                     setConfigForTool = { configForTool = it },
