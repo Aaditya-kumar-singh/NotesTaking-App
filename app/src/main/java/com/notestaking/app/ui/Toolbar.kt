@@ -84,6 +84,8 @@ import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.tools.Tool
+import com.notestaking.app.core.tools.ToolConfig
+import com.notestaking.app.core.tools.ToolConversions
 import com.notestaking.app.core.tools.ToolbarItem
 import com.notestaking.app.core.tools.ToolbarLayout
 import com.notestaking.app.platform.ImageDecoder
@@ -94,10 +96,45 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** Describe actual ink and stroke settings without changing the saved preset. */
+internal fun strokeStyleDescription(
+    tool: Tool,
+    config: ToolConfig,
+    activeInk: Rgba,
+    name: String,
+    colourLabel: String,
+    widthLabel: String,
+    pressureLabel: String,
+    sensitivityLabel: String,
+    offLabel: String,
+): String {
+    val ink = config.colorOverride ?: activeInk
+    val base = "$name, $colourLabel ${Rgba.toHex(ink)}, $widthLabel ${"%.1f".format(config.baseWidth)}"
+    if (tool != Tool.PEN && tool != Tool.CALLIGRAPHY && tool != Tool.SPEED && tool != Tool.TAPER) return base
+    val value = if (config.pressureEnabled) {
+        "$sensitivityLabel ${ToolConversions.minFactorToSensitivity(config.pressureMinFactor).roundToInt()}%"
+    } else offLabel
+    return "$base, $pressureLabel $value"
+}
+
+/** The armed stroke preview is shared by paged and infinite toolbars. */
+@Composable
+internal fun strokeToolAnnouncement(host: ToolPopupHost, tool: Tool, name: String): String {
+    val config = host.toolConfig(tool)
+    val activeInk = host.hostToolbarColors.getOrNull(host.hostActiveColorIndex) ?: config.rgba
+    return strokeStyleDescription(
+        tool, config, activeInk, name,
+        stringResource(R.string.colour), stringResource(R.string.caption_width),
+        stringResource(R.string.caption_pressure), stringResource(R.string.caption_sensitivity),
+        stringResource(R.string.off),
+    )
+}
 
 internal fun pdfReadingToolbarActive(hasPdf: Boolean, tool: Tool): Boolean = hasPdf && tool == Tool.PAN
 
@@ -361,10 +398,12 @@ private fun ToolButton(
     if (icon == null) return
     val armed = editor.tool == tool
     val configurable = tool.isStroke || tool == Tool.SHAPE || tool == Tool.ERASER || tool == Tool.SELECT || tool == Tool.TEXT || tool == Tool.MARKUP || tool == Tool.TAPE
+    val name = if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes)
+    val description = if (armed && tool.isStroke) strokeToolAnnouncement(editor, tool, name) else name
     Box {
         ToolbarIcon(
             icon,
-            if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes),
+            description,
             active = armed,
             glideKey = tool,
             hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,

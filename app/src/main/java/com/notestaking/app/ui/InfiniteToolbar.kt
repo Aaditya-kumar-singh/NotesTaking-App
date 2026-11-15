@@ -156,9 +156,11 @@ fun InfiniteToolbar(
                                 // Tapping the armed tool again opens its settings, as the paged bar does.
                                 val armed = editor.tool == tool
                                 val configurable = tool.isStroke || tool == Tool.ERASER || tool == Tool.SHAPE || tool == Tool.SELECT || tool == Tool.TAPE
+                                val name = if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes)
+                                val description = if (armed && tool.isStroke) strokeToolAnnouncement(editor, tool, name) else name
                                 ToolbarIcon(
                                     icon,
-                                    if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes),
+                                    description,
                                     active = armed,
                                     glideKey = tool,
                                     hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,
