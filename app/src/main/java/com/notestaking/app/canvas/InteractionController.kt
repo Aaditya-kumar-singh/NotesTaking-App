@@ -567,7 +567,9 @@ class InteractionController(
     fun configFor(t: Tool): ToolConfig = toolConfigs[t] ?: ToolDefaults.configFor(t)
 
     fun setToolConfig(t: Tool, config: ToolConfig) {
+        val changed = toolConfigs[t] != config
         toolConfigs[t] = config
+        if (changed && t == Tool.ERASER) requestRender() // refresh a stationary hover ring as the size slider moves
     }
 
     fun setTool(t: Tool) {
@@ -1527,11 +1529,13 @@ class InteractionController(
 
     // SCALE off: hold the eraser at a constant on-screen size by shrinking its content-space
     // radius as you zoom in (both the hit-test and the cursor circle derive from this).
-    private fun eraserRadius(): Double {
+    internal fun eraserRadius(): Double {
         val cfg = configFor(Tool.ERASER)
         return if (cfg.scale) cfg.baseWidth else cfg.baseWidth / state.zoom
     }
 
+    /** Same viewport-space radius for the sweep and its cursor preview. */
+    internal fun eraserCursorRadiusPx(): Double = eraserRadius() * state.zoom
     private fun areaErase(): Boolean = configFor(Tool.ERASER).eraseMode == EraseMode.AREA
 
     private fun beginErase(vx: Double, vy: Double) {
@@ -1556,7 +1560,7 @@ class InteractionController(
     private fun eraseAlong(vx: Double, vy: Double) {
         val next = Pt(vx, vy)
         com.notestaking.app.core.geometry.EraserSweep.visit(
-            previousErasePoint, next, eraserRadius() * state.zoom,
+            previousErasePoint, next, eraserCursorRadiusPx(),
         ) { eraseAt(it.x, it.y) }
         previousErasePoint = next
     }
@@ -4609,7 +4613,7 @@ class InteractionController(
 
         // Eraser cursor (viewport space, after the transform is restored).
         eraserCursor?.let {
-            val radius = eraserRadius() * state.zoom
+            val radius = eraserCursorRadiusPx()
             r.strokeEllipse(it, radius, radius, Pen(state.palette.textDim, 1.3, cosmetic = true))
         }
 

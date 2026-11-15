@@ -121,6 +121,15 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/history/HistoryTest.kt` regression for mixed z-order, unsorted selections across pages, idempotent Undo and Redo. Added `canvas/SelectionCacheRepairTest.kt` end-to-end model test for lasso membership, a locked object inside the loop, two selected objects amid unselected layers, exactly one Undo restoring original ordering and Redo removing only the same members. Existing PDF/background cache preservation tests remain intact.
 - Permitted A–Z integrity, Python source checks, privacy validation, C-only file ownership and `git diff --check` required before commit. Kotlin/JUnit, exact-SHA GitHub CI and real NT-033 stylus lasso/delete/undo across paged/PDF/infinite surfaces remain **unverified**; no APK build, push, merge, or checklist tick by worker.
 
+## NP-042 — eraser size slider and cursor ring (Batch G, P1)
+
+- Session `C-20261115-1120-gpt6`, parent local commit `f2fbcf2ec216a04647408a41dc4750b93e4918b3` (NP-041 still in review). Confirmed clean Agent C worktree, current developer ref `ab0774ca9fc6503f41aab238cdda9399cd0d3425`, exclusive C ownership and atomically claimed NP-042.
+- Inspected paged `canvas/InteractionController.kt` eraser hit-test, sweep, hover and overlay ring, `core/geometry/EraserSweep.kt`, `core/model/Stroke.erasedBy` nib-width-aware boundaries, `core/tools/{ToolConfig,ToolConversions}.kt` persisted slider radius 1–80 (default 24), read-only `ui/Popups.kt`, `ui/Editor.kt`, `ui/InfiniteInteraction.kt`, `ui/InfiniteEditor.kt`, `gl/InfiniteCanvasView.kt`, and NT-034 S Pen zoom/size requirements.
+- Corrected a paged-canvas stale hover preview: the slider calls `InteractionController.setToolConfig` but changing the configuration previously did not request a render. Config changes for the eraser now request a frame, avoiding a stationary cursor displaying the previous size. Centralized paged eraser's viewport radius in `eraserCursorRadiusPx()`, used by both sweep interpolation and drawn ring; the actual erase still uses `eraserRadius()` in content units. Existing scale on/off semantics and stored settings are unchanged.
+- Added `canvas/EraserCursorSizeTest.kt` for sizes 4/24/80, zoom 25/100/400%, scale enabled/disabled, matching ring and erase radii, two-point stroke cut boundaries including nib thickness; also immediate config-change redraw, deduplicated updates and unchanged unrelated pen settings.
+- An infinite-canvas stationary hover refresh when the slider changes is potentially dependent on `ui/InfiniteEditor.updateToolConfig` and the cached GL cursor radius in `gl/InfiniteCanvasView`. These paths are outside Agent C's ownership; coordinator must review/allocate if a real device reproduction shows a stale ring. Neither source file was modified.
+- A–Z integrity, Python source validator (0 problems), privacy checker, Chat C file-ownership guard and `git diff --check` passed. Kotlin/JUnit, exact-SHA GitHub Android CI and real S Pen NT-034 cursor/erased-width tests are unverified. No APK build, branch reset, integration push, or checklist tick.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
