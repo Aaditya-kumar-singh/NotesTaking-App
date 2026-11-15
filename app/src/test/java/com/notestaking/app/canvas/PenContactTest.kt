@@ -1,6 +1,9 @@
 package com.notestaking.app.canvas
 
+import android.view.MotionEvent
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,6 +35,18 @@ class PenContactTest {
         assertFalse(PenContact.finishesGesture(true, true, activeId = 7, liftedId = 4))
         assertFalse(PenContact.finishesGesture(false, true, activeId = 7, liftedId = 7))
         assertFalse(PenContact.finishesGesture(true, false, activeId = 7, liftedId = 7))
+    }
+
+    @Test fun mixedPenAndFingerEventsKeepThePenUntilItsOwnLift() {
+        val penId = 7
+        val palmId = 4
+        assertEquals(MotionEvent.ACTION_MOVE, PenContact.routedPenAction(MotionEvent.ACTION_POINTER_DOWN, penId, palmId))
+        assertEquals(MotionEvent.ACTION_MOVE, PenContact.routedPenAction(MotionEvent.ACTION_MOVE, penId, palmId))
+        assertEquals(MotionEvent.ACTION_MOVE, PenContact.routedPenAction(MotionEvent.ACTION_POINTER_UP, penId, palmId))
+        assertEquals(MotionEvent.ACTION_UP, PenContact.routedPenAction(MotionEvent.ACTION_POINTER_UP, penId, penId))
+        assertEquals(MotionEvent.ACTION_UP, PenContact.routedPenAction(MotionEvent.ACTION_UP, penId, penId))
+        assertEquals(MotionEvent.ACTION_CANCEL, PenContact.routedPenAction(MotionEvent.ACTION_CANCEL, penId, palmId))
+        assertNull(PenContact.routedPenAction(MotionEvent.ACTION_HOVER_MOVE, penId, palmId))
     }
 
     @Test fun penCanBeginWhilePalmRemainsButNotFromAnotherPen() {

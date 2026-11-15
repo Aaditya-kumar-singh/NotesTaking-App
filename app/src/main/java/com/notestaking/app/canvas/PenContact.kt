@@ -1,5 +1,7 @@
 package com.notestaking.app.canvas
 
+import android.view.MotionEvent
+
 /**
  * The pen owns its ink/eraser/tape gesture until its own pointer lifts, even if
  * Android still reports an incidental finger resting on the display.
@@ -14,6 +16,16 @@ internal object PenContact {
 
     fun finishesGesture(penActive: Boolean, ownsGesture: Boolean, activeId: Int, liftedId: Int): Boolean =
         penActive && ownsGesture && activeId == liftedId
+
+    /** Other fingers cannot start a pinch or finish the pen's single-pointer gesture. */
+    fun routedPenAction(action: Int, penId: Int, actionPointerId: Int): Int? = when (action) {
+        MotionEvent.ACTION_MOVE, MotionEvent.ACTION_POINTER_DOWN -> MotionEvent.ACTION_MOVE
+        MotionEvent.ACTION_POINTER_UP ->
+            if (actionPointerId == penId) MotionEvent.ACTION_UP else MotionEvent.ACTION_MOVE
+        MotionEvent.ACTION_UP -> MotionEvent.ACTION_UP
+        MotionEvent.ACTION_CANCEL -> MotionEvent.ACTION_CANCEL
+        else -> null
+    }
 
     fun canStartWhileFingersDown(toolTypes: IntArray, downIndex: Int, fingerType: Int, stylusType: Int, eraserType: Int): Boolean =
         toolTypes.size > 1 && downIndex in toolTypes.indices &&

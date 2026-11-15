@@ -3,9 +3,9 @@ package com.notestaking.app.canvas
 import android.view.MotionEvent
 
 /**
- * When a pen touches while fingers are already down, route only that pen as a normal
- * single-pointer stream. Using public MotionEvent.obtain preserves tool type, pressure
- * and historical samples; the original mixed stream never reaches the ink controller.
+ * Keep the active pen as a single-pointer stream whether it touches before or after
+ * fingers. Public MotionEvent.obtain preserves tool type, pressure and historical samples;
+ * the original mixed stream never reaches the ink controller.
  */
 internal class PenContactRouter {
     private var pointerId = -1
@@ -37,17 +37,12 @@ internal class PenContactRouter {
         val index = event.findPointerIndex(pointerId)
         if (index < 0) {
             pointerId = -1
-            return null
+            // Android dropped the pen ID: cancel the live ink instead of leaving it stuck.
+            return MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
         }
-        val action = when (event.actionMasked) {
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_POINTER_DOWN -> MotionEvent.ACTION_MOVE
-            MotionEvent.ACTION_POINTER_UP ->
-                if (event.getPointerId(event.actionIndex) == pointerId) MotionEvent.ACTION_UP
-                else MotionEvent.ACTION_MOVE
-            MotionEvent.ACTION_UP -> MotionEvent.ACTION_UP
-            MotionEvent.ACTION_CANCEL -> MotionEvent.ACTION_CANCEL
-            else -> return null
-        }
+        val actionPointerId = if (event.actionMasked == MotionEvent.ACTION_POINTER_UP)
+            event.getPointerId(event.actionIndex) else -1
+        val action = PenContact.routedPenAction(event.actionMasked, pointerId, actionPointerId) ?: return null
         val isolated = copyOne(event, index, action)
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) pointerId = -1
         return isolated
@@ -58,11 +53,14 @@ internal class PenContactRouter {
         event.getPointerProperties(index, props)
         val current = MotionEvent.PointerCoords()
         event.getPointerCoords(index, current)
-        val withHistory = action == MotionEvent.ACTION_MOVE && event.historySize > 0
-        val initial = if (withHistory) MotionEvent.PointerCoords().also {
-            event.getHistoricalPointerCoords(index, 0, it)
+        // A pen joining an older finger gesture must not inherit pre-pen history.
+        val firstHistory = if (action == MotionEvent.ACTION_MOVE)
+            (0 until event.historySize).firstOrNull { event.getHistoricalEventTime(it) >= penDownTime }
+        else null
+        val initial = if (firstHistory != null) MotionEvent.PointerCoords().also {
+            event.getHistoricalPointerCoords(index, firstHistory, it)
         } else current
-        val startTime = if (withHistory) event.getHistoricalEventTime(0) else event.eventTime
+        val startTime = if (firstHistory != null) event.getHistoricalEventTime(firstHistory) else event.eventTime
         val copy = MotionEvent.obtain(
             penDownTime, startTime, action, 1,
             arrayOf(props), arrayOf(initial),
@@ -70,8 +68,8 @@ internal class PenContactRouter {
             event.xPrecision, event.yPrecision,
             event.deviceId, event.edgeFlags, event.source, event.flags,
         )
-        if (withHistory) {
-            for (h in 1 until event.historySize) {
+        if (firstHistory != null) {
+            for (h in firstHistory + 1 until event.historySize) {
                 val coords = MotionEvent.PointerCoords()
                 event.getHistoricalPointerCoords(index, h, coords)
                 copy.addBatch(event.getHistoricalEventTime(h), arrayOf(coords), event.metaState)
