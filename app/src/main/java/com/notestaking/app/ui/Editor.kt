@@ -1145,17 +1145,26 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         pdfText.selection?.let { markSelection(it, type) }
     }
 
-    /** Marks [sel] as [type] in the active ink colour, a markup on each page it covers, as one undo step. */
+    /** Marks [sel] as [type] only while its note pages and PDF orientation still match. */
     fun markSelection(sel: com.notestaking.app.core.pdf.TextSelection, type: MarkupType) {
+        val doc = state.document
+        val source = pdfSource ?: return
+        val targets = com.notestaking.app.platform.PdfMarkupTargets.capture(
+            doc, sel.start.page, sel.end.page,
+        ) ?: return
         val intensity = controller.configFor(Tool.MARKUP).markupIntensity
         val color = controller.inkColor
         readPdfTexts(sel.start.page..sel.end.page) { texts ->
-            pdfText.clear()
+            if (!noteOpen || state.document !== doc || pdfSource !== source ||
+                pdfText.selection != sel || !targets.stillValid(state.document)
+            ) return@readPdfTexts
             val made = com.notestaking.app.core.pdf.Markups.of(sel, { texts[it] }, type, color, intensity, System.currentTimeMillis())
-            val pages = state.document.pages
             val steps = made.groupBy({ it.first }, { it.second })
-                .mapNotNull { (i, marks) -> pages.getOrNull(i)?.let { AddMarkups(it, marks) } }
-            if (steps.isNotEmpty()) applyMarkupEdit(steps.singleOrNull() ?: CompositeCommand(steps))
+                .mapNotNull { (i, marks) -> doc.pages.getOrNull(i)?.let { AddMarkups(it, marks) } }
+            if (steps.isNotEmpty()) {
+                applyMarkupEdit(steps.singleOrNull() ?: CompositeCommand(steps))
+                pdfText.clear()
+            }
         }
     }
 
