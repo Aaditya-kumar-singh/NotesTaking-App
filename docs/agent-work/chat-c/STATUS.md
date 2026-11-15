@@ -91,6 +91,13 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added regression coverage for overlapping stylus keys across panes, unpaired key-up, focus loss, rear-eraser precedence, and rear-tip click suppression. No edits to shared UI, platform, settings, source documents or other lanes.
 - A–Z integrity, source Python (0 problems), privacy, C ownership and whitespace checks passed before commit. Kotlin/JUnit/Android execution, exact-SHA GitHub CI, and real S Pen tablet NT-025 button/eraser/hover/auto-repeat/focus-restore acceptance remain pending. No push or APK build.
 
+## NP-029 — One-tap PDF Read/Pan versus Annotate (Batch F, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `bfba01411a141d3c051388db2522b65d65d35aea` (NP-028 remains in review). Atomically claimed `NP-029`, preserving all earlier reviewed commits and the shared A/B lane reservations.
+- Read-only audited `ui/Editor.kt` (`selectTool`, `setPdfReadingMode`, tool-change callback and PDF source state), `ui/CanvasQuickAccess.kt` plus the PDF favorites/overflow wiring, `canvas/InteractionController.kt` PAN entry/tap/link behavior, `canvas/FreePointer.kt`, `core/tools/{PdfReadingToolChoice,Tool}.kt`, `docs/engineering/PDF_READING_ANNOTATION_UX_B08_2026-11-10.md`, and NT-026 phone/tablet acceptance. The one-tap Read/Annotate action already exists: Read arms PAN; Annotate restores the latest PDF editing tool through the non-serialized per-pane choice; PAN/SCREENSHOT/IMAGE do not replace it. It uses `setTool` without resetting page or viewport.
+- No production behavior changed because there is no demonstrated missing feature or bug in the in-scope policy, and `ui/Editor.kt` / toolbar wiring is another agent's ownership. Added four focused cases to `core/tools/PdfReadingToolChoiceTest.kt`: exact NT-026 Read → Annotate → Eraser → Read → Annotate (plus Highlighter); every supported editing tool restored; transient tools and repeated Read ignored; independent split-pane tool memory.
+- Source-only A–Z integrity, source/privacy, ownership and whitespace checks required before local commit. Kotlin/JUnit and Android builds are prohibited locally; GitHub exact-SHA CI, viewport/page preservation, mode button UI, and NT-026 phone/tablet gestures remain **unverified** and must not be marked complete. No push, rebase, manual checklist ticks or non-owned files modified.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
