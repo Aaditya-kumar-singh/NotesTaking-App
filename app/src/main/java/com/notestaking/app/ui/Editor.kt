@@ -4893,12 +4893,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             val newUri = android.provider.DocumentsContract.createDocument(
                 appContext.contentResolver, target, "application/octet-stream", newName,
             ) ?: return@runCatching null
-            val copied = runCatching {
-                appContext.contentResolver.openInputStream(src)?.use { input ->
-                    appContext.contentResolver.openOutputStream(newUri, "wt")?.use { output -> input.copyTo(output); true } ?: false
-                } ?: false
-            }.getOrDefault(false)
-            if (!copied) { runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, newUri) }; return@runCatching null }
+            val copied = com.notestaking.app.platform.ProviderCopy.save(
+                { appContext.contentResolver.openInputStream(src) },
+                { appContext.contentResolver.openOutputStream(newUri, "wt") },
+                { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, newUri) },
+            ) == com.notestaking.app.platform.ProviderCopy.Result.SAVED
+            if (!copied) return@runCatching null
             queryDisplayName(newUri) ?: newName
         }
     }.getOrNull()

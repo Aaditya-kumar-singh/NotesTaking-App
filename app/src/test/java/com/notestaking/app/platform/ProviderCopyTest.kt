@@ -150,6 +150,25 @@ class ProviderCopyTest {
         assertTrue(source.closed)
     }
 
+    @Test fun stalledReadAfterPartialCopyDoesNotReportSuccess() {
+        val source = object : ByteArrayInputStream("partial note".toByteArray()) {
+            var firstRead = true
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (!firstRead) return 0
+                firstRead = false
+                return super.read(b, off, len)
+            }
+        }
+        val output = ByteArrayOutputStream()
+        var removed = false
+        val result = ProviderCopy.save(
+            { source }, { output }, { removed = true; true },
+        )
+        assertEquals(ProviderCopy.Result.FAILED_REMOVED, result)
+        assertTrue(removed)
+        assertArrayEquals("partial note".toByteArray(), output.toByteArray())
+    }
+
     @Test fun intermittentEmptyReadsStillSaveExactProviderBytes() {
         val payload = ByteArray(128 * 1024) { (it % 251).toByte() }
         val input = object : ByteArrayInputStream(payload) {
