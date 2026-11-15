@@ -1185,7 +1185,8 @@ class CanvasState(
             postToMain {
                 pendingInk.remove(page)
                 val meanwhile = repairedMeanwhile.remove(page)
-                if (gen == cacheGen) {
+                // A queued render can finish after a fast scroll evicts its page.
+                if (gen == cacheGen && page in cacheBand().keep) {
                     caches[page] = entry
                     staleInk.remove(page)
                     // The build painted from what it read then; a repair since, as a playhead crossing ink, would be lost.
@@ -1352,7 +1353,7 @@ class CanvasState(
             val entry = buildBackground(page, res)
             postToMain {
                 pendingBg.remove(page)
-                if (gen == cacheGen) bgCaches[page] = entry.also { it.seq = seq }
+                if (gen == cacheGen && page in cacheBand().keep) bgCaches[page] = entry.also { it.seq = seq }
                 onCacheReady?.invoke() // discarded or not; see [scheduleInk]
             }
         }
