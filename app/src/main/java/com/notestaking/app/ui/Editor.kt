@@ -4284,17 +4284,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /**
      * What Recent shows under [treeUri]: each document as it is now, when it was opened and the folder it's in.
-     * A document that has gone is dropped from Recent. One query per document; IO.
+     * Unavailable documents are hidden, not forgotten: a failed provider query cannot prove deletion. IO.
      */
     fun recentEntries(treeUri: String): List<RecentEntry> {
         val tree = android.net.Uri.parse(treeUri)
         val colors = HashMap<String, Map<String, Rgba>>()
         val folders = HashMap<String, String?>()
-        val gone = ArrayList<String>()
         val out = recentDocs.filter { isUnderTree(it.uri, treeUri) }.mapNotNull { r ->
             val docId = runCatching { android.provider.DocumentsContract.getDocumentId(android.net.Uri.parse(r.uri)) }.getOrNull() ?: return@mapNotNull null
             val uri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, docId)
-            val stamp = stampOf(uri.toString()) ?: run { gone.add(r.uri); return@mapNotNull null }
+            val stamp = stampOf(uri.toString()) ?: return@mapNotNull null
             val name = queryDisplayName(uri) ?: r.name
             val parent = parentDocIdOf(uri.toString())
             val color = parent?.let { p ->
@@ -4307,7 +4306,6 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             )
             RecentEntry(entry, r.opened, where)
         }
-        if (gone.isNotEmpty()) autosaveScope.launch { setRecents(recentDocs.filterNot { it.uri in gone }) }
         return out.distinctBy { it.entry.documentUri }
     }
 
@@ -5991,7 +5989,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** (id, name, is a folder) for each child of [docId]. */
     private fun childRows(tree: android.net.Uri, docId: String): List<Triple<String, String, Boolean>> {
         val out = ArrayList<Triple<String, String, Boolean>>()
-        runCatching {
+        val queried = runCatching {
             appContext.contentResolver.query(
                 android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId),
                 arrayOf(
@@ -6007,7 +6005,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 }
             }
         }
-        return out
+        return if (queried.isSuccess) out else emptyList()
     }
 
     /**
@@ -6036,7 +6034,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                     .put("path", org.json.JSONArray(path))
                     .put("deleted", java.time.Instant.ofEpochMilli(now).toString())
                     .apply { e.color?.let { put("colour", Rgba.toHex(it)) } }
-                val moved = if (writeSidecarJson(tree, wrapperId, TRASH_INFO, info)) {
+                val infoSaved = writeSidecarJson(tree, wrapperId, TRASH_INFO, info)
+                val moved = if (infoSaved) {
                     runCatching {
                         android.provider.DocumentsContract.moveDocument(
                             resolver, android.net.Uri.parse(e.documentUri),
@@ -6045,7 +6044,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                     }.getOrNull()
                 } else null
                 if (moved == null) {
-                    runCatching { android.provider.DocumentsContract.deleteDocument(resolver, wrapper) }
+                    // Only delete when no move was attempted; a failed provider response may hide a successful move.
+                    if (!infoSaved) runCatching { android.provider.DocumentsContract.deleteDocument(resolver, wrapper) }
                     return@runCatching null
                 }
                 // The open note stops writing to where it was; what's keyed by its identity follows it in.
@@ -6067,7 +6067,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         return trashed to failed
     }
 
-    /** What waits in Trash, newest first. A wrapper whose item has gone is cleared away. IO. */
+    /** What waits in Trash, newest first; unreadable/ambiguous wrappers are preserved. IO. */
     fun listTrash(treeUri: String): List<TrashItem> {
         val tree = android.net.Uri.parse(treeUri)
         val trash = trashDir(treeUri, create = false) ?: run { trashCount = 0; return emptyList() }
@@ -6081,10 +6081,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                         ?.use { org.json.JSONObject(it.readBytes().toString(Charsets.UTF_8)) }
                 }.getOrNull()
             }
-            val (itemId, itemName, itemIsDir) = children.firstOrNull { it.third || it.second != TRASH_INFO } ?: run {
-                runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, wrapperId)) }
-                continue
-            }
+            val (itemId, itemName, itemIsDir) = com.notestaking.app.platform.TrashRecoverySafety.singlePayload(children, TRASH_INFO)
+                ?: continue
             val itemUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, itemId).toString()
             val stamp = stampOf(itemUri)
             val deleted = info?.optString("deleted")?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
