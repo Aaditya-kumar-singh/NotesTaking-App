@@ -571,6 +571,39 @@ class CanvasCodecTest {
         assertEquals(ToolDefaults.LEGACY_TAPER_TIP, s.config.taperMinFactor, 1e-9)
     }
 
+    @Test fun legacyTaperLengthKeepsCanvasInkEditableAfterReopen() {
+        fun load(config: String): Stroke = readManifest(
+            """{"format":"xcanvas","items":[{"kind":"stroke","tool":"taper","config":$config,
+               "samples":[[1,2,0.25],[3,4,0.875]]}]}""",
+        ).items.single() as Stroke
+
+        val legacy = load("""{"taper_length":40.0}""")
+        assertTrue(legacy.config.taperEnabled)
+        assertEquals(ToolDefaults.LEGACY_TAPER_TIP, legacy.config.taperMinFactor, 1e-9)
+        assertEquals(listOf(Sample(1.0, 2.0, 0.25), Sample(3.0, 4.0, 0.875)), legacy.samples)
+        assertFalse(load("""{"taper_length":0.0}""").config.taperEnabled)
+        assertFalse(load("""{"taper_length":40.0,"taper_enabled":false}""").config.taperEnabled)
+
+        val saved = InfiniteDocument().apply { add(legacy) }
+        val reopened = roundTrip(saved).items.single() as Stroke
+        assertTrue(reopened.config.taperEnabled)
+        assertEquals(legacy.samples, reopened.samples)
+    }
+
+    @Test fun canvasPressureAndCoordinatesDoNotDriftOnRepeatedSaves() {
+        val doc = InfiniteDocument().apply {
+            add(Stroke(Tool.PEN, ToolConfig(), mutableListOf(
+                Sample(369.6723697692391, -33.3059117626799, 0.031501833349466324),
+            )))
+        }
+        val once = roundTrip(doc)
+        val point = (once.items.single() as Stroke).samples.single()
+        assertEquals(369.67, point.x, 1e-4)
+        assertEquals(-33.31, point.y, 1e-4)
+        assertEquals(0.032, point.pressure, 1e-6)
+        assertEquals(point, (roundTrip(once).items.single() as Stroke).samples.single())
+    }
+
     @Test fun legacyHighlightersReloadAtTheHistoricalAlpha() {
         val doc = readManifest(
             """{"format":"xcanvas","items":[{"kind":"stroke","tool":"highlighter","samples":[[0,0,1]]}]}""",

@@ -255,13 +255,61 @@ class PdfBatchTest {
     }
 
     @Test
+    fun `copy stage reports transfer progress and completes only after provider close`() {
+        for (zip in listOf(true, false)) {
+            val sink = Sink()
+            val observed = ArrayList<Pair<PdfBatch.Progress, Boolean>>()
+            val exporter = PdfBatch(scratchDir, renderAll, { cancel.get() }) { observed += it to sink.closed }
+            val result = if (zip) exporter.zip(listOf(Entry("Algebra.pdf", "a", "Algebra.xnote")), sink)
+                else exporter.single("a", "Algebra.xnote", sink)
+
+            assertTrue(result.kept)
+            assertEquals(1, result.written)
+            val copying = observed.filter { it.first.total == -1 }
+            assertEquals(0, copying.first().first.done)
+            assertTrue(copying.any { it.first.done in 1..999 })
+            assertEquals(1000, copying.last().first.done)
+            assertTrue("100% must follow the successful destination close", copying.last().second)
+            val fractions = observed.map { it.first.fraction }
+            assertEquals(fractions.sorted(), fractions)
+            assertTrue(scratchDir.listFiles()!!.isEmpty())
+        }
+    }
+
+    @Test
+    fun `provider close failure never reports completed export`() {
+        for (zip in listOf(true, false)) {
+            var discarded = false
+            val reported = ArrayList<PdfBatch.Progress>()
+            val sink = object : PdfBatch.Destination {
+                override fun open(): OutputStream = object : ByteArrayOutputStream() {
+                    override fun close() {
+                        super.close()
+                        throw IOException("provider rejected final write")
+                    }
+                }
+                override fun discard() { discarded = true }
+            }
+            val exporter = PdfBatch(scratchDir, renderAll, { cancel.get() }) { reported += it }
+            val result = if (zip) exporter.zip(listOf(Entry("Algebra.pdf", "a", "Algebra.xnote")), sink)
+                else exporter.single("a", "Algebra.xnote", sink)
+
+            assertFalse(result.kept)
+            assertEquals(0, result.written)
+            assertTrue(discarded)
+            assertFalse(reported.any { it.total < 0 && it.done == 1000 })
+            assertTrue(scratchDir.listFiles()!!.isEmpty())
+        }
+    }
+
+    @Test
     fun `progress walks the documents and only ever grows`() {
         batch(renderAll).zip(plan, Sink())
         assertEquals(listOf("Algebra.xnote", "Board.xcanvas"), progress.map { it.name }.distinct())
         assertTrue(progress.all { it.count == 2 })
         val fractions = progress.map { it.fraction }
         assertEquals(fractions.sorted(), fractions)
-        assertEquals(0.75f, fractions.last(), 1e-6f)
+        assertEquals(1f, fractions.last(), 1e-6f)
         assertEquals(0f, PdfBatch.Progress.GATHERING.fraction, 0f)
         assertEquals(0.875f, PdfBatch.Progress(1, 2, "", 500, -1).fraction, 1e-6f)
     }

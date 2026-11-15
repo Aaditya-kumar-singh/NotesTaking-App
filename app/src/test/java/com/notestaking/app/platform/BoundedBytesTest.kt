@@ -106,6 +106,53 @@ class BoundedBytesTest {
         assertArrayEquals(byteArrayOf(42), BoundedBytes.read(input, 10))
     }
 
+    @Test fun audioStreamCopyAcceptsExactBoundaryWithoutLoadingIntoMemory() {
+        val source = byteArrayOf(1, 2, 3, 4, 5)
+        val output = java.io.ByteArrayOutputStream()
+        assertEquals(5L, BoundedBytes.copy(ByteArrayInputStream(source), output, 5L))
+        assertArrayEquals(source, output.toByteArray())
+    }
+
+    @Test fun audioStreamCopyRejectsOneBytePastTheActualProviderLimit() {
+        val output = java.io.ByteArrayOutputStream()
+        assertThrows(BoundedBytes.TooLarge::class.java) {
+            BoundedBytes.copy(ByteArrayInputStream(byteArrayOf(1, 2, 3, 4, 5, 6)), output, 5L)
+        }
+        assertTrue(output.size() <= 5)
+    }
+
+    @Test fun audioStreamCopyRejectsStalledProviderAndPropagatesDiskFailures() {
+        val stalled = object : java.io.InputStream() {
+            override fun read(): Int = 0
+            override fun read(b: ByteArray, off: Int, len: Int): Int = 0
+        }
+        assertThrows(IOException::class.java) {
+            BoundedBytes.copy(stalled, java.io.ByteArrayOutputStream(), 1024L)
+        }
+        val output = object : java.io.OutputStream() {
+            override fun write(b: Int) = throw IOException("disk full")
+            override fun write(b: ByteArray, off: Int, len: Int) = throw IOException("disk full")
+        }
+        assertThrows(IOException::class.java) {
+            BoundedBytes.copy(ByteArrayInputStream(byteArrayOf(42)), output, 1024L)
+        }
+    }
+
+    @Test fun audioStreamCopyCanRecoverFromShortZeroLengthReads() {
+        val input = object : java.io.InputStream() {
+            var reads = 0
+            override fun read(): Int = -1
+            override fun read(b: ByteArray, off: Int, len: Int): Int = when (++reads) {
+                1, 2 -> 0
+                3 -> { b[off] = 17; 1 }
+                else -> -1
+            }
+        }
+        val output = java.io.ByteArrayOutputStream()
+        assertEquals(1L, BoundedBytes.copy(input, output, 100L))
+        assertArrayEquals(byteArrayOf(17), output.toByteArray())
+    }
+
     @Test fun svgUtf8LimitIncludesMultibyteCharacters() {
         assertArrayEquals("ink".toByteArray(), BoundedBytes.utf8WithinLimit("ink", 3))
         assertNull(BoundedBytes.utf8WithinLimit("éé", 3))

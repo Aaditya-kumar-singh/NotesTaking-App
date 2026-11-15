@@ -47,6 +47,57 @@ class ImportCleanupTest {
         return output.toByteArray()
     }
 
+    /** Fail immediately after the first image's ZIP header, once its staging file exists. */
+    private fun exhaustedAssetStream(): java.io.InputStream {
+        val bytes = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { zip ->
+                zip.putNextEntry(ZipEntry("assets/image-000.png"))
+                zip.write(ByteArray(32) { 7 })
+                zip.closeEntry()
+            }
+        }.toByteArray()
+        fun u16(at: Int) = (bytes[at].toInt() and 255) or ((bytes[at + 1].toInt() and 255) shl 8)
+        val dataStart = 30 + u16(26) + u16(28)
+        return object : ByteArrayInputStream(bytes) {
+            private var consumed = 0
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (consumed >= dataStart) throw OutOfMemoryError("simulated import exhaustion")
+                val read = super.read(b, off, minOf(len, 1, dataStart - consumed))
+                if (read > 0) consumed += read
+                return read
+            }
+            override fun read(): Int {
+                if (consumed >= dataStart) throw OutOfMemoryError("simulated import exhaustion")
+                val read = super.read()
+                if (read >= 0) consumed++
+                return read
+            }
+        }
+    }
+
+    private fun assertFatalImportCleansStaging(load: (java.io.InputStream, java.io.File) -> Unit) {
+        val dir = Files.createTempDirectory("notes-fatal-import").toFile()
+        try {
+            val sentinel = java.io.File(dir, "keep.txt").apply { writeText("unchanged") }
+            assertThrows(OutOfMemoryError::class.java) { load(exhaustedAssetStream(), dir) }
+            assertTrue("failed import must delete only its own staging files",
+                dir.listFiles()!!.map { it.name } == listOf("keep.txt"))
+            assertTrue(sentinel.readText() == "unchanged")
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test fun fatalNoteImportRemovesStagedAssetsWithoutTouchingOtherFiles() {
+        val codec = DocumentCodec(FakeImageCodec(), FakeTextMeasurer())
+        assertFatalImportCleansStaging { input, dir -> codec.read(input, imageDir = dir) }
+    }
+
+    @Test fun fatalCanvasImportRemovesStagedAssetsWithoutTouchingOtherFiles() {
+        val codec = CanvasCodec(FakeImageCodec(), FakeTextMeasurer())
+        assertFatalImportCleansStaging { input, dir -> codec.read(input, imageDir = dir) }
+    }
+
     @Test fun successfulNoteImportDeletesOrphanImages() {
         val dir = Files.createTempDirectory("note-success-cleanup").toFile()
         try {

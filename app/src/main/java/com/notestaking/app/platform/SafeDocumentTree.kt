@@ -86,6 +86,7 @@ internal class SafeDocumentTree(base: File) {
         val source = resolve(documentId)
         requireNotRoot(source)
         val target = child(source.parentFile, displayName)
+        if (target == source) return documentId(source) // same name: no disk changes
         if (target.exists()) throw FileNotFoundException("Name already exists")
         try { Files.move(source.toPath(), target.toPath()) }
         catch (_: IOException) { throw FileNotFoundException("Rename failed") }
@@ -123,6 +124,7 @@ internal class SafeDocumentTree(base: File) {
         if (source.parentFile != sourceParent) throw FileNotFoundException("Incorrect source parent")
         forbidSelfDescendant(source, targetParent)
         val destination = child(targetParent, source.name)
+        if (destination == source) return documentId(source) // same-parent move is a no-op
         if (destination.exists()) throw FileNotFoundException("Destination exists")
         try { Files.move(source.toPath(), destination.toPath()) }
         catch (_: IOException) { throw FileNotFoundException("Move failed") }

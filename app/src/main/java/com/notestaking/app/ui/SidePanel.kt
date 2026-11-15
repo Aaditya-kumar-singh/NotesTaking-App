@@ -167,7 +167,16 @@ fun SidePanel(
     val palette = LocalPalette.current
     val tab = editor.sidePanelTab
     var pickingCover by remember { mutableStateOf(false) }
-    var exportStart by remember(editor) { mutableStateOf<PageExportStart?>(null) }
+    var exportStart by remember(editor, editor.state.document) { mutableStateOf<PageExportStart?>(null) }
+    var exportPagesAtOpen by remember(editor, editor.state.document) { mutableStateOf<List<Page>>(emptyList()) }
+    var exportDocumentAtOpen by remember(editor, editor.state.document) { mutableStateOf(editor.state.document) }
+    fun beginExport(start: PageExportStart) {
+        exportPagesAtOpen = editor.pagesSnapshot()
+        exportDocumentAtOpen = editor.state.document
+        exportStart = start
+    }
+    val pdfExportError = stringResource(R.string.err_export_pdf)
+    val imageExportError = stringResource(R.string.err_save_images)
     exportStart?.let { start ->
         PageExportDialog(
             start = start,
@@ -175,7 +184,13 @@ fun SidePanel(
             onDismiss = { exportStart = null },
             onExport = { pages, format, destination ->
                 exportStart = null
-                when {
+                val stillSamePages = editor.state.document === exportDocumentAtOpen &&
+                    com.notestaking.app.platform.ExportPageSelection.matchesSnapshot(
+                        exportPagesAtOpen, editor.pagesSnapshot(), pages,
+                    )
+                if (!stillSamePages) {
+                    editor.message = if (format == PageExportFormat.PDF) pdfExportError else imageExportError
+                } else when {
                     destination == PageExportDestination.SHARE -> onSharePages(pages, format == PageExportFormat.PDF)
                     format == PageExportFormat.PDF -> onSavePagesAsPdf(pages)
                     else -> onSavePagesAsImages(pages)
@@ -214,7 +229,7 @@ fun SidePanel(
         }
         if (tab == SidePanelTab.PAGES) {
             PagePanelHeader(editor, onInsertPdf) {
-                exportStart = PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL)
+                beginExport(PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL))
             }
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -222,7 +237,7 @@ fun SidePanel(
                 SidePanelTab.PAGES -> PagesTab(
                     editor,
                     onStartExport = { page, destination ->
-                        exportStart = PageExportStart(page, editor.selectedPageIndices(), PageExportScope.THIS, destination)
+                        beginExport(PageExportStart(page, editor.selectedPageIndices(), PageExportScope.THIS, destination))
                     },
                     onInsertPdf = onInsertPdf,
                     onPickCover = { pickingCover = true },
@@ -234,9 +249,9 @@ fun SidePanel(
         }
         if (tab == SidePanelTab.PAGES && editor.inPageSelectionMode) {
             PageSelectionBar(editor) { destination ->
-                exportStart = PageExportStart(
+                beginExport(PageExportStart(
                     editor.pageIndex, editor.selectedPageIndices(), PageExportScope.SELECTED, destination,
-                )
+                ))
             }
         }
     }
@@ -271,8 +286,11 @@ private fun PagesTab(
     onPickCover: () -> Unit,
 ) {
     val listState = rememberLazyListState()
-    // Open the panel on the current page, not page 1 (re-runs each open: a hidden panel leaves composition).
-    LaunchedEffect(Unit) { listState.scrollToItem(editor.pageIndex) }
+    // Recenter only when the note changes; ordinary scrolling through thumbnails must stay under the user's control.
+    LaunchedEffect(editor.state.document) {
+        val count = editor.pagesSnapshot().size
+        if (count > 0) listState.scrollToItem(editor.pageIndex.coerceIn(0, count - 1))
+    }
     // Keyed by the page's stable id so insert/delete animate and keep each page's cached thumbnail;
     // contentVersion drives a fresh read of the order whenever the page list changes.
     val pages = remember(editor.contentVersion) { editor.pagesSnapshot() }
@@ -373,9 +391,11 @@ private fun PagesTab(
                             e.changes.forEach { it.consume() }
                         } while (e.changes.any { it.id == down.id && it.pressed })
                     }
+                    val liveIndex = editor.pageIndexOf(page)
+                    if (liveIndex < 0) return@awaitEachGesture
                     if (!editor.isPageSelected(page)) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        editor.togglePageSelection(row.index)
+                        editor.togglePageSelection(liveIndex)
                         holdToUp()
                         return@awaitEachGesture
                     }
@@ -538,8 +558,8 @@ private fun PageThumb(
 ) {
     val palette = LocalPalette.current
     val pageLabel = if (page.cover) stringResource(R.string.cover) else stringResource(R.string.page_n, index + 1)
-    val current = index == editor.pageIndex
-    val selected = editor.isPageSelected(index)
+    val current = editor.pageAt(editor.pageIndex) === page
+    val selected = editor.isPageSelected(page)
     var menuOpen by remember { mutableStateOf(false) }
     var sizing by remember { mutableStateOf(false) }
     var extracting by remember { mutableStateOf<Boolean?>(null) }
@@ -574,11 +594,20 @@ private fun PageThumb(
                 .border(if (selected || current) 2.dp else 1.dp, borderColor.toComposeColor())
                 // Tap navigates (or toggles selection in select mode). Long-presses belong to the
                 // panel (see PagesTab), so a drag survives the row scrolling away.
-                .clickable { if (selecting) editor.togglePageSelection(index) else editor.goToPage(index) }
+                .clickable {
+                    val liveIndex = editor.pageIndexOf(page)
+                    if (liveIndex >= 0) {
+                        if (selecting) editor.togglePageSelection(liveIndex) else editor.goToPage(liveIndex)
+                    }
+                }
                 .semantics {
                     contentDescription = pageLabel
                     this.selected = if (selecting) selected else current
-                    onLongClick { editor.togglePageSelection(index); true }
+                    onLongClick {
+                        val liveIndex = editor.pageIndexOf(page)
+                        if (liveIndex >= 0) editor.togglePageSelection(liveIndex)
+                        liveIndex >= 0
+                    }
                 },
         ) {
             bitmap?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
@@ -708,7 +737,11 @@ private fun PageContextMenu(
 /** Extract or Move to new note: the name the new note gets, the note's own with which pages suggested, then the pages go into it. */
 @Composable
 private fun ExtractDialog(editor: Editor, indices: List<Int>, move: Boolean, onDismiss: () -> Unit) {
-    val suggested = remember(indices) { editor.extractName(indices) }
+    val originalIndices = remember { indices.toList() }
+    val originalDocument = remember { editor.state.document }
+    val originalPages = remember { editor.pagesSnapshot() }
+    val suggested = remember { editor.extractName(originalIndices) }
+    val staleSelectionError = stringResource(R.string.err_extract_pages)
     var name by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(suggested, androidx.compose.ui.text.TextRange(0, suggested.length))) }
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -725,7 +758,18 @@ private fun ExtractDialog(editor: Editor, indices: List<Int>, move: Boolean, onD
             )
         },
         confirmButton = {
-            TextButton(enabled = name.text.isNotBlank(), onClick = { onDismiss(); editor.extractPages(indices, name.text.trim(), move) }) {
+            TextButton(enabled = name.text.isNotBlank(), onClick = {
+                onDismiss()
+                if (editor.state.document === originalDocument &&
+                    com.notestaking.app.platform.ExportPageSelection.matchesSnapshot(
+                        originalPages, editor.pagesSnapshot(), originalIndices,
+                    )
+                ) {
+                    editor.extractPages(originalIndices, name.text.trim(), move)
+                } else {
+                    editor.message = staleSelectionError
+                }
+            }) {
                 Text(stringResource(if (move) R.string.move else R.string.extract))
             }
         },

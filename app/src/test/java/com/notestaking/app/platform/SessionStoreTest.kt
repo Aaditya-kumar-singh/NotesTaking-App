@@ -87,6 +87,54 @@ class SessionStoreTest {
         }
     }
 
+    @Test fun metadataOnlySaveRejectsCorruptNonemptyDocumentAndFullSaveRepairs() {
+        val dir = tempDir()
+        val pdf = pdfDir()
+        val images = imageDir()
+        try {
+            val store = SessionStore(dir, codec(), pdf, images)
+            assertTrue(store.save(
+                Document.blank(2), zoom = 1.0, scrollX = 0.0, scrollY = 0.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            val sidecar = File(dir, "session.json")
+            val oldMetadata = sidecar.readBytes()
+            val slot = File(dir, "document.xnote")
+            slot.writeText("nonempty but not a native ZIP")
+
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(3), zoom = 2.0, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = true, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertEquals("nonempty but not a native ZIP", slot.readText())
+            val withoutManifest = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(withoutManifest).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("assets/unused.bin"))
+                zip.write(byteArrayOf(1, 2, 3))
+                zip.closeEntry()
+            }
+            slot.writeBytes(withoutManifest.toByteArray())
+            org.junit.Assert.assertFalse(store.save(
+                Document.blank(3), zoom = 2.0, scrollX = 10.0, scrollY = 20.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = false,
+            ))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertArrayEquals(withoutManifest.toByteArray(), slot.readBytes())
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
+            assertTrue(store.save(
+                Document.blank(4), zoom = 2.5, scrollX = 5.0, scrollY = 6.0,
+                zoomLocked = false, viewOverrides = ViewOverrides(), writeDocument = true,
+            ))
+            assertEquals(4, store.load()!!.document.pages.size)
+            assertEquals(2.5, store.load()!!.zoom, 1e-9)
+        } finally {
+            dir.deleteRecursively()
+            pdf.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun failsClosedWhenSessionDocumentCannotBeReplaced() {
         val dir = tempDir()
         try {

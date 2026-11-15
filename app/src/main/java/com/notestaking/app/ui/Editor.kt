@@ -2494,8 +2494,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * The file is copied and checked off the main thread, and its waveform is read after it lands.
      */
     fun attachAudio(uri: android.net.Uri) {
+        val wasCanvas = canvasOpen
+        val target = if (wasCanvas) infiniteOrNull?.document else state.document
         autosaveScope.launch {
             val result = withContext(Dispatchers.IO) { com.notestaking.app.platform.AudioFiles.attach(appContext, uri, imageDir) }
+            if (!noteOpen || canvasOpen != wasCanvas ||
+                (if (wasCanvas) infiniteOrNull?.document else state.document) !== target
+            ) {
+                if (result is com.notestaking.app.platform.AudioFiles.Result.Ok) result.file.delete()
+                return@launch
+            }
             when (result) {
                 is com.notestaking.app.platform.AudioFiles.Result.Ok -> {
                     val data = com.notestaking.app.core.model.AudioData(result.file, result.ext, result.durationMs, ByteArray(0))
@@ -2677,6 +2685,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         out: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> },
         isCancelled: () -> Boolean = { false },
+        editableInkAnnotations: Boolean = false,
     ) {
         // A private PdfSource, not the live [pdfSource], which a note switch mid-export would
         // close. A plain note has no PDF and renders identically.
@@ -2690,6 +2699,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 flow = flowExportHooks(state.document),
                 title = title,
                 headingBookmarks = settings.prefs.pdfHeadingBookmarks,
+                editableInkAnnotations = editableInkAnnotations,
             )
         } finally {
             src?.close()
@@ -3320,6 +3330,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Replace [newPageSize]; saved with the note but, like a style change, not an undo step. */
     fun setNewPageSize(size: PageSizeChoice?) {
+        if (size != null && !com.notestaking.app.platform.PageSizeSafety.valid(size)) return
         if (state.document.newPageSize == size) return
         state.document.newPageSize = size
         state.document.dirty = true
@@ -3493,19 +3504,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Steps to the next match, or back to the one before, round the ends. */
     fun searchStep(forward: Boolean) {
-        val r = searchResults ?: return
-        if (r.count == 0) return
-        val i = searchCurrent?.let(r::indexOf)?.takeIf { it >= 0 }
-        val next = when {
-            i == null -> r.firstFrom(state.currentPageIndex())?.takeIf { it >= 0 } ?: 0
-            forward -> (i + 1) % r.count
-            else -> (i - 1 + r.count) % r.count
-        }
-        showSearchHit(r.hit(next))
+        val hit = com.notestaking.app.platform.SearchJump.step(
+            searchResults, SearchQuery(searchQuery, searchMatchCase, searchWholeWords),
+            searchCurrent, state.currentPageIndex(), forward,
+        ) ?: return
+        showSearchHit(hit)
     }
 
     /** Makes [hit] the current match and brings it into view. */
     fun showSearchHit(hit: SearchHit) {
+        if (!com.notestaking.app.platform.SearchJump.contains(
+                searchResults, SearchQuery(searchQuery, searchMatchCase, searchWholeWords), hit,
+            )
+        ) return
         searchCurrent = hit
         searchReveal = false
         searchTints.show(searchResults, hit)
@@ -3514,10 +3525,17 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     private fun runSearch(now: Boolean, keep: SearchHit? = null) {
         val s = search ?: return
+        val query = SearchQuery(searchQuery, searchMatchCase, searchWholeWords)
+        if (searchResults?.query != null && searchResults?.query != query) {
+            // Do not let a previous query's hits remain tappable during the new scan's debounce.
+            searchResults = null
+            searchCurrent = null
+            searchTints.show(null, null)
+        }
         searchKeep = keep
         searchReveal = keep == null
         searchFrom = keep?.page ?: state.currentPageIndex()
-        s.search(SearchQuery(searchQuery, searchMatchCase, searchWholeWords), searchFrom, now)
+        s.search(query, searchFrom, now)
     }
 
     private fun onSearchResults(r: SearchResults?) {
@@ -4284,17 +4302,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /**
      * What Recent shows under [treeUri]: each document as it is now, when it was opened and the folder it's in.
-     * A document that has gone is dropped from Recent. One query per document; IO.
+     * Unavailable documents are hidden, not forgotten: a failed provider query cannot prove deletion. IO.
      */
     fun recentEntries(treeUri: String): List<RecentEntry> {
         val tree = android.net.Uri.parse(treeUri)
         val colors = HashMap<String, Map<String, Rgba>>()
         val folders = HashMap<String, String?>()
-        val gone = ArrayList<String>()
         val out = recentDocs.filter { isUnderTree(it.uri, treeUri) }.mapNotNull { r ->
             val docId = runCatching { android.provider.DocumentsContract.getDocumentId(android.net.Uri.parse(r.uri)) }.getOrNull() ?: return@mapNotNull null
             val uri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, docId)
-            val stamp = stampOf(uri.toString()) ?: run { gone.add(r.uri); return@mapNotNull null }
+            val stamp = stampOf(uri.toString()) ?: return@mapNotNull null
             val name = queryDisplayName(uri) ?: r.name
             val parent = parentDocIdOf(uri.toString())
             val color = parent?.let { p ->
@@ -4307,7 +4324,6 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             )
             RecentEntry(entry, r.opened, where)
         }
-        if (gone.isNotEmpty()) autosaveScope.launch { setRecents(recentDocs.filterNot { it.uri in gone }) }
         return out.distinctBy { it.entry.documentUri }
     }
 
@@ -4476,11 +4492,14 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Creates a `.xnote` under [parentDocId] as [setup] describes, a cover first when it has one; returns its URI, or null. IO. */
     fun createNoteFile(treeUri: String, parentDocId: String, rawName: String, setup: NewNoteSetup): String? {
-        val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
         val dpi = PageSize.DEFAULT_DPI
+        val size = com.notestaking.app.platform.PageSizeSafety.forNewNote(setup.widthMm, setup.heightMm, dpi)
+            ?: return null
+        val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
         val w = PageSize.mmToPx(setup.widthMm, dpi)
         val h = PageSize.mmToPx(setup.heightMm, dpi)
         val doc = Document.blankPixels(Document.DEFAULT_NEW_PAGES, w, h, dpi).also { it.created = System.currentTimeMillis() }
+        doc.newPageSize = size
         doc.style = setup.style
         TemplateLibrary.embed(doc, setup.style.template, imageDir)
         (settings.newNoteFlow ?: factoryFlow).applyTo(doc.flow)
@@ -4517,7 +4536,20 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 stampNewNoteDefaults(doc)
                 doc.created = System.currentTimeMillis()
                 val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-                createNoteFile(treeUri, parentDocId, name) { codec.write(doc, it) { importCancelled.get() } }
+                val digest = java.security.MessageDigest.getInstance("SHA-256")
+                val uri = createNoteFile(treeUri, parentDocId, name) { output ->
+                    codec.write(doc, java.security.DigestOutputStream(output, digest)) { importCancelled.get() }
+                } ?: return null
+                val created = android.net.Uri.parse(uri)
+                val verified = com.notestaking.app.platform.NativeNoteReadback.verify(
+                    { appContext.contentResolver.openInputStream(created) },
+                    codec, doc.pages.size, true, digest.digest(), { importCancelled.get() },
+                )
+                if (verified && !importCancelled.get()) uri else {
+                    // A provider can acknowledge close before making a complete native note readable.
+                    runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, created) }
+                    null
+                }
             }
         } catch (e: java.util.concurrent.CancellationException) {
             throw e
@@ -4713,8 +4745,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val result = runCatching {
             android.provider.DocumentsContract.renameDocument(appContext.contentResolver, android.net.Uri.parse(docUri), newName)
         }
-        if (result.isFailure) return false
-        val resultUri = result.getOrNull()?.toString() ?: docUri
+        val resultUri = result.getOrNull()?.toString() ?: return false
         if (state.document.path == docUri) {
             state.document.path = resultUri
             state.document.displayName = newName
@@ -4893,12 +4924,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             val newUri = android.provider.DocumentsContract.createDocument(
                 appContext.contentResolver, target, "application/octet-stream", newName,
             ) ?: return@runCatching null
-            val copied = runCatching {
-                appContext.contentResolver.openInputStream(src)?.use { input ->
-                    appContext.contentResolver.openOutputStream(newUri, "wt")?.use { output -> input.copyTo(output); true } ?: false
-                } ?: false
-            }.getOrDefault(false)
-            if (!copied) { runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, newUri) }; return@runCatching null }
+            val copied = com.notestaking.app.platform.ProviderCopy.save(
+                { appContext.contentResolver.openInputStream(src) },
+                { appContext.contentResolver.openOutputStream(newUri, "wt") },
+                { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, newUri) },
+            ) == com.notestaking.app.platform.ProviderCopy.Result.SAVED
+            if (!copied) return@runCatching null
             queryDisplayName(newUri) ?: newName
         }
     }.getOrNull()
@@ -5992,7 +6023,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** (id, name, is a folder) for each child of [docId]. */
     private fun childRows(tree: android.net.Uri, docId: String): List<Triple<String, String, Boolean>> {
         val out = ArrayList<Triple<String, String, Boolean>>()
-        runCatching {
+        val queried = runCatching {
             appContext.contentResolver.query(
                 android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId),
                 arrayOf(
@@ -6008,7 +6039,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 }
             }
         }
-        return out
+        return if (queried.isSuccess) out else emptyList()
     }
 
     /**
@@ -6037,7 +6068,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                     .put("path", org.json.JSONArray(path))
                     .put("deleted", java.time.Instant.ofEpochMilli(now).toString())
                     .apply { e.color?.let { put("colour", Rgba.toHex(it)) } }
-                val moved = if (writeSidecarJson(tree, wrapperId, TRASH_INFO, info)) {
+                val infoSaved = writeSidecarJson(tree, wrapperId, TRASH_INFO, info)
+                val moved = if (infoSaved) {
                     runCatching {
                         android.provider.DocumentsContract.moveDocument(
                             resolver, android.net.Uri.parse(e.documentUri),
@@ -6046,7 +6078,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                     }.getOrNull()
                 } else null
                 if (moved == null) {
-                    runCatching { android.provider.DocumentsContract.deleteDocument(resolver, wrapper) }
+                    // Only delete when no move was attempted; a failed provider response may hide a successful move.
+                    if (!infoSaved) runCatching { android.provider.DocumentsContract.deleteDocument(resolver, wrapper) }
                     return@runCatching null
                 }
                 // The open note stops writing to where it was; what's keyed by its identity follows it in.
@@ -6068,7 +6101,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         return trashed to failed
     }
 
-    /** What waits in Trash, newest first. A wrapper whose item has gone is cleared away. IO. */
+    /** What waits in Trash, newest first; unreadable/ambiguous wrappers are preserved. IO. */
     fun listTrash(treeUri: String): List<TrashItem> {
         val tree = android.net.Uri.parse(treeUri)
         val trash = trashDir(treeUri, create = false) ?: run { trashCount = 0; return emptyList() }
@@ -6082,10 +6115,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                         ?.use { org.json.JSONObject(it.readBytes().toString(Charsets.UTF_8)) }
                 }.getOrNull()
             }
-            val (itemId, itemName, itemIsDir) = children.firstOrNull { it.third || it.second != TRASH_INFO } ?: run {
-                runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, wrapperId)) }
-                continue
-            }
+            val (itemId, itemName, itemIsDir) = com.notestaking.app.platform.TrashRecoverySafety.singlePayload(children, TRASH_INFO)
+                ?: continue
             val itemUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, itemId).toString()
             val stamp = stampOf(itemUri)
             val deleted = info?.optString("deleted")?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
@@ -6697,6 +6728,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     ) {
         controller.clearSelection()
         val pages = state.document.pages
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, pages)
         if (reshaped.isNotEmpty()) {
             for (page in reshaped) {
                 state.invalidatePage(page)
@@ -6781,9 +6813,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     private fun insertBlankPageAt(index: Int, refIndex: Int): Int {
         val pages = state.document.pages
         val ref = pages.getOrNull(refIndex) ?: pages.getOrNull(index) ?: pages.lastOrNull()
-        val (w, h) = state.document.blankPageSize(ref)
         val at = index.coerceIn(0, pages.size)
-        val page = Page(w, h)
+        val page = com.notestaking.app.platform.InsertedNotePage.after(state.document, ref)
         controller.clearSelection() // inserting shifts later page indices; drop any stale item selection
         history.push(AddPage(state.document, page, at).also { it.redo() })
         bookmarkVersion++
@@ -6842,6 +6873,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Common tail for a side-panel page edit: re-layout, refresh the chrome, repaint. */
     private fun afterPageEdit() {
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, state.document.pages)
         controller.clearSelection()
         bookmarkVersion++
         state.document.dirty = true
@@ -6887,6 +6919,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val index = state.currentPageIndex()
         val page = state.document.pages[index]
         history.push(DeletePage(state.document, page, index).also { it.redo() })
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, state.document.pages)
         bookmarkVersion++
         state.document.dirty = true
         state.invalidatePage(page)
@@ -7086,7 +7119,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             withContext(Dispatchers.IO) {
                 val extra = cargoPdf(clip.cargo, clip.sourcePdf) ?: return@withContext null
                 val read = com.notestaking.app.platform.PdfSource.open(extra)
-                val sizes = try { read.allPageSizePoints() } finally { read.close() } ?: return@withContext null
+                val sizes = try {
+                    com.notestaking.app.platform.PdfImportSafety.completePageSizes(read.pageCount, read.allPageSizePoints())
+                } finally { read.close() } ?: return@withContext null
                 joinFile(extra, sizes, base, baseSource)
             }
         } finally {
@@ -7141,13 +7176,17 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         if (importing) return
         val root = browseRoot ?: run { message = appContext.getString(R.string.err_extract_pages); return }
         val doc = state.document
-        val picked = indices.filter { it in doc.pages.indices }.distinct().sorted()
-        if (picked.isEmpty()) return
+        if (indices.isEmpty() || indices.any { it !in doc.pages.indices }) {
+            message = appContext.getString(R.string.err_extract_pages)
+            return
+        }
+        val picked = indices.distinct().sorted()
         if (move && picked.size >= doc.pages.size) {
             message = appContext.getString(R.string.err_keep_one_page)
             return
         }
         val leaving = picked.map { doc.pages[it] }
+        val sourceVersion = contentVersion // an edit during the copy must not be deleted on Move
         val cargo = com.notestaking.app.core.model.PageCargo.pack(doc, picked, textMeasurer)
         // A name of its own for the PDF, which a note switched away from meanwhile would delete.
         val sourcePdf = doc.pdfFile?.takeIf { cargo.pdfIndices.isNotEmpty() }?.let { keepPdf(it) }
@@ -7158,9 +7197,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         autosaveScope.launch {
             val made = try {
                 withContext(Dispatchers.IO) {
-                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf)?.also { made ->
-                        if (importCancelled.get()) {
+                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf)?.let { made ->
+                        if (!importCancelled.get()) made else {
                             runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(made.uri)) }
+                            null
                         }
                     }
                 }
@@ -7170,12 +7210,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 sourcePdf?.delete()
                 cargo.pdf?.delete()
             }
-            if (importCancelled.get()) return@launch
+            if (importCancelled.get()) {
+                // Cancel can arrive after the provider readback, before returning to the UI.
+                made?.let { madeFile ->
+                    withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+                        runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(madeFile.uri)) }
+                    }
+                }
+                return@launch
+            }
             if (made == null) {
                 message = appContext.getString(R.string.err_extract_pages)
                 return@launch
             }
-            if (move && state.document === doc) deletePages(leaving.map { p -> doc.pages.indexOfFirst { it === p } }.filter { it >= 0 })
+            if (move && state.document === doc && contentVersion == sourceVersion) {
+                deletePages(leaving.map { p -> doc.pages.indexOfFirst { it === p } }.filter { it >= 0 })
+            }
             val folder = withContext(Dispatchers.IO) {
                 queryDisplayName(android.provider.DocumentsContract.buildDocumentUriUsingTree(android.net.Uri.parse(root), parentId))
             } ?: ""
@@ -7213,7 +7263,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         note.bookmarks.addAll(cargo.bookmarks.map { Bookmark(it.page, it.label) })
         if (importCancelled.get()) return null
         val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val uri = createNoteFile(root, parentId, name) { writeCancellableNote(note, it) } ?: return null
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val uri = createNoteFile(root, parentId, name) { output ->
+            writeCancellableNote(note, java.security.DigestOutputStream(output, digest))
+        } ?: return null
+        if (!com.notestaking.app.platform.NativeNoteReadback.verify(
+                { appContext.contentResolver.openInputStream(android.net.Uri.parse(uri)) },
+                codec, note.pages.size, pdf != null, digest.digest(), { importCancelled.get() },
+            )
+        ) {
+            // Neither Save As nor Move should report success for a broken provider file.
+            runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(uri)) }
+            return null
+        }
         return MadeFile(uri, name)
     }
 
@@ -7316,7 +7378,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Every page's size in points of the PDF at [file], or null when it does not read. IO. */
     private fun pdfSizesOf(file: java.io.File): FloatArray? {
         val read = com.notestaking.app.platform.PdfSource.open(file)
-        return try { read.allPageSizePoints() } finally { read.close() }
+        return try {
+            com.notestaking.app.platform.PdfImportSafety.completePageSizes(read.pageCount, read.allPageSizePoints())
+        } finally { read.close() }
     }
 
     /** The name Extract suggests for the pages at [indices]: the note's, then which pages or how many. */
@@ -7378,6 +7442,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      * page grows again. PDF pages keep theirs.
      */
     fun resizePages(indices: List<Int>, choice: PageSizeChoice) {
+        if (!com.notestaking.app.platform.PageSizeSafety.valid(choice)) return
         val all = indices.distinct().sorted().mapNotNull { pageAt(it) }
         val plain = all.filter { it.pdfPage == null }
         if (plain.size < all.size) message = appContext.getString(R.string.pdf_pages_keep_size)
@@ -7491,7 +7556,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     fun selectAllPages() {
         val pages = state.document.pages
-        if (selectedPages.size == pages.size) return
+        if (selectedPages.size == pages.size && pages.all { p -> selectedPages.any { it === p } }) return
         selectedPages.clear()
         selectedPages.addAll(pages)
     }
@@ -7504,14 +7569,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         out: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> },
         isCancelled: () -> Boolean = { false },
+        editableInkAnnotations: Boolean = false,
     ) {
-        val pages = indices.distinct().sorted().mapNotNull { pageAt(it) }
-        if (pages.isEmpty()) return
-        val sub = Document(dpi = state.document.dpi, pdfFile = state.document.pdfFile)
+        val doc = state.document
+        val pages = com.notestaking.app.platform.ExportPageSelection.resolve(doc.pages.toList(), indices)
+        val sub = Document(dpi = doc.dpi, pdfFile = doc.pdfFile)
         sub.pages.addAll(pages) // share the page objects; export only reads them
-        sub.style = state.document.style // carry the note's "all pages" style into the subset export
-        sub.templates = state.document.templates
-        sub.templatePackages = state.document.templatePackages
+        sub.style = doc.style // carry the note's "all pages" style into the subset export
+        sub.templates = doc.templates
+        sub.templatePackages = doc.templatePackages
         // A private source per export, see [exportPdf]. The shared PDF file is read-only and owned
         // by the open document, so closing src won't delete it.
         val src = sub.pdfFile?.let { com.notestaking.app.platform.PdfSource.create(it) }
@@ -7521,10 +7587,11 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 { exportPaper(sub, it) },
                 { page, r -> paintExportRuling(sub, page, r) },
                 onProgress, isCancelled,
-                // The subset shares the open note's page objects, so its flow lines map through.
-                flow = flowExportHooks(state.document),
+                // The subset shares the captured note's page objects, so its flow lines map through.
+                flow = flowExportHooks(doc),
                 title = title,
                 headingBookmarks = settings.prefs.pdfHeadingBookmarks,
+                editableInkAnnotations = editableInkAnnotations,
             )
         } finally {
             src?.close()

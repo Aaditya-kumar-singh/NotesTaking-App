@@ -90,7 +90,8 @@ object PdfJoin {
         if (!written) return false
         val read = PdfSource.open(out)
         try {
-            return read.pageCount == indices.size
+            return read.pageCount == indices.size &&
+                PdfImportSafety.completePageSizes(indices.size, read.allPageSizePoints()) != null
         } finally {
             read.close()
         }
