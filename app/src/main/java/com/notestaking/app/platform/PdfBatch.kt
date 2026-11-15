@@ -74,6 +74,7 @@ class PdfBatch(
         val count = entries.count { it.source != null }
         if (dest.existingContent) return Result(count, 0, isCancelled(), false, blockedExisting = true)
         var written = 0
+        var lastWrittenName = ""
         var kept = false
         var scratch: File? = null
         var raw: OutputStream? = null
@@ -92,21 +93,24 @@ class PdfBatch(
                         folders.add(e.path)
                         continue
                     }
-                    val crc = renderTo(tmp, source, index++, count, e.name) ?: continue
+                    val current = index++
+                    val crc = renderTo(tmp, source, current, count, e.name) ?: continue
                     val z = zip ?: ZipOutputStream(BufferedOutputStream(dest.open().also { raw = it }, BUFFER)).also { zip = it }
                     folders.forEach { z.putNextEntry(stored(it, 0, 0)); z.closeEntry() }
                     folders.clear()
                     // A cancelled entry discards the entire destination; never publish a partial ZIP.
                     z.putNextEntry(stored(e.path, tmp.length(), crc))
-                    tmp.inputStream().use { it.copyTo(CancellableOutputStream(z, isCancelled), BUFFER) }
+                    copyRendered(tmp, z, current, count, e.name)
                     z.closeEntry()
                     written++
+                    lastWrittenName = e.name
                 }
                 zip?.let { z ->
                     folders.forEach { z.putNextEntry(stored(it, 0, 0)); z.closeEntry() }
                     z.close()
                 }
                 kept = written > 0 && !isCancelled()
+                if (kept) onProgress(Progress(count - 1, count, lastWrittenName, 1000, -1))
             }
         } catch (_: Throwable) {
             // The destination failed, so nothing in it can be trusted; whatever it holds goes.
@@ -128,8 +132,9 @@ class PdfBatch(
             scratchDir.mkdirs()
             val tmp = File.createTempFile("batch", ".pdf", scratchDir).also { scratch = it }
             if (renderTo(tmp, source, 0, 1, name) != null) {
-                dest.open().use { out -> tmp.inputStream().use { it.copyTo(CancellableOutputStream(out, isCancelled), BUFFER) } }
+                dest.open().use { out -> copyRendered(tmp, out, 0, 1, name) }
                 kept = !isCancelled()
+                if (kept) onProgress(Progress(0, 1, name, 1000, -1))
             }
         } catch (_: Throwable) {
             kept = false
@@ -138,6 +143,32 @@ class PdfBatch(
             if (!kept) runCatching { dest.discard() }
         }
         return Result(1, if (kept) 1 else 0, isCancelled(), kept)
+    }
+
+    /** Progress through the provider copy, which can take longer than rendering a large PDF. */
+    private fun copyRendered(scratch: File, output: OutputStream, index: Int, count: Int, name: String) {
+        val size = scratch.length()
+        onProgress(Progress(index, count, name, 0, -1))
+        var copied = 0L
+        var lastPercent = 0
+        val checked = CancellableOutputStream(output, isCancelled)
+        scratch.inputStream().use { input ->
+            val buffer = ByteArray(BUFFER)
+            while (true) {
+                if (isCancelled()) throw InterruptedIOException()
+                val n = input.read(buffer)
+                if (n < 0) break
+                checked.write(buffer, 0, n)
+                copied += n
+                val percent = (100.0 * copied.toDouble() / size.toDouble()).toInt().coerceIn(0, 99)
+                if (percent > lastPercent) {
+                    lastPercent = percent
+                    onProgress(Progress(index, count, name, percent * 10, -1))
+                }
+            }
+        }
+        if (isCancelled()) throw InterruptedIOException()
+        if (copied != size) throw java.io.EOFException("Rendered PDF changed during export")
     }
 
     /** Renders [source] into [scratch] as document [index] of [count]; the CRC-32 of what landed, or null when it failed, wrote nothing or was cancelled. */
