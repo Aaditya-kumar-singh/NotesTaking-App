@@ -1259,4 +1259,22 @@
     <string name="annotation_list_count">Annotations (%1$d)</string>
     <string name="annotation_list_empty_current">No annotations on this page.</string>
     <string name="annotation_list_empty_all">No annotations in this note.</string>
+    <string name="version_history_title">Version history</string>
+    <string name="version_history_hint">Private snapshots for this note. Up to 4 versions, 128 MB in total. Older versions are removed as needed.</string>
+    <string name="version_history_save">Save current version</string>
+    <string name="version_history_checking">Checking version…</string>
+    <string name="version_history_empty">No saved versions yet.</string>
+    <string name="version_history_entry_preview">%1$d KB · Preview</string>
+    <string name="version_history_preview_summary">Preview: %1$s · %2$d pages</string>
+    <string name="version_history_preview_hint">Saved %1$s. Restoring opens a new unsaved copy.</string>
+    <string name="version_history_restore_as_copy">Restore as copy</string>
+    <string name="version_history_confirm_title">Restore this version?</string>
+    <string name="version_history_confirm_body">The current working note is saved as another private version first. The selected version opens as a new unsaved copy. The original note will not be overwritten.</string>
+    <string name="version_history_restore_copy">Restore copy</string>
+    <string name="version_history_error_save">Could not save the version. The note was not changed.</string>
+    <string name="version_history_error_missing">This saved version is missing or damaged.</string>
+    <string name="version_history_error_unreadable">This version is no longer readable.</string>
+    <string name="version_history_error_preserve">Restore cancelled: current note could not be preserved.</string>
+    <string name="version_history_error_changed">Restore cancelled: the note changed.</string>
+    <string name="version_history_success">Restored as an unsaved copy. Use Save As to keep it.</string>
 </resources>

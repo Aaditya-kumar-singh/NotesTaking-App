@@ -90,8 +90,8 @@ class VersionHistoryStoreTest {
             zip.write("{invalid json".toByteArray())
             zip.closeEntry()
         }
-        val malformed = store.list("one").single() // ZIP index exists, but its JSON cannot parse.
-        assertNull(store.preview("one", malformed))
+        assertTrue(store.list("one").isEmpty()) // Reject malformed JSON even when the ZIP index exists.
+        assertNull(store.preview("one", entry))
         assertNull(store.restoreCopy("one", preview))
         assertTrue(file.isFile)
     }

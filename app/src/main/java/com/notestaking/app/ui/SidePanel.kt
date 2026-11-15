@@ -144,7 +144,7 @@ private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport
         }
         if (!selecting && editor.versionHistoryAvailable) {
             TextButton(onClick = onHistory, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                Text("Version history")
+                Text(stringResource(R.string.version_history_title))
             }
         }
         if (!selecting && pages.size > 1) {
@@ -1117,21 +1117,21 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Version history") },
+        title = { Text(stringResource(R.string.version_history_title)) },
         text = {
             Column {
                 Text(
-                    "Private snapshots for this note. Up to 4 versions, 128 MB in total. Older versions are removed as needed.",
+                    stringResource(R.string.version_history_hint),
                     fontSize = 12.sp, color = palette.textDim.toComposeColor(),
                 )
                 TextButton(
                     onClick = { editor.saveVersionSnapshot() },
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                ) { Text("Save current version") }
-                if (busy) Text("Checking version…", fontSize = 13.sp)
+                ) { Text(stringResource(R.string.version_history_save)) }
+                if (busy) Text(stringResource(R.string.version_history_checking), fontSize = 13.sp)
                 if (entries.isEmpty() && !busy) {
-                    Text("No saved versions yet.", fontSize = 13.sp)
+                    Text(stringResource(R.string.version_history_empty), fontSize = 13.sp)
                 }
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 224.dp)) {
                     itemsIndexed(entries) { _, entry ->
@@ -1148,7 +1148,7 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
                         ) {
                             Column(Modifier.fillMaxWidth()) {
                                 Text(whenSaved(entry.createdAt), maxLines = 1, fontSize = 13.sp)
-                                Text("${entry.sizeBytes / 1024} KB · Preview", fontSize = 11.sp)
+                                Text(stringResource(R.string.version_history_entry_preview, entry.sizeBytes / 1024), fontSize = 11.sp)
                             }
                         }
                     }
@@ -1156,11 +1156,11 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
                 if (preview != null) {
                     HorizontalDivider(color = palette.border.toComposeColor())
                     Text(
-                        "Preview: ${preview.title} · ${preview.pages} pages",
+                        stringResource(R.string.version_history_preview_summary, preview.title, preview.pages),
                         fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        "Saved ${whenSaved(preview.entry.createdAt)}. Restoring will open a new, unsaved copy.",
+                        stringResource(R.string.version_history_preview_hint, whenSaved(preview.entry.createdAt)),
                         color = palette.textDim.toComposeColor(), fontSize = 12.sp,
                     )
                 }
@@ -1168,7 +1168,7 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = { confirming = true }, enabled = preview != null && !busy) {
-                Text("Restore as copy")
+                Text(stringResource(R.string.version_history_restore_as_copy))
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
@@ -1176,11 +1176,10 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
     if (confirming && preview != null) {
         AlertDialog(
             onDismissRequest = { confirming = false },
-            title = { Text("Restore this version?") },
+            title = { Text(stringResource(R.string.version_history_confirm_title)) },
             text = {
                 Text(
-                    "Your current working note will be saved as another private version first. " +
-                        "The selected version will open as a new unsaved copy. Your original note will not be overwritten."
+                    stringResource(R.string.version_history_confirm_body)
                 )
             },
             confirmButton = {
@@ -1190,7 +1189,7 @@ private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
                         editor.restoreVersionAsCopy(preview, onDismiss)
                     },
                     enabled = !busy,
-                ) { Text("Restore copy") }
+                ) { Text(stringResource(R.string.version_history_restore_copy)) }
             },
             dismissButton = {
                 TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }

@@ -3468,7 +3468,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             versionHistoryEntries = entries
             versionHistoryPreview = null
             versionHistoryBusy = false
-            if (saved == null) message = "Could not save version. The note is unchanged."
+            if (saved == null) message = appContext.getString(R.string.version_history_error_save)
         }
     }
 
@@ -3486,7 +3486,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             if (!versionOperationCurrent(generation, current)) return@launch
             versionHistoryPreview = preview
             versionHistoryBusy = false
-            if (preview == null) message = "This saved version is missing or damaged."
+            if (preview == null) message = appContext.getString(R.string.version_history_error_missing)
         }
     }
 
@@ -3511,7 +3511,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             if (copy == null) {
                 if (generation == versionHistoryGeneration) {
                     versionHistoryBusy = false
-                    message = "This version is no longer readable."
+                    message = appContext.getString(R.string.version_history_error_unreadable)
                 }
                 return@launch
             }
@@ -3533,7 +3533,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 deleteImageTemps(copy)
                 if (generation == versionHistoryGeneration) {
                     versionHistoryBusy = false
-                    message = if (protected == null) "Restore cancelled: current note could not be preserved." else "Restore cancelled: the note changed."
+                    message = if (protected == null) appContext.getString(R.string.version_history_error_preserve) else appContext.getString(R.string.version_history_error_changed)
                 }
                 return@launch
             }
@@ -3543,7 +3543,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             versionHistoryPreview = null
             versionHistoryEntries = emptyList()
             onRestored()
-            message = "Restored as an unsaved copy. Use Save As to keep it."
+            message = appContext.getString(R.string.version_history_success)
         }
     }
 

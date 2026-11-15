@@ -52,7 +52,7 @@ internal class VersionHistoryStore(
     fun list(key: String): List<Entry> = bucket(key).listFiles()?.mapNotNull { file ->
         val match = names.matchEntire(file.name) ?: return@mapNotNull null
         val size = file.length()
-        if (!file.isFile || size <= 0 || size > maxVersionBytes || !SafeFileWriter.hasNativeManifest(file)) return@mapNotNull null
+        if (!file.isFile || size <= 0 || size > maxVersionBytes || !SafeFileWriter.hasReadableNativeManifest(file, "xnote")) return@mapNotNull null
         Entry(file.name, match.groupValues[1].toLong(), size)
     }?.sortedWith(compareByDescending<Entry> { it.createdAt }.thenByDescending { it.id }).orEmpty()
 
@@ -61,7 +61,7 @@ internal class VersionHistoryStore(
         if (match.groupValues[1].toLongOrNull() != entry.createdAt) return null
         val file = File(bucket(key), entry.id)
         if (!file.isFile || file.length() != entry.sizeBytes || file.length() !in 1L..maxVersionBytes) return null
-        return file.takeIf { SafeFileWriter.hasNativeManifest(it) }
+        return file.takeIf { SafeFileWriter.hasReadableNativeManifest(it, "xnote") }
     }
 
     /** Fail closed if a snapshot cannot be fully encoded, fsynced and atomically published. */
@@ -73,7 +73,7 @@ internal class VersionHistoryStore(
         val name = "${now.coerceIn(1000000000000L, 9999999999999L)}-${UUID.randomUUID()}.xnote"
         val file = File(dir, name)
         if (file.exists()) return null
-        val written = SafeFileWriter.write(file, { it.length() in 1L..minOf(maxVersionBytes, maxNoteBytes) && SafeFileWriter.hasNativeManifest(it) }) { output ->
+        val written = SafeFileWriter.write(file, { it.length() in 1L..minOf(maxVersionBytes, maxNoteBytes) && SafeFileWriter.hasReadableNativeManifest(it, "xnote") }) { output ->
             codec.write(document, limited(output))
         }
         if (!written) return null

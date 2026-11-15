@@ -1240,4 +1240,22 @@
     <string name="annotation_list_count">批注（%1$d）</string>
     <string name="annotation_list_empty_current">当前页面没有批注。</string>
     <string name="annotation_list_empty_all">这篇笔记没有批注。</string>
+    <string name="version_history_title">版本历史</string>
+    <string name="version_history_hint">本地私人快照，最多保留4个版本，共128 MB。较旧版本将按需删除。</string>
+    <string name="version_history_save">保存当前版本</string>
+    <string name="version_history_checking">正在检查版本…</string>
+    <string name="version_history_empty">还没有已保存的版本。</string>
+    <string name="version_history_entry_preview">%1$d KB · 预览</string>
+    <string name="version_history_preview_summary">预览：%1$s · %2$d 页</string>
+    <string name="version_history_preview_hint">保存于 %1$s。恢复将打开未保存的新副本。</string>
+    <string name="version_history_restore_as_copy">恢复为副本</string>
+    <string name="version_history_confirm_title">恢复此版本？</string>
+    <string name="version_history_confirm_body">当前笔记会先保存为私人版本，然后将所选版本作为未保存的新副本打开。原始笔记不会被覆盖。</string>
+    <string name="version_history_restore_copy">恢复副本</string>
+    <string name="version_history_error_save">无法保存此版本，笔记未更改。</string>
+    <string name="version_history_error_missing">此保存版本丢失或已损坏。</string>
+    <string name="version_history_error_unreadable">此版本已无法读取。</string>
+    <string name="version_history_error_preserve">恢复已取消：无法保留当前笔记。</string>
+    <string name="version_history_error_changed">恢复已取消：笔记已更改。</string>
+    <string name="version_history_success">已恢复为未保存的副本。请使用另存为保存。</string>
 </resources>
