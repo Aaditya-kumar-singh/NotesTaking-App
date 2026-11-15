@@ -794,6 +794,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
         var rgba: Rgba? = null
         var speedStrength: Double? = null
         var taperEnabled: Boolean? = null
+        var taperLength: Double? = null
         var taperMinFactor: Double? = null
         var neon: Boolean? = null
         var neonStrength: Double? = null
@@ -919,7 +920,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
             directionStrength = c?.directionStrength ?: def.directionStrength,
             rgba = c?.rgba ?: def.rgba,
             speedStrength = c?.speedStrength ?: def.speedStrength,
-            taperEnabled = c?.taperEnabled ?: def.taperEnabled,
+            taperEnabled = c?.let { it.taperEnabled ?: ((it.taperLength ?: 0.0) > 0.0) } ?: def.taperEnabled,
             taperMinFactor = c?.taperMinFactor ?: ToolDefaults.LEGACY_TAPER_TIP,
             neon = c?.neon ?: def.neon,
             neonStrength = c?.neonStrength ?: def.neonStrength,
@@ -1117,6 +1118,7 @@ class CanvasCodec(private val imageCodec: ImageCodec, private val textMeasurer: 
                 "rgba" -> c.rgba = rgbaOrNull(p)
                 "speed_strength" -> c.speedStrength = doubleOrNull(p)
                 "taper_enabled" -> c.taperEnabled = boolOrNull(p)
+                "taper_length" -> c.taperLength = doubleOrNull(p)
                 "taper_min_factor" -> c.taperMinFactor = doubleOrNull(p)
                 "neon" -> c.neon = boolOrNull(p)
                 "neon_strength" -> c.neonStrength = doubleOrNull(p)
