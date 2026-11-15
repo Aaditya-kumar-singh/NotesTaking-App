@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -370,7 +371,7 @@ private fun ChipFace(item: ToolbarItem, visible: Boolean, modifier: Modifier = M
     val palette = LocalPalette.current
     Row(
         modifier
-            .heightIn(min = 48.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .alpha(if (!visible) 0.4f else 1f)
             .clip(MaterialTheme.shapes.small)
             .background(palette.surface.toComposeColor())
