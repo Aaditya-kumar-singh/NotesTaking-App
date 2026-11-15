@@ -27,6 +27,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Edge-case fix: track the exact finger pointer ID that began a scrollbar drag, rather than assuming index 0 remains the owner. When that finger lifts while another remains, ignore the remaining finger's motion instead of moving the scrollbar; the next stylus/eraser tip may still take over. Reset the tracked pointer on completion/cancellation and display active thumb styling only while its owner is present.
 - Regression source: `canvas/PenContactTest.kt` checks initial scrollbar owner vs unrelated finger lift and cleared owner. Existing tests check stylus/eraser exclusion and finger-first takeover. Android/Kotlin execution prohibited locally; pending GitHub CI and S Pen tablet NT-019/020/021/022, vertical and horizontal bands, palm, mouse/finger, and data safety acceptance.
 
+## NP-023 - pressure-sensitive pen strokes (Batch A, P0)
+
+- Session: `C-20261115-1120-gpt6`; parent local commit: `e342a3de7ad7131bc1ddb9ae68dd7c69f1a25cc2` (NP-022 in coordinator review).
+- Reviewed Android historical/current/down pressure reads in `canvas/InteractionController.kt` and the read-only `ui/InfiniteInteraction.kt`, `PenContactRouter`, `core/model/Stroke.kt`, `core/stroke/{StrokeEngine,WetRibbon}.kt`, tool defaults, and existing stroke geometry tests. The controllers already pass valid pressure through to the engine, including zoom-dependent smoothing. Only core-owned files changed.
+- Fixed the shared new-sample ingestion boundary: bound stylus pressure to `[0,1]`, with a full-pressure fallback for non-finite hardware readings. The packed sample and growing wet ribbon now receive the same finite value for both canvas input pipelines; existing serialized samples and codecs are not rewritten.
+- Added `core/model/LiveStrokeRibbonTest.kt` regression source for negative/over-range/NaN/infinite pressure and for light versus firm pressure width at 25%, 100%, and 400% zoom, before and after pen-up.
+- Verification: `check_project.py`, `check_backup_privacy.py`, `check_lane.py` and `git diff --check` passed. Local Kotlin/Gradle execution prohibited by repo policy. GitHub exact-SHA CI and S Pen device pressure/width/last-frame checks (NT-023) remain required; source checks alone do not establish hardware pass.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

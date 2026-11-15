@@ -67,6 +67,40 @@ class LiveStrokeRibbonTest {
         }
     }
 
+    @Test fun capturedPressureIsFiniteAndBoundedBeforeWetInkAndCommit() {
+        val stroke = Stroke(Tool.PEN, ToolDefaults.configFor(Tool.PEN))
+        stroke.finished = false
+        listOf(-0.4, 0.25, 1.6, Double.NaN, Double.POSITIVE_INFINITY).forEachIndexed { i, pressure ->
+            stroke.addSample(Sample(i * 5.0, 0.0, pressure))
+        }
+        val expected = listOf(0.0, 0.25, 1.0, 1.0, 1.0)
+        for (i in expected.indices) assertEquals("pressure at $i", expected[i], stroke.pAt(i), 1e-6)
+        assertTrue(stroke.geometry().halfWidths.all { it.isFinite() && it > 0f })
+        stroke.finished = true
+        assertTrue(stroke.geometry().halfWidths.all { it.isFinite() && it > 0f })
+    }
+
+    @Test fun lightAndFirmPressureRemainDistinctFromQuarterToFourTimesZoom() {
+        for (zoom in listOf(0.25, 1.0, 4.0)) {
+            val stroke = Stroke(
+                Tool.PEN, ToolDefaults.configFor(Tool.PEN),
+                smoothScale = (1.0 / zoom).coerceAtMost(1.0),
+            )
+            stroke.finished = false
+            for (i in 0..110) {
+                val pressure = if (i in 35..79) 0.85 else 0.15
+                stroke.addSample(Sample(i * 1.5 / zoom, 0.0, pressure, i * 6.0))
+            }
+            val wet = stroke.geometry()
+            assertTrue("live pressure width at zoom $zoom", wet.hw(65) > wet.hw(20) * 1.3)
+            stroke.finished = true
+            val committed = stroke.geometry()
+            assertTrue("committed pressure width at zoom $zoom", committed.hw(65) > committed.hw(20) * 1.3)
+            assertEquals("thin width stable at zoom $zoom", wet.hw(20), committed.hw(20), 0.03)
+            assertEquals("firm width stable at zoom $zoom", wet.hw(65), committed.hw(65), 0.03)
+        }
+    }
+
     @Test fun liveInkMatchesTheEngine() {
         for (tool in listOf(Tool.PEN, Tool.CALLIGRAPHY, Tool.SPEED, Tool.DASHED)) {
             assertSameInk(tool, finished = false)
