@@ -3493,19 +3493,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Steps to the next match, or back to the one before, round the ends. */
     fun searchStep(forward: Boolean) {
-        val r = searchResults ?: return
-        if (r.count == 0) return
-        val i = searchCurrent?.let(r::indexOf)?.takeIf { it >= 0 }
-        val next = when {
-            i == null -> r.firstFrom(state.currentPageIndex())?.takeIf { it >= 0 } ?: 0
-            forward -> (i + 1) % r.count
-            else -> (i - 1 + r.count) % r.count
-        }
-        showSearchHit(r.hit(next))
+        val hit = com.notestaking.app.platform.SearchJump.step(
+            searchResults, SearchQuery(searchQuery, searchMatchCase, searchWholeWords),
+            searchCurrent, state.currentPageIndex(), forward,
+        ) ?: return
+        showSearchHit(hit)
     }
 
     /** Makes [hit] the current match and brings it into view. */
     fun showSearchHit(hit: SearchHit) {
+        if (!com.notestaking.app.platform.SearchJump.contains(
+                searchResults, SearchQuery(searchQuery, searchMatchCase, searchWholeWords), hit,
+            )
+        ) return
         searchCurrent = hit
         searchReveal = false
         searchTints.show(searchResults, hit)
@@ -3514,10 +3514,17 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     private fun runSearch(now: Boolean, keep: SearchHit? = null) {
         val s = search ?: return
+        val query = SearchQuery(searchQuery, searchMatchCase, searchWholeWords)
+        if (searchResults?.query != null && searchResults?.query != query) {
+            // Do not let a previous query's hits remain tappable during the new scan's debounce.
+            searchResults = null
+            searchCurrent = null
+            searchTints.show(null, null)
+        }
         searchKeep = keep
         searchReveal = keep == null
         searchFrom = keep?.page ?: state.currentPageIndex()
-        s.search(SearchQuery(searchQuery, searchMatchCase, searchWholeWords), searchFrom, now)
+        s.search(query, searchFrom, now)
     }
 
     private fun onSearchResults(r: SearchResults?) {
