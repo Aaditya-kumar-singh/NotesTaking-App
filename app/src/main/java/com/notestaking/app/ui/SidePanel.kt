@@ -271,8 +271,11 @@ private fun PagesTab(
     onPickCover: () -> Unit,
 ) {
     val listState = rememberLazyListState()
-    // Open the panel on the current page, not page 1 (re-runs each open: a hidden panel leaves composition).
-    LaunchedEffect(Unit) { listState.scrollToItem(editor.pageIndex) }
+    // Recenter only when the note changes; ordinary scrolling through thumbnails must stay under the user's control.
+    LaunchedEffect(editor.state.document) {
+        val count = editor.pagesSnapshot().size
+        if (count > 0) listState.scrollToItem(editor.pageIndex.coerceIn(0, count - 1))
+    }
     // Keyed by the page's stable id so insert/delete animate and keep each page's cached thumbnail;
     // contentVersion drives a fresh read of the order whenever the page list changes.
     val pages = remember(editor.contentVersion) { editor.pagesSnapshot() }
@@ -373,9 +376,11 @@ private fun PagesTab(
                             e.changes.forEach { it.consume() }
                         } while (e.changes.any { it.id == down.id && it.pressed })
                     }
+                    val liveIndex = editor.pageIndexOf(page)
+                    if (liveIndex < 0) return@awaitEachGesture
                     if (!editor.isPageSelected(page)) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        editor.togglePageSelection(row.index)
+                        editor.togglePageSelection(liveIndex)
                         holdToUp()
                         return@awaitEachGesture
                     }
@@ -538,8 +543,8 @@ private fun PageThumb(
 ) {
     val palette = LocalPalette.current
     val pageLabel = if (page.cover) stringResource(R.string.cover) else stringResource(R.string.page_n, index + 1)
-    val current = index == editor.pageIndex
-    val selected = editor.isPageSelected(index)
+    val current = editor.pageAt(editor.pageIndex) === page
+    val selected = editor.isPageSelected(page)
     var menuOpen by remember { mutableStateOf(false) }
     var sizing by remember { mutableStateOf(false) }
     var extracting by remember { mutableStateOf<Boolean?>(null) }
@@ -574,11 +579,20 @@ private fun PageThumb(
                 .border(if (selected || current) 2.dp else 1.dp, borderColor.toComposeColor())
                 // Tap navigates (or toggles selection in select mode). Long-presses belong to the
                 // panel (see PagesTab), so a drag survives the row scrolling away.
-                .clickable { if (selecting) editor.togglePageSelection(index) else editor.goToPage(index) }
+                .clickable {
+                    val liveIndex = editor.pageIndexOf(page)
+                    if (liveIndex >= 0) {
+                        if (selecting) editor.togglePageSelection(liveIndex) else editor.goToPage(liveIndex)
+                    }
+                }
                 .semantics {
                     contentDescription = pageLabel
                     this.selected = if (selecting) selected else current
-                    onLongClick { editor.togglePageSelection(index); true }
+                    onLongClick {
+                        val liveIndex = editor.pageIndexOf(page)
+                        if (liveIndex >= 0) editor.togglePageSelection(liveIndex)
+                        liveIndex >= 0
+                    }
                 },
         ) {
             bitmap?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize()) }

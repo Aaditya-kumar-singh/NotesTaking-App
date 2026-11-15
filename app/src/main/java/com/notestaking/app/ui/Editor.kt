@@ -6694,6 +6694,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     ) {
         controller.clearSelection()
         val pages = state.document.pages
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, pages)
         if (reshaped.isNotEmpty()) {
             for (page in reshaped) {
                 state.invalidatePage(page)
@@ -6839,6 +6840,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Common tail for a side-panel page edit: re-layout, refresh the chrome, repaint. */
     private fun afterPageEdit() {
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, state.document.pages)
         controller.clearSelection()
         bookmarkVersion++
         state.document.dirty = true
@@ -6884,6 +6886,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val index = state.currentPageIndex()
         val page = state.document.pages[index]
         history.push(DeletePage(state.document, page, index).also { it.redo() })
+        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, state.document.pages)
         bookmarkVersion++
         state.document.dirty = true
         state.invalidatePage(page)
@@ -7492,7 +7495,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     fun selectAllPages() {
         val pages = state.document.pages
-        if (selectedPages.size == pages.size) return
+        if (selectedPages.size == pages.size && pages.all { p -> selectedPages.any { it === p } }) return
         selectedPages.clear()
         selectedPages.addAll(pages)
     }
