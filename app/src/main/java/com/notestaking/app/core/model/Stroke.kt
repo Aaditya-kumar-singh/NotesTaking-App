@@ -651,11 +651,15 @@ class Stroke(
             .also { cachedRawBounds = it }
     }
 
+    /** Upper bound on the nib radius, including the broader face of a calligraphic stroke. */
+    private fun maxNibRadius(): Double =
+        config.baseWidth.coerceAtLeast(0.0) * (1.0 + kotlin.math.abs(config.directionStrength)) * 0.5
+
     /** Test every raw segment, including long two-point lines with no middle samples. */
     override fun intersectsCircle(cx: Double, cy: Double, radius: Double): Boolean {
         val s = pts
         if (s.n == 0 || radius <= 0.0) return false
-        val reach = radius + config.baseWidth.coerceAtLeast(0.0) * 0.5
+        val reach = radius + maxNibRadius()
         if (rawBounds().distanceTo(Pt(cx, cy)) > reach) return false
         val center = Pt(cx, cy)
         if (s.n == 1) return center.distanceTo(s.sample(0).pos) < reach
@@ -677,7 +681,7 @@ class Stroke(
     fun erasedBy(cx: Double, cy: Double, radius: Double): List<Stroke>? {
         val s = pts
         if (s.n == 0 || radius <= 0.0) return null
-        val reach = radius + config.baseWidth.coerceAtLeast(0.0) * 0.5
+        val reach = radius + maxNibRadius()
         if (rawBounds().distanceTo(Pt(cx, cy)) > reach) return null
         val r2 = reach * reach
         fun inside(p: Sample): Boolean {

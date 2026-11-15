@@ -89,6 +89,43 @@ class StrokeEraseTest {
         near(100.0, parts[1].samples.last().x)
     }
 
+    @Test fun sparsePressureStrokeSplitsIntoEditableEndsAtEveryDrawZoom() {
+        for (zoom in listOf(0.25, 1.0, 4.0)) {
+            val scale = 1.0 / zoom
+            val original = Stroke(
+                Tool.PEN, ToolConfig(baseWidth = 2.0 * scale),
+                listOf(Sample(0.0, 0.0, 0.4, 1.0), Sample(100.0 * scale, 0.0, 0.8, 101.0)),
+                straight = true, smoothScale = scale.coerceAtMost(1.0),
+            )
+            val pieces = original.erasedBy(50.0 * scale, 0.0, 5.0 * scale)!!
+            assertEquals("zoom=$zoom", 2, pieces.size)
+            near(44.0 * scale, pieces[0].samples.last().x, 0.01)
+            near(56.0 * scale, pieces[1].samples.first().x, 0.01)
+            near(0.576, pieces[0].samples.last().pressure)
+            near(0.624, pieces[1].samples.first().pressure)
+            near(45.0, pieces[0].samples.last().t)
+            near(57.0, pieces[1].samples.first().t)
+            val rightStart = pieces[1].samples.first().x
+            pieces[0].translate(10.0 * scale, 0.0) // fragments must remain independently editable
+            near(rightStart, pieces[1].samples.first().x, 0.01)
+            near(100.0 * scale, original.samples.last().x, 0.01)
+        }
+    }
+
+    @Test fun broadCalligraphyNibCanBeErasedWhereItsVisibleInkExtendsBeyondBaseWidth() {
+        val stroke = Stroke(
+            Tool.CALLIGRAPHY, ToolConfig(baseWidth = 6.0, directionStrength = 0.6),
+            (0..20).map { Sample(0.0, it * 6.0, 1.0) },
+        )
+        assertTrue(stroke.geometry().hw(10) > 3.0)
+        assertTrue(stroke.contains(com.notestaking.app.core.geometry.Pt(4.0, 60.0)))
+        assertTrue(stroke.intersectsCircle(4.0, 60.0, 0.5))
+        val fragments = stroke.erasedBy(4.0, 60.0, 0.5)!!
+        assertEquals(2, fragments.size)
+        assertTrue(fragments[0].samples.last().y < 60.0)
+        assertTrue(fragments[1].samples.first().y > 60.0)
+    }
+
     @Test fun offCenterCutInterpolatesCircleBoundaries() {
         val s = stroke(0.0 to 0.0, 100.0 to 0.0)
         // Expanded r=10+1.5: at y=8, half-chord sqrt(11.5^2 - 8^2).
