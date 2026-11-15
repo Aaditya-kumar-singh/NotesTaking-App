@@ -19,10 +19,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -73,8 +77,12 @@ internal val LocalMenuOffset = compositionLocalOf { DpOffset.Zero }
 /** How far a floating bar sits in from the canvas edge. */
 private val FLOAT_MARGIN = 8.dp
 
-/** Only docked bars pin quick actions; floating bars scroll them into view on narrow panes. */
-internal fun toolbarScrollsTrailing(floating: Boolean): Boolean = floating
+/** Reserve room for one tool, five quick actions and Close Pane in a docked strip. */
+internal fun toolbarScrollsTrailing(
+    floating: Boolean,
+    availableAxisDp: Float = Float.POSITIVE_INFINITY,
+    buttonDp: Float = 48f,
+): Boolean = floating || availableAxisDp < buttonDp * 7f
 
 /** What a floating bar covers of the canvas, for overlays that must stay out from under it. */
 internal val LocalToolbarCover = compositionLocalOf { PaddingValues(0.dp) }
@@ -131,8 +139,8 @@ internal fun ColumnScope.ToolbarAround(
 
 /**
  * The strip both toolbars are laid out in: a row along the top or bottom, a column down either
- * side. [content] scrolls when long; [trailing] stays pinned when docked, but scrolls with
- * the tools when floating. [pinned] (split-pane Close) is always fixed at the end.
+ * side. [content] scrolls when long; [trailing] scrolls in short docked panes and floating bars,
+ * but pins in full-size docked bars. [pinned] (split-pane Close) stays fixed at the end.
  */
 @Composable
 internal fun ToolbarFrame(
@@ -144,7 +152,9 @@ internal fun ToolbarFrame(
     val look = LocalToolbarLook.current
     val bar = barMetrics(look.size).copy(vertical = look.position.vertical)
     val glide = remember { ToolGlide() }
-    val scrollTrailing = toolbarScrollsTrailing(look.floating)
+    var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
+    val availableAxisDp = with(LocalDensity.current) { availableAxisPx.toDp().value }
+    val scrollTrailing = toolbarScrollsTrailing(look.floating, availableAxisDp, bar.button.value)
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.extraLarge
     val divider = palette.border.toComposeColor()
@@ -184,7 +194,7 @@ internal fun ToolbarFrame(
     CompositionLocalProvider(LocalToolGlide provides glide, LocalBar provides bar, LocalMenuOffset provides menuOffset, LocalTipSide provides tipSide) {
         if (bar.vertical) {
             Column(
-                stretch.width(bar.thickness).then(surface),
+                stretch.width(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.height },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
@@ -203,7 +213,7 @@ internal fun ToolbarFrame(
             }
         } else {
             Row(
-                stretch.height(bar.thickness).then(surface),
+                stretch.height(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.width },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(

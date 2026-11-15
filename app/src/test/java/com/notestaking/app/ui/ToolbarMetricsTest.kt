@@ -30,6 +30,18 @@ class ToolbarMetricsTest {
     }
 
     @Test
+    fun shortDockedPanesScrollQuickActionsInsteadOfCrowdingTheToolStrip() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value
+            assertTrue("$size: 320dp split pane needs reachable tools", toolbarScrollsTrailing(false, 320f, button))
+            assertTrue(toolbarScrollsTrailing(false, button * 7f - 1f, button))
+            assertFalse("$size: full-size docked bar keeps quick actions pinned", toolbarScrollsTrailing(false, button * 7f, button))
+            assertFalse(toolbarScrollsTrailing(false, 600f, button))
+            assertTrue(toolbarScrollsTrailing(true, 600f, button))
+        }
+    }
+
+    @Test
     fun collapsedFloatingToolbarHidesFavoritesWhenEvenOneWouldOverflow() {
         for (size in ToolbarSize.entries) {
             val buttonDp = barMetrics(size).button.value.toInt()
