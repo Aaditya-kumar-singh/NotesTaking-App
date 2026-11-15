@@ -7149,6 +7149,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             return
         }
         val leaving = picked.map { doc.pages[it] }
+        val sourceVersion = contentVersion // an edit during the copy must not be deleted on Move
         val cargo = com.notestaking.app.core.model.PageCargo.pack(doc, picked, textMeasurer)
         // A name of its own for the PDF, which a note switched away from meanwhile would delete.
         val sourcePdf = doc.pdfFile?.takeIf { cargo.pdfIndices.isNotEmpty() }?.let { keepPdf(it) }
@@ -7159,9 +7160,10 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         autosaveScope.launch {
             val made = try {
                 withContext(Dispatchers.IO) {
-                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf)?.also { made ->
-                        if (importCancelled.get()) {
+                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf, verifyReadback = move)?.let { made ->
+                        if (!importCancelled.get()) made else {
                             runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(made.uri)) }
+                            null
                         }
                     }
                 }
@@ -7171,12 +7173,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 sourcePdf?.delete()
                 cargo.pdf?.delete()
             }
-            if (importCancelled.get()) return@launch
+            if (importCancelled.get()) {
+                // Cancel can arrive after the provider readback, before returning to the UI.
+                made?.let { madeFile ->
+                    withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+                        runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(madeFile.uri)) }
+                    }
+                }
+                return@launch
+            }
             if (made == null) {
                 message = appContext.getString(R.string.err_extract_pages)
                 return@launch
             }
-            if (move && state.document === doc) deletePages(leaving.map { p -> doc.pages.indexOfFirst { it === p } }.filter { it >= 0 })
+            if (move && state.document === doc && contentVersion == sourceVersion) {
+                deletePages(leaving.map { p -> doc.pages.indexOfFirst { it === p } }.filter { it >= 0 })
+            }
             val folder = withContext(Dispatchers.IO) {
                 queryDisplayName(android.provider.DocumentsContract.buildDocumentUriUsingTree(android.net.Uri.parse(root), parentId))
             } ?: ""
@@ -7193,7 +7205,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      */
     private fun writeCargoNote(
         root: String, parentId: String, rawName: String, from: Document,
-        cargo: com.notestaking.app.core.model.PageCargo, sourcePdf: java.io.File?,
+        cargo: com.notestaking.app.core.model.PageCargo, sourcePdf: java.io.File?, verifyReadback: Boolean,
     ): MadeFile? {
         if (importCancelled.get()) return null
         val note = Document(dpi = cargo.dpi, created = System.currentTimeMillis())
@@ -7214,7 +7226,19 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         note.bookmarks.addAll(cargo.bookmarks.map { Bookmark(it.page, it.label) })
         if (importCancelled.get()) return null
         val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val uri = createNoteFile(root, parentId, name) { writeCancellableNote(note, it) } ?: return null
+        val digest = if (verifyReadback) java.security.MessageDigest.getInstance("SHA-256") else null
+        val uri = createNoteFile(root, parentId, name) { output ->
+            writeCancellableNote(note, digest?.let { java.security.DigestOutputStream(output, it) } ?: output)
+        } ?: return null
+        if (digest != null && !com.notestaking.app.platform.NativeNoteReadback.verify(
+                { appContext.contentResolver.openInputStream(android.net.Uri.parse(uri)) },
+                codec, note.pages.size, pdf != null, digest.digest(), { importCancelled.get() },
+            )
+        ) {
+            // The provider may acknowledge an incomplete write; leave source pages untouched.
+            runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(uri)) }
+            return null
+        }
         return MadeFile(uri, name)
     }
 

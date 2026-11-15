@@ -367,6 +367,10 @@ class DocumentCodecTest {
             extracted.pages.addAll(cargo.unpack(extracted, pdfBase = 0, measurer = measurer))
             extracted.bookmarks.addAll(cargo.bookmarks)
             val bytes = ByteArrayOutputStream().also { codec.write(extracted, it) }.toByteArray()
+            assertTrue(com.notestaking.app.platform.NativeNoteReadback.verify(
+                { ByteArrayInputStream(bytes) }, codec, 2, true,
+                java.security.MessageDigest.getInstance("SHA-256").digest(bytes),
+            ))
 
             // No embedded asset in the saved note may depend on the source note remaining open.
             image.delete()
