@@ -372,6 +372,7 @@ class InteractionController(
     private val eraseRemovals = mutableListOf<Triple<Page, Int, CanvasItem>>()
     private var eraseAreaForGesture = false
     private var eraseModeForGesture = EraseMode.STROKE
+    private var eraseMarkupsForGesture = false
     /** AREA mode: each touched page's item list snapshotted on first contact this gesture, so the
      *  whole split-and-trim drag undoes/redoes as one [ReplacePageItems] step. */
     private val eraseSnapshots = linkedMapOf<Page, List<CanvasItem>>()
@@ -1495,7 +1496,9 @@ class InteractionController(
         val reach = Rect.bounding(path).outset(radius)
         val candidates = ArrayList<Any>()
         page.items.filterTo(candidates) { EraseRule.erasable(it) && it.paintBounds().intersects(reach) }
-        if (eraser.eraseMarkups) candidates.addAll(page.markups)
+        if (eraser.eraseMarkups) candidates.addAll(page.markups.filter {
+            eraserModeAllowsMarkup(eraser.eraseMode, it.type)
+        })
         val ptPerPx = 72.0 / state.document.dpi
         // A scribble is ink, so it takes only lines, never a fill.
         val taken = Scribble.taken(passes, radius, candidates) { c, x, y, r ->
@@ -1546,7 +1549,9 @@ class InteractionController(
         eraseSnapshots.clear()
         eraseMarkups.clear()
         eraseUnfilled.clear()
-        eraseModeForGesture = configFor(Tool.ERASER).eraseMode
+        val eraserConfig = configFor(Tool.ERASER)
+        eraseModeForGesture = eraserConfig.eraseMode
+        eraseMarkupsForGesture = eraserConfig.eraseMarkups
         eraseAreaForGesture = eraseModeForGesture == EraseMode.AREA // preserve undo representation mid-drag
         mode = PointerMode.ERASE
         previousErasePoint = null
@@ -1602,14 +1607,19 @@ class InteractionController(
         requestRender()
     }
 
-    /** Takes off [page]'s text markups the eraser circle touches, when the eraser is set to; true if any. */
+    /** A selective object eraser must never silently fall back to erasing PDF text marks. */
+    private fun eraserModeAllowsMarkup(mode: EraseMode, type: MarkupType): Boolean = when (mode) {
+        EraseMode.STROKE, EraseMode.AREA -> true
+        EraseMode.MARKER -> type == MarkupType.HIGHLIGHT
+        EraseMode.TAPE, EraseMode.SHAPE, EraseMode.CONNECTOR -> false
+    }
+
+    /** Takes off [page]'s text markups the eraser circle touches, when opted in. */
     private fun eraseMarkupsFromPage(page: Page, cx: Double, cy: Double, radius: Double): Boolean {
-        if (page.markups.isEmpty() || !configFor(Tool.ERASER).eraseMarkups ||
-            eraseModeForGesture == EraseMode.TAPE || eraseModeForGesture == EraseMode.SHAPE ||
-            eraseModeForGesture == EraseMode.CONNECTOR) return false
+        if (!eraseMarkupsForGesture || page.markups.isEmpty()) return false
         val ptPerPx = 72.0 / state.document.dpi
         val hit = page.markups.filter {
-            (eraseModeForGesture != EraseMode.MARKER || it.type == MarkupType.HIGHLIGHT) &&
+            eraserModeAllowsMarkup(eraseModeForGesture, it.type) &&
                 MarkupPainter.touches(it, cx * ptPerPx, cy * ptPerPx, radius * ptPerPx)
         }
         if (hit.isEmpty()) return false
@@ -1730,6 +1740,7 @@ class InteractionController(
         eraseMarkups.clear()
         eraseUnfilled.clear()
         eraseModeForGesture = EraseMode.STROKE
+        eraseMarkupsForGesture = false
         eraserCursor = null
         previousErasePoint = null
         mode = PointerMode.IDLE
