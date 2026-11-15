@@ -185,6 +185,36 @@ class TriadTests(unittest.TestCase):
             "review")
 
 
+    def test_dedicated_coordinator_publisher_is_exclusive_and_does_not_steal_worker_sessions(self):
+        base="c"*40
+        def remote_stub(repo,*args):
+            return base + "\trefs/heads/developer"
+        with patch.object(triad,"assert_coordinator"), patch.object(triad,"git",side_effect=remote_stub):
+            triad.register_coordinator(self.db,"coordinator-first",None,
+                "Coordinator starts integration without borrowing A B or C sessions",triad.ROOT)
+            self.assertEqual(
+                self.db.execute("SELECT session FROM triad_slots WHERE slot='A'").fetchone()[0],
+                "legacy-a")
+            triad.publish_lock(self.db,"COORD","coordinator-first",base,
+                "Exact predecessor CI and five local reviewed tasks checked.",triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.publish_lock(self.db,"B","legacy-b",base,
+                    "Second contributor cannot publish while coordinator holds lock.",triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.register_coordinator(self.db,"coordinator-second","coordinator-first",
+                    "Attempted takeover while a publish operation remains locked",triad.ROOT)
+            triad.publish_release(self.db,"COORD","coordinator-first",
+                "Verified integration outcome and recorded remote SHA state.",triad.ROOT)
+            triad.register_coordinator(self.db,"coordinator-second","coordinator-first",
+                "Explicit replacement after coordinator publication was released.",triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.publish_lock(self.db,"COORD","coordinator-first",base,
+                    "Old coordinator session should no longer be allowed to publish.",triad.ROOT)
+            triad.publish_lock(self.db,"COORD","coordinator-second",base,
+                "New coordinator holds publication rights after safe takeover.",triad.ROOT)
+            triad.publish_release(self.db,"COORD","coordinator-second",
+                "Released new exclusive lock after verification.",triad.ROOT)
+
     def test_batch_ready_requires_all_five_reviews_or_deferrals(self):
         self.assertFalse(triad.batch_ready(self.db,"A",self.data)["ready_for_integration_review"])
         self.assertEqual(len(triad.batch_ready(self.db,"A",self.data)["remaining"]),5)

@@ -173,6 +173,42 @@ def replace_session(db, slot: str, old: str | None, new: str, reason: str, repo:
     return {"slot": slot, "session": new, "superseded": old}
 
 
+def register_coordinator(db, session: str, previous: str | None, reason: str, repo: Path) -> dict:
+    """Exclusive administrative identity; never owns or edits worker source."""
+    assert_coordinator(repo)
+    if not session or len(session) > 96 or any(ch.isspace() for ch in session):
+        raise Blocked("Coordinator session must be a unique nonblank token without whitespace")
+    if len(reason.strip()) < 12:
+        raise Blocked("Coordinator registration needs a meaningful handoff reason")
+    with transaction(db):
+        row = db.execute("SELECT session,generation FROM triad_slots WHERE slot='COORD'").fetchone()
+        if row is None:
+            if previous is not None:
+                raise Blocked("No existing coordinator session to replace")
+            db.execute("INSERT INTO triad_slots(slot,session,generation,joined_at,heartbeat_at)"
+                       " VALUES('COORD',?,?,?,?)", (session,1,now(),now()))
+        else:
+            if previous is None or row["session"] != previous or session == previous:
+                raise Blocked("Coordinator session already owned; compare-and-swap required")
+            if db.execute("SELECT 1 FROM triad_publish WHERE id=1").fetchone():
+                raise Blocked("Cannot take over coordinator while a publication lock exists")
+            db.execute("UPDATE triad_slots SET session=?,generation=generation+1,"
+                       "joined_at=?,heartbeat_at=? WHERE slot='COORD'",
+                       (session,now(),now()))
+        emit(db,"COORD","coordinator-session",f"{previous} -> {session}: {reason}")
+    return {"slot":"COORD","session":session,"previous":previous,
+            "note":"Administrative publisher only, not a fourth source-writing agent"}
+
+
+def assert_publisher_session(db, slot: str, session: str) -> None:
+    if slot == "COORD":
+        row=db.execute("SELECT session FROM triad_slots WHERE slot='COORD'").fetchone()
+        if not session or not row or row["session"] != session:
+            raise Blocked("Coordinator session not registered or superseded")
+    else:
+        assert_session(db,slot,session)
+
+
 def touch(db, slot: str, session: str):
     with transaction(db):
         assert_session(db, slot, session)
@@ -328,7 +364,7 @@ def publish_lock(db, slot, session, base, evidence, repo):
     if base != remote:
         raise Blocked("Remote developer advanced; rebase/review, never force-push")
     with transaction(db):
-        assert_session(db, slot, session)
+        assert_publisher_session(db, slot, session)
         if db.execute("SELECT 1 FROM triad_publish WHERE id=1").fetchone():
             raise Blocked("A different publish integration is already in progress")
         db.execute("INSERT INTO triad_publish(id,slot,session,base_sha,evidence)"
@@ -343,7 +379,7 @@ def publish_release(db, slot, session, evidence, repo):
     if len(evidence.strip()) < 20:
         raise Blocked("Publish release requires remote SHA / CI outcome note")
     with transaction(db):
-        assert_session(db, slot, session)
+        assert_publisher_session(db, slot, session)
         row = db.execute("SELECT * FROM triad_publish WHERE id=1").fetchone()
         if not row or row["slot"] != slot or row["session"] != session:
             raise Blocked("This session does not hold publish lock")
@@ -534,6 +570,10 @@ def main() -> int:
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("init")
     sub.add_parser("status")
+    cr = sub.add_parser("coordinator-register")
+    cr.add_argument("--session",required=True)
+    cr.add_argument("--previous",default=None)
+    cr.add_argument("--reason",required=True)
     k = sub.add_parser("checklist")
     k.add_argument("--write",action="store_true",help="Coordinator refreshes the checked-box Markdown snapshot")
     b = sub.add_parser("batch-ready")
@@ -555,7 +595,7 @@ def main() -> int:
     r.add_argument("--reason", required=True)
     for command in ("heartbeat","claim","handoff","ci-claim","ci-finish","publish-lock","publish-release"):
         x = sub.add_parser(command)
-        x.add_argument("--slot", required=True, choices=BRANCHES)
+        x.add_argument("--slot", required=True, choices=(*BRANCHES, "COORD") if command in ("publish-lock","publish-release") else BRANCHES)
         x.add_argument("--session", required=True)
         if command in ("claim","handoff"):
             x.add_argument("task")
@@ -594,6 +634,8 @@ def main() -> int:
             out = {"initialized": len(data["tasks"]), "slots": "A, B, C"}
         elif args.command == "status":
             out = status(db, data)
+        elif args.command == "coordinator-register":
+            out = register_coordinator(db,args.session,args.previous,args.reason,repo)
         elif args.command == "checklist":
             if args.write:
                 assert_coordinator(repo)
