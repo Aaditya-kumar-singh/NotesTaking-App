@@ -14,6 +14,14 @@ import java.util.concurrent.atomic.AtomicInteger
 /** Why a PDF did not open, from PDFium's FPDF_ERR_* codes. */
 enum class PdfOpenError { FILE, FORMAT, PASSWORD, SECURITY, UNKNOWN }
 
+/** Reject broken native page maps before they can turn saved annotation positions into NaN. */
+internal fun checkedNativePageGeometry(values: DoubleArray?): PdfPageGeometry? {
+    if (values == null || values.size != 6 || values.any { !it.isFinite() }) return null
+    val det = values[0] * values[3] - values[1] * values[2]
+    if (!det.isFinite() || kotlin.math.abs(det) < 1e-9) return null
+    return PdfPageGeometry(values[0], values[1], values[2], values[3], values[4], values[5])
+}
+
 /**
  * A PDF opened with PDFium. The native document lives on [PdfiumThread]: opening is queued
  * there and returns at once, and the calls that need it wait, so keep them off the main thread.
@@ -101,7 +109,7 @@ class PdfiumDocument private constructor(
     /** How the user space of the page [key] names maps to its points as displayed; null when not open or the page does not load. */
     fun pageGeometry(key: Int, priority: PdfPriority): PdfPageGeometry? {
         val m = withHandle(priority) { PdfiumNative.nativePageGeometry(it, PdfKey.index(key), PdfKey.turn(key)) } ?: return null
-        return PdfPageGeometry(m[0], m[1], m[2], m[3], m[4], m[5])
+        return checkedNativePageGeometry(m)
     }
 
     /** The text of the page [key] names, to search, read without boxes or keeping the page loaded; null when not open or it does not load. */
