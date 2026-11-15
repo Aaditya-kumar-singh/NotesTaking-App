@@ -67,6 +67,13 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `canvas/FrontInkHandoffTest.kt` source coverage for abandoned, replaced, finished, and still-active takeover ownership. Added `canvas/WetInkCacheTest.kt` source coverage that committed strokes do not also reuse a stale live raster (single owner/paint path after pen-up). Existing taper, speed, smoothing, PDF/page-crossing behavior and native note codecs untouched.
 - Source, A-Z, backup privacy, C ownership and `git diff --check` checks required before local commit. Kotlin/JUnit and Android tests are forbidden locally; GitHub exact-SHA CI plus physical S Pen frame timing, cancellations, rapid consecutive strokes and no-duplicate-ink acceptance remain unverified.
 
+## NP-026 — stylus-only ink versus finger drawing (Batch E, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `70f1c152ae712d9c22d690f58db598da2f8e5bbe` (NP-025 in coordinator review). Claimed independently and retained all previous review SHAs intact.
+- Inspected UI preference wiring (read-only `settings/Preferences.kt`, `ui/Editor.kt`, `ui/InfiniteEditor.kt`, `ui/InfiniteInteraction.kt`, quick access and preferences panel), paged `canvas/InteractionController.kt`, shared `canvas/FreePointer.kt`, tool metadata, stylus-button latch, mixed-pointer routing, existing tests and NT-025 S Pen acceptance. Existing B14/B16 behavior already persists the preference and applies it to both editors; finger-only pans when disabled, stylus/eraser remains armed, and pen pressure is independent of finger drawing.
+- No speculative runtime change to already-implemented input routing. Added `canvas/FreePointerTest.kt` regression table for all 13 ink/eraser/gesture tools in both toggle states, and for navigation/typing/placement tools unaffected by the preference. This catches regressions if new drawing tools accidentally bypass the stylus-only gate.
+- Only Chat C-owned test and status paths changed. Pending gates: Kotlin/JUnit GitHub exact-SHA CI, physical S Pen/phone NT-025 (finger pan vs ink, two-finger zoom, stylus tip and button eraser), and UI preference persistence across relaunch. Do not claim device verification or acceptance from source tests.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
