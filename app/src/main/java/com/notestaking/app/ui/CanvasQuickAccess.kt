@@ -266,20 +266,43 @@ private fun CanvasAllTools(
     var open by remember { mutableStateOf(false) }
     var eraserOpen by remember { mutableStateOf(false) }
     var penOpen by remember { mutableStateOf(false) }
+    var guideOpen by remember { mutableStateOf(false) }
     val penForConfig = selected.takeIf { it.isStroke } ?: Tool.PEN
     Box {
         ToolbarIcon(
             NotesTakingIcons.more,
             stringResource(R.string.canvas_all_tools),
             active = open,
-        ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 248.dp))) {
+        ) { guideOpen = false; open = true }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false; guideOpen = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 248.dp))) {
             Text(
                 stringResource(R.string.canvas_all_tools),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             HorizontalDivider()
+            // Guidance stays opt-in: opening an editor never places a tutorial over the page.
+            QuickActionRow(stringResource(R.string.markup_note_hint)) { guideOpen = !guideOpen }
+            if (guideOpen) {
+                listOf(
+                    R.string.tool_pen to R.string.markup_note_hint,
+                    R.string.tool_eraser to R.string.canvas_eraser_tool_hint,
+                    R.string.export_pdf to R.string.page_export_pdf_hint,
+                ).forEach { (title, detail) ->
+                    Text(
+                        "${stringResource(title)}: ${stringResource(detail)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+                Text(
+                    stringResource(R.string.pref_finger_draws),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                QuickActionRow(stringResource(R.string.done)) { guideOpen = false }
+                HorizontalDivider()
+            }
             tools.forEach { tool ->
                 QuickActionRow(if (tool == Tool.ERASER) eraserToolbarDescription(host) else stringResource(tool.labelRes), isSelected = tool == selected) {
                     open = false
