@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -1314,14 +1315,19 @@ internal fun ChoiceMenuItem(
 }
 
 @Composable
-internal fun ModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun ModeChip(label: String, selected: Boolean, onClick: () -> Unit) =
+    ModeChip(label, selected, enabled = true, onClick = onClick)
+
+@Composable
+internal fun ModeChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Box(
         Modifier
             .clip(MaterialTheme.shapes.extraSmall)
             .background(if (selected) palette.selectionBackground.toComposeColor() else palette.surface.toComposeColor())
             .border(1.dp, if (selected) palette.accent.toComposeColor() else palette.border.toComposeColor(), MaterialTheme.shapes.extraSmall)
-            .clickable(onClick = onClick)
+            .alpha(if (enabled) 1f else 0.38f)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         Text(

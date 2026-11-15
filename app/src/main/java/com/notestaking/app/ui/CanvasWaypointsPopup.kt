@@ -106,7 +106,7 @@ fun CanvasWaypointsPopup(editor: InfiniteEditor, onDismiss: () -> Unit) {
             Spacer(Modifier.size(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ModeChip(stringResource(R.string.toolbar_minimap), editor.minimapVisible) { editor.toggleMinimap() }
-                ModeChip(stringResource(R.string.fit_all), selected = false) { editor.zoomToFit(); onDismiss() }
+                ModeChip(stringResource(R.string.fit_all), selected = false, enabled = !editor.zoomLocked) { editor.zoomToFit(); onDismiss() }
             }
         }
     }
