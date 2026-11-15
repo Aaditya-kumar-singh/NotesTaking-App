@@ -298,7 +298,8 @@ class Stroke(
         // slack a doubling left cannot disturb a reader holding the previous one.
         xa[n] = (s.x - ox).toFloat()
         ya[n] = (s.y - oy).toFloat()
-        pa[n] = s.pressure.toFloat()
+        // Android pens can report out-of-range/non-finite pressure; never feed invalid ink geometry.
+        pa[n] = if (s.pressure.isFinite()) s.pressure.coerceIn(0.0, 1.0).toFloat() else 1f
         ta?.set(n, s.t.toFloat())
         pts = Samples(ox, oy, xa, ya, pa, ta, n + 1)
         val ribbon = wetOrStart()
