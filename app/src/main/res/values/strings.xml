@@ -697,6 +697,7 @@
         <item quantity="other">Exported %d PDFs.</item>
     </plurals>
     <string name="err_export_pdf">Could not export to PDF.</string>
+    <string name="err_export_pdf_retry">PDF export failed. Try Export again; if it keeps failing, choose another location or free up storage.</string>
     <string name="err_export_existing_file">Could not confirm that the destination is empty. Choose a new filename or folder to protect existing files.</string>
     <string name="err_export_pdf_leftover">PDF export failed. An incomplete file may remain at the destination; please delete it.</string>
     <string name="err_save_copy">Could not save a copy.</string>

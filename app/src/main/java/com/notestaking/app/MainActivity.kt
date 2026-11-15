@@ -416,11 +416,20 @@ private fun EditorScreen(
             else scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 val result = try {
                     if (!com.notestaking.app.platform.SafDestinationGuard.isEmptyDocument(resolver, uri)) null
-                    else com.notestaking.app.platform.ProviderCopy.save(
-                        { temp.inputStream() },
-                        { resolver.openOutputStream(uri) },
-                        { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
-                    )
+                    else {
+                        val saved = com.notestaking.app.platform.ProviderCopy.save(
+                            { temp.inputStream() },
+                            { resolver.openOutputStream(uri) },
+                            { android.provider.DocumentsContract.deleteDocument(resolver, uri) },
+                        )
+                        if (saved == com.notestaking.app.platform.ProviderCopy.Result.SAVED &&
+                            !com.notestaking.app.platform.PdfSaveProof.matches(temp) { resolver.openInputStream(uri) }
+                        ) {
+                            if (runCatching { android.provider.DocumentsContract.deleteDocument(resolver, uri) }.getOrDefault(false))
+                                com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED
+                            else com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER
+                        } else saved
+                    }
                 } finally {
                     temp.delete()
                 }
@@ -428,7 +437,7 @@ private fun EditorScreen(
                     editor.message = resources.getString(when (result) {
                         null -> R.string.err_export_existing_file
                         com.notestaking.app.platform.ProviderCopy.Result.SAVED -> R.string.exported_pdf
-                        com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED -> R.string.err_export_pdf
+                        com.notestaking.app.platform.ProviderCopy.Result.FAILED_REMOVED -> R.string.err_export_pdf_retry
                         com.notestaking.app.platform.ProviderCopy.Result.FAILED_LEFTOVER -> R.string.err_export_pdf_leftover
                     })
                 }
@@ -884,13 +893,14 @@ private fun EditorScreen(
                     val o = com.notestaking.app.platform.CancellableOutputStream(fo) { cancel.get() }
                     render(o, { done, total -> if (!cancel.get()) exportProgress = ExportProgress(done, total, counting) }, { cancel.get() })
                 }
-            }.isSuccess
+                com.notestaking.app.platform.PdfSaveProof.rendered(temp)
+            }.getOrDefault(false)
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                 if (exportCancel === cancel) exportProgress = null // only the latest export owns the dialog
                 when {
                     cancel.get() -> temp.delete()
                     ok -> onReady(temp)
-                    else -> { temp.delete(); if (exportCancel === cancel) editor.message = resources.getString(R.string.err_export_pdf) }
+                    else -> { temp.delete(); if (exportCancel === cancel) editor.message = resources.getString(R.string.err_export_pdf_retry) }
                 }
             }
         }
