@@ -1562,9 +1562,10 @@ class InteractionController(
     }
 
     private fun eraseAt(vx: Double, vy: Double) {
-        eraserCursor = Pt(vx, vy)
         val content = state.viewportToContent(Pt(vx, vy))
         val radius = eraserRadius()
+        if (!content.x.isFinite() || !content.y.isFinite() || !radius.isFinite() || radius <= 0.0) return
+        eraserCursor = Pt(vx, vy)
         val eraserBox = Rect(content.x - radius, content.y - radius, radius * 2, radius * 2)
         val area = areaErase()
         var changed = false
