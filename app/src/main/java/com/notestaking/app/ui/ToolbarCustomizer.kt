@@ -52,7 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -128,8 +128,8 @@ fun ToolbarCustomizerBody(
     val dragging = dragItem != null
     val draggingSection = dragSection != null
     var search by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val matches = toolbarSearchResults(layout, search) { context.getString(it.labelRes) }
+    val resources = LocalResources.current
+    val matches = toolbarSearchResults(layout, search) { resources.getString(it.labelRes) }
     OutlinedTextField(
         value = search,
         onValueChange = { search = it },
