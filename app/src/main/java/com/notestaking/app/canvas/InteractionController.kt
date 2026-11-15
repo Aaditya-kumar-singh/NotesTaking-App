@@ -367,7 +367,9 @@ class InteractionController(
     private var screenshotOrigin = Pt.ZERO
 
     // ERASE
-    private val eraseRemovals = mutableListOf<Pair<Page, CanvasItem>>()
+    /** Whole-stroke removals record their live z-slot in removal order, for one exact undo. */
+    private val eraseRemovals = mutableListOf<Triple<Page, Int, CanvasItem>>()
+    private var eraseAreaForGesture = false
     /** AREA mode: each touched page's item list snapshotted on first contact this gesture, so the
      *  whole split-and-trim drag undoes/redoes as one [ReplacePageItems] step. */
     private val eraseSnapshots = linkedMapOf<Page, List<CanvasItem>>()
@@ -567,7 +569,9 @@ class InteractionController(
     fun configFor(t: Tool): ToolConfig = toolConfigs[t] ?: ToolDefaults.configFor(t)
 
     fun setToolConfig(t: Tool, config: ToolConfig) {
+        val changed = toolConfigs[t] != config
         toolConfigs[t] = config
+        if (changed && t == Tool.ERASER) requestRender() // refresh a stationary hover ring as the size slider moves
     }
 
     fun setTool(t: Tool) {
@@ -1527,18 +1531,21 @@ class InteractionController(
 
     // SCALE off: hold the eraser at a constant on-screen size by shrinking its content-space
     // radius as you zoom in (both the hit-test and the cursor circle derive from this).
-    private fun eraserRadius(): Double {
+    internal fun eraserRadius(): Double {
         val cfg = configFor(Tool.ERASER)
         return if (cfg.scale) cfg.baseWidth else cfg.baseWidth / state.zoom
     }
 
+    /** Same viewport-space radius for the sweep and its cursor preview. */
+    internal fun eraserCursorRadiusPx(): Double = eraserRadius() * state.zoom
     private fun areaErase(): Boolean = configFor(Tool.ERASER).eraseMode == EraseMode.AREA
 
-    private fun beginErase(vx: Double, vy: Double) {
+    internal fun beginErase(vx: Double, vy: Double) {
         eraseRemovals.clear()
         eraseSnapshots.clear()
         eraseMarkups.clear()
         eraseUnfilled.clear()
+        eraseAreaForGesture = areaErase() // a settings change mid-drag cannot change its undo representation
         mode = PointerMode.ERASE
         previousErasePoint = null
         eraseAlong(vx, vy)
@@ -1553,10 +1560,10 @@ class InteractionController(
         eraseAlong(e.getX(idx).toDouble(), e.getY(idx).toDouble())
     }
 
-    private fun eraseAlong(vx: Double, vy: Double) {
+    internal fun eraseAlong(vx: Double, vy: Double) {
         val next = Pt(vx, vy)
         com.notestaking.app.core.geometry.EraserSweep.visit(
-            previousErasePoint, next, eraserRadius() * state.zoom,
+            previousErasePoint, next, eraserCursorRadiusPx(),
         ) { eraseAt(it.x, it.y) }
         previousErasePoint = next
     }
@@ -1567,7 +1574,7 @@ class InteractionController(
         if (!content.x.isFinite() || !content.y.isFinite() || !radius.isFinite() || radius <= 0.0) return
         eraserCursor = Pt(vx, vy)
         val eraserBox = Rect(content.x - radius, content.y - radius, radius * 2, radius * 2)
-        val area = areaErase()
+        val area = eraseAreaForGesture
         var changed = false
         val drawable = state.drawablePageRange()
         for (pi in state.document.pages.indices) {
@@ -1612,8 +1619,10 @@ class InteractionController(
         val toRemove = page.items.filter { EraseRule.takes(it, cx, cy, radius) }
         if (toRemove.isEmpty()) return dirty
         for (item in toRemove) {
-            page.items.remove(item)
-            eraseRemovals.add(page to item)
+            val at = page.items.indexOfFirst { it === item }
+            if (at < 0) continue
+            page.items.removeAt(at)
+            eraseRemovals.add(Triple(page, at, item))
             val b = item.paintBounds()
             dirty = dirty?.union(b) ?: b
         }
@@ -1689,11 +1698,11 @@ class InteractionController(
         return dirty
     }
 
-    private fun endErase() {
+    internal fun endErase() {
         val cmds = ArrayList<Command>()
         // A fill came off before any cut or removal of its shape, so it goes back after them.
         if (eraseUnfilled.isNotEmpty()) cmds += RefillShapes(eraseUnfilled.toList())
-        if (areaErase()) {
+        if (eraseAreaForGesture) {
             // One drag may split/trim many strokes across pages; commit each touched page's
             // net before/after as one undo step.
             eraseSnapshots.mapNotNullTo(cmds) { (page, before) ->
@@ -1701,7 +1710,7 @@ class InteractionController(
                 if (after != before) ReplacePageItems(page, before, after) else null
             }
         } else if (eraseRemovals.isNotEmpty()) {
-            cmds += EraseItems(eraseRemovals.toList())
+            cmds += EraseItems.fromSweep(eraseRemovals.toList())
         }
         cmds += eraseMarkups
         if (cmds.isNotEmpty()) {
@@ -3639,8 +3648,9 @@ class InteractionController(
     fun deleteSelection() {
         if (selection.isEmpty()) return
         val removals = selection.map { state.document.pages[it.pageIndex] to it.item }
+        val command = EraseItems.capture(removals) // before removal, while original z-slots exist
         for ((page, item) in removals) page.items.remove(item)
-        history.push(EraseItems(removals))
+        history.push(command)
         state.document.dirty = true
         // clearSelection repairs the vacated regions in place; the removed items were lifted
         // (already out of the ink cache) so they simply stop being drawn. The background/PDF
@@ -4608,7 +4618,7 @@ class InteractionController(
 
         // Eraser cursor (viewport space, after the transform is restored).
         eraserCursor?.let {
-            val radius = eraserRadius() * state.zoom
+            val radius = eraserCursorRadiusPx()
             r.strokeEllipse(it, radius, radius, Pen(state.palette.textDim, 1.3, cosmetic = true))
         }
 

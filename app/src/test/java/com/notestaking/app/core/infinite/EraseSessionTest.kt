@@ -1,6 +1,7 @@
 package com.notestaking.app.core.infinite
 
 import com.notestaking.app.core.FakeTextMeasurer
+import com.notestaking.app.core.history.History
 import com.notestaking.app.core.geometry.Pt
 import com.notestaking.app.core.geometry.Rect
 import com.notestaking.app.core.model.CanvasItem
@@ -17,6 +18,7 @@ import com.notestaking.app.core.stroke.Sample
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolDefaults
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -267,6 +269,32 @@ class EraseSessionTest {
         assertEquals(4, doc.itemCount)
         cmd.undo()
         assertEquals(before, doc.items)
+    }
+
+    @Test fun threeCrossingsMakeOneUndoEntryAndNewInkClearsRedo() {
+        val original = line(200.0)
+        val untouched = line(200.0, y = 100.0)
+        val doc = docOf(original, untouched)
+        val session = EraseSession(doc)
+        for (x in listOf(40.0, 100.0, 160.0)) {
+            assertNotNull(session.erase(x, 0.0, 8.0, area = true))
+        }
+        val fragments = doc.items.toList()
+        assertEquals("three holes leave four fragments plus the untouched stroke", 5, doc.itemCount)
+
+        val history = History()
+        history.push(session.buildCommand()!!)
+        history.undo()
+        assertEquals(listOf<CanvasItem>(original, untouched), doc.items)
+        assertFalse("the whole sweep is one undo command", history.canUndo)
+        history.redo()
+        assertEquals(fragments, doc.items)
+        history.undo()
+
+        val newInk = line(40.0, y = 200.0)
+        doc.add(newInk)
+        history.push(AddCanvasItem(doc, newInk))
+        assertFalse("new edits invalidate the previous redo branch", history.canRedo)
     }
 
     @Test fun aFragmentCutAgainStillUndoesToTheOriginal() {

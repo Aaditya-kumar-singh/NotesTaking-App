@@ -71,6 +71,41 @@ class StylusButtonLatchTest {
     }
 
     @Test
+    fun simultaneousStylusKeysReleaseIndependentlyAcrossPanes() {
+        val otherPane = StylusButtonLatch()
+        assertTrue(latch.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, down = true))
+        assertTrue(otherPane.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_SECONDARY, down = true))
+        assertTrue(otherPane.heldWith(0))
+        assertTrue(latch.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, down = false))
+        assertTrue("another held button still controls the pen", latch.heldWith(0))
+        assertTrue(otherPane.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_TERTIARY, down = false))
+        assertTrue("an unpressed key-up must not release the held button", latch.held)
+        assertTrue(otherPane.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_SECONDARY, down = false))
+        assertFalse(latch.heldWith(0))
+    }
+
+    @Test
+    fun rearEraserAndFingerCannotInheritAButtonOverride() {
+        latch.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_TAIL, down = true)
+        assertTrue(latch.heldFor(MotionEvent.TOOL_TYPE_STYLUS, 0))
+        assertFalse("the eraser nib always uses the eraser tool", latch.heldFor(MotionEvent.TOOL_TYPE_ERASER, 0))
+        assertFalse("a finger never inherits a held pen button", latch.heldFor(MotionEvent.TOOL_TYPE_FINGER, MotionEvent.BUTTON_STYLUS_PRIMARY))
+        assertFalse("a mouse never inherits a held pen button", latch.heldFor(MotionEvent.TOOL_TYPE_MOUSE, 0))
+        latch.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_TAIL, down = false)
+        assertFalse(latch.heldFor(MotionEvent.TOOL_TYPE_STYLUS, 0))
+    }
+
+    @Test
+    fun losingFocusReleasesAllHeldButtons() {
+        latch.onKey(KeyEvent.KEYCODE_F21, down = true)
+        latch.onKey(KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, down = true)
+        assertTrue(latch.held)
+        StylusButtonLatch.releaseKey()
+        assertFalse(latch.held)
+        assertFalse(latch.heldFor(MotionEvent.TOOL_TYPE_STYLUS, 0))
+    }
+
+    @Test
     fun tapKeysAndOrdinaryKeysAreNotTheButton() {
         // Honor 333, Lenovo 600-604, Huawei 718 and Redmi's page keys fire tap actions instead.
         val codes = listOf(333, 600, 604, 718, KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_A)

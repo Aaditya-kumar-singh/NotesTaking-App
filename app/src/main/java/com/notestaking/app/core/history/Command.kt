@@ -103,16 +103,46 @@ class AddItems(private val page: Page, private val items: List<CanvasItem>) : Co
 }
 
 /** Remove a set of (page, item) pairs (object erase, or delete selection). */
-class EraseItems(private val removals: List<Pair<Page, CanvasItem>>) : Command {
+class EraseItems(
+    private val removals: List<Pair<Page, CanvasItem>>,
+    private val restoreSlots: List<Triple<Page, Int, CanvasItem>>? = null,
+    private val capturedDuringRemoval: Boolean = false,
+) : Command {
     override fun redo() {
         for ((page, item) in removals) page.items.removeRef(item)
     }
 
     override fun undo() {
-        for ((page, item) in removals) if (!page.items.containsRef(item)) page.items.add(item)
+        if (restoreSlots == null) {
+            for ((page, item) in removals) if (!page.items.containsRef(item)) page.items.add(item)
+        } else {
+            // Sweep slots were captured after earlier deletions; replay those in reverse.
+            val slots = if (capturedDuringRemoval) restoreSlots.asReversed() else restoreSlots
+            for ((page, index, item) in slots) {
+                if (!page.items.containsRef(item)) page.items.add(index.coerceIn(0, page.items.size), item)
+            }
+        }
     }
 
     override fun touched(locate: (CanvasItem) -> Page?) = removals
+
+    companion object {
+        /** Capture current z-slots in removal order, so a whole-stroke drag restores exactly. */
+        fun fromSweep(removed: List<Triple<Page, Int, CanvasItem>>): EraseItems =
+            EraseItems(removed.map { it.first to it.third }, removed, capturedDuringRemoval = true)
+
+        /** Capture original z-slots before deleting a selection; retain only selected references. */
+        fun capture(removals: List<Pair<Page, CanvasItem>>): EraseItems {
+            val slots = ArrayList<Triple<Page, Int, CanvasItem>>(removals.size)
+            for ((page, items) in removals.groupBy({ it.first }, { it.second })) {
+                val selected = items.toHashSet()
+                for ((index, item) in page.items.withIndex()) {
+                    if (item in selected) slots.add(Triple(page, index, item))
+                }
+            }
+            return EraseItems(removals, slots)
+        }
+    }
 }
 
 /**

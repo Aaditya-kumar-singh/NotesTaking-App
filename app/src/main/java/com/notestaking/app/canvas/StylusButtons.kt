@@ -34,7 +34,7 @@ class StylusButtonLatch {
 
     /** True while a side button is held, from whichever stream reported it. */
     val held: Boolean
-        get() = keyHeld || motionHeld
+        get() = pressedButtonKeys.isNotEmpty() || motionHeld
 
     /**
      * Latch the button off the generic-motion (hover) stream. Returns true when a stylus event
@@ -54,7 +54,7 @@ class StylusButtonLatch {
      */
     fun onKey(keyCode: Int, down: Boolean): Boolean {
         if (!isStylusButtonKey(keyCode)) return false
-        keyHeld = down
+        if (down) pressedButtonKeys.add(keyCode) else pressedButtonKeys.remove(keyCode)
         return true
     }
 
@@ -65,21 +65,24 @@ class StylusButtonLatch {
 
     /** Whether [e] is a stylus contact with the side button down, on either route. */
     fun heldFor(e: MotionEvent): Boolean =
-        e.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS && heldWith(e.buttonState)
+        heldFor(e.getToolType(0), e.buttonState)
+
+    internal fun heldFor(toolType: Int, buttonState: Int): Boolean =
+        toolType == MotionEvent.TOOL_TYPE_STYLUS && heldWith(buttonState)
 
     internal fun heldWith(buttonState: Int): Boolean =
         (buttonState and InteractionController.STYLUS_BUTTON_MASK) != 0 || held
 
     companion object {
-        /** One pen, so one key state for every latch: its key-up can reach another pane than its key-down. */
-        private var keyHeld = false
+        /** Shared across panes; release one key without clearing another button that remains held. */
+        private val pressedButtonKeys = HashSet<Int>()
 
         /** The same pen's button clicks, kept once for the same reason; see [ButtonClick]. */
         val clicks = ButtonClick { ViewConfiguration.getLongPressTimeout().toLong() }
 
         /** Let go of a held key whose key-up may never arrive, as when the window loses focus. */
         fun releaseKey() {
-            keyHeld = false
+            pressedButtonKeys.clear()
             clicks.cancel()
         }
 
@@ -138,14 +141,17 @@ class ButtonClick(private val timeoutMs: () -> Long) {
 
     internal fun onTouch(action: Int, toolType: Int) {
         when (action) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> if (toolType == MotionEvent.TOOL_TYPE_STYLUS) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> if (penContact(toolType)) {
                 touching = true
                 touched = true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> if (toolType == MotionEvent.TOOL_TYPE_STYLUS) touching = false
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> if (penContact(toolType)) touching = false
             MotionEvent.ACTION_CANCEL -> touching = false
         }
     }
+
+    private fun penContact(toolType: Int): Boolean =
+        toolType == MotionEvent.TOOL_TYPE_STYLUS || toolType == MotionEvent.TOOL_TYPE_ERASER
 
     private companion object {
         const val NONE = -1L

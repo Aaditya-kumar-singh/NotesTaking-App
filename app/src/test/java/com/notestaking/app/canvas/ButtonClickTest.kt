@@ -48,6 +48,22 @@ class ButtonClickTest {
     }
 
     @Test
+    fun rearEraserContactPreventsAccidentalButtonClick() {
+        click.onPress(1_000)
+        click.onTouch(MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_ERASER)
+        click.onTouch(MotionEvent.ACTION_UP, MotionEvent.TOOL_TYPE_ERASER)
+        assertFalse(click.onRelease(1_120))
+    }
+
+    @Test
+    fun rearEraserAlreadyTouchingAlsoPreventsClick() {
+        click.onTouch(MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_ERASER)
+        click.onPress(1_000)
+        assertFalse(click.onRelease(1_100))
+        click.onTouch(MotionEvent.ACTION_UP, MotionEvent.TOOL_TYPE_ERASER)
+    }
+
+    @Test
     fun aFingerDoesNotSpoilAClick() {
         click.onPress(1_000)
         click.onTouch(MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_FINGER)
