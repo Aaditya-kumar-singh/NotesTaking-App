@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import com.notestaking.app.core.geometry.Affine
 import com.notestaking.app.core.geometry.Geometry
+import com.notestaking.app.core.geometry.EraserPressure
 import com.notestaking.app.core.geometry.Obb
 import com.notestaking.app.core.geometry.Pt
 import com.notestaking.app.core.geometry.Rect
@@ -373,6 +374,9 @@ class InteractionController(
     private var eraseAreaForGesture = false
     private var eraseModeForGesture = EraseMode.STROKE
     private var eraseMarkupsForGesture = false
+    private var erasePressureEnabledForGesture = false
+    private var eraseMinPressureFactorForGesture = 1.0
+    private var eraseStylusPressure: Double? = null
     /** AREA mode: each touched page's item list snapshotted on first contact this gesture, so the
      *  whole split-and-trim drag undoes/redoes as one [ReplacePageItems] step. */
     private val eraseSnapshots = linkedMapOf<Page, List<CanvasItem>>()
@@ -916,7 +920,7 @@ class InteractionController(
             effectiveTool == Tool.ERASER -> {
                 clearSelection()
                 erasingWithFinger = toolType == MotionEvent.TOOL_TYPE_FINGER
-                beginErase(vx, vy)
+                beginErase(vx, vy, if (drawingIsStylus) e.getPressure(0).toDouble() else null)
             }
             effectiveTool == Tool.SELECT -> beginSelect(content)
             effectiveTool == Tool.LASSO -> beginLasso(content)
@@ -1538,13 +1542,16 @@ class InteractionController(
     // radius as you zoom in (both the hit-test and the cursor circle derive from this).
     internal fun eraserRadius(): Double {
         val cfg = configFor(Tool.ERASER)
-        return if (cfg.scale) cfg.baseWidth else cfg.baseWidth / state.zoom
+        val base = if (cfg.scale) cfg.baseWidth else cfg.baseWidth / state.zoom
+        return if (mode == PointerMode.ERASE) {
+            EraserPressure.radius(base, erasePressureEnabledForGesture, eraseMinPressureFactorForGesture, eraseStylusPressure)
+        } else base
     }
 
     /** Same viewport-space radius for the sweep and its cursor preview. */
     internal fun eraserCursorRadiusPx(): Double = eraserRadius() * state.zoom
 
-    internal fun beginErase(vx: Double, vy: Double) {
+    internal fun beginErase(vx: Double, vy: Double, stylusPressure: Double? = null) {
         eraseRemovals.clear()
         eraseSnapshots.clear()
         eraseMarkups.clear()
@@ -1552,26 +1559,37 @@ class InteractionController(
         val eraserConfig = configFor(Tool.ERASER)
         eraseModeForGesture = eraserConfig.eraseMode
         eraseMarkupsForGesture = eraserConfig.eraseMarkups
+        erasePressureEnabledForGesture = eraserConfig.pressureEnabled
+        eraseMinPressureFactorForGesture = eraserConfig.pressureMinFactor
         eraseAreaForGesture = eraseModeForGesture == EraseMode.AREA // preserve undo representation mid-drag
         mode = PointerMode.ERASE
         previousErasePoint = null
-        eraseAlong(vx, vy)
+        eraseAlong(vx, vy, stylusPressure)
     }
 
     /** Include historical stylus positions, then bridge each gap at the current zoom. */
     private fun extendErase(e: MotionEvent, idx: Int) {
         if (e.findPointerIndex(drawingPointerId) < 0) return
         for (h in 0 until e.historySize) {
-            eraseAlong(e.getHistoricalX(idx, h).toDouble(), e.getHistoricalY(idx, h).toDouble())
+            eraseAlong(e.getHistoricalX(idx, h).toDouble(), e.getHistoricalY(idx, h).toDouble(),
+                if (drawingIsStylus) e.getHistoricalPressure(idx, h).toDouble() else null)
         }
-        eraseAlong(e.getX(idx).toDouble(), e.getY(idx).toDouble())
+        eraseAlong(e.getX(idx).toDouble(), e.getY(idx).toDouble(),
+            if (drawingIsStylus) e.getPressure(idx).toDouble() else null)
     }
 
-    internal fun eraseAlong(vx: Double, vy: Double) {
+    internal fun eraseAlong(vx: Double, vy: Double, stylusPressure: Double? = null) {
+        val beforePressure = eraseStylusPressure
+        eraseStylusPressure = stylusPressure
         val next = Pt(vx, vy)
-        com.notestaking.app.core.geometry.EraserSweep.visit(
-            previousErasePoint, next, eraserCursorRadiusPx(),
-        ) { eraseAt(it.x, it.y) }
+        if (previousErasePoint == next && beforePressure != stylusPressure) {
+            // A stationary stylus pressing harder must still grow the eraser's actual hit region.
+            eraseAt(vx, vy)
+        } else {
+            com.notestaking.app.core.geometry.EraserSweep.visit(
+                previousErasePoint, next, eraserCursorRadiusPx(),
+            ) { eraseAt(it.x, it.y) }
+        }
         previousErasePoint = next
     }
 
@@ -1741,6 +1759,8 @@ class InteractionController(
         eraseUnfilled.clear()
         eraseModeForGesture = EraseMode.STROKE
         eraseMarkupsForGesture = false
+        erasePressureEnabledForGesture = false
+        eraseStylusPressure = null
         eraserCursor = null
         previousErasePoint = null
         mode = PointerMode.IDLE
