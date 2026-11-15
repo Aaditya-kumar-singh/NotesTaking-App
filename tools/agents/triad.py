@@ -196,12 +196,39 @@ def next_tasks(db, slot: str, session: str, data: dict, include_optional=False):
     ][:10]
 
 
-def claim(db, slot, session, task_id, data):
+def legacy_review_lineage(db: sqlite3.Connection, slot: str, repo: Path) -> str | None:
+    """A pending A/B handoff locks its own SHA, not unrelated local task work."""
+    if slot not in ("A", "B"):
+        return None
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='claims'").fetchone():
+        return None
+    row = db.execute(
+        "SELECT phase,agent,worktree,branch,commit_sha FROM claims WHERE task_id=?",
+        ("LANE-" + slot,),
+    ).fetchone()
+    if not row or row["phase"] != "review":
+        return None
+    checkpoint = row["commit_sha"]
+    if row["agent"] != "chat-" + slot.lower() or row["branch"] != BRANCHES[slot][1]:
+        raise Blocked("Legacy reviewed checkpoint has a different slot owner or branch")
+    if not row["worktree"] or Path(row["worktree"]).resolve() != repo.resolve():
+        raise Blocked("Legacy checkpoint belongs to a different worktree")
+    if not checkpoint or not re.fullmatch(r"[0-9a-f]{40}", checkpoint):
+        raise Blocked("Legacy handoff SHA is missing or invalid")
+    if git(repo, "status", "--porcelain"):
+        raise Blocked("Commit or resolve local edits before claiming another task")
+    # New local commits must preserve the exact reviewed checkpoint as an ancestor.
+    git(repo, "merge-base", "--is-ancestor", checkpoint, "HEAD")
+    return checkpoint
+
+
+def claim(db, slot, session, task_id, data, repo: Path | None = None):
     t = catalog_tasks(data).get(task_id)
     if not t or t["owner"] != slot:
         raise Blocked("Task missing or not routed to this slot; request coordinator allocation")
     with transaction(db):
         assert_session(db, slot, session)
+        preserved = legacy_review_lineage(db, slot, repo) if repo is not None else None
         if db.execute("SELECT 1 FROM triad_tasks WHERE slot=? AND status='active'", (slot,)).fetchone():
             raise Blocked("This slot already has an active task; hand it off first")
         r = db.execute("UPDATE triad_tasks SET status='active',slot=?,session=?,updated_at=? "
@@ -210,7 +237,9 @@ def claim(db, slot, session, task_id, data):
         if r.rowcount != 1:
             raise Blocked("Task was concurrently claimed, reviewed or deferred")
         emit(db, slot, "task-claim", task_id)
-    return {"task": task_id, "slot": slot, "status": "active"}
+    return {"task": task_id, "slot": slot, "status": "active",
+            "legacy_handoff_unchanged": preserved,
+            "note": "Local task claim only; existing review and CI gates are unchanged."}
 
 
 def handoff(db, slot, session, task_id, commit, evidence, repo):
@@ -586,7 +615,7 @@ def main() -> int:
             out = touch(db, args.slot, args.session)
         elif args.command == "claim":
             assert_worktree(args.slot, repo)
-            out = claim(db,args.slot,args.session,args.task,data)
+            out = claim(db,args.slot,args.session,args.task,data,repo)
         elif args.command == "handoff":
             out = handoff(db,args.slot,args.session,args.task,args.commit,args.evidence,repo)
         elif args.command == "approve":

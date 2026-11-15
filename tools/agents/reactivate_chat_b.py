@@ -30,8 +30,8 @@ def reactivate(handoff: str, integration: str, run_id: int, dry_run: bool) -> di
         raise coord.Blocked("Chat B's approved worktree changed")
     if coord.git(WORKTREE, "branch", "--show-current") != agent["branch"]:
         raise coord.Blocked("Chat B branch does not match its reservation")
-    if coord.git(WORKTREE, "rev-parse", "HEAD") != handoff:
-        raise coord.Blocked("Chat B HEAD changed since the reviewed handoff")
+    # Future local commits do not invalidate the immutable reviewed checkpoint.
+    coord.git(WORKTREE, "merge-base", "--is-ancestor", handoff, "HEAD")
     if coord.git(WORKTREE, "status", "--porcelain"):
         raise coord.Blocked("Chat B worktree is not clean")
     # The coordinator may have the next local batch staged atop the published integration.
@@ -86,7 +86,7 @@ def reactivate(handoff: str, integration: str, run_id: int, dry_run: bool) -> di
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--handoff", required=True, help="Full reviewed Chat B HEAD SHA")
+    p.add_argument("--handoff", required=True, help="Full immutable Chat B handoff SHA (may be ancestor of current HEAD)")
     p.add_argument("--integration", required=True, help="Full exact-SHA developer integration")
     p.add_argument("--ci-run", required=True, type=int, help="Reviewed successful Android CI run ID")
     p.add_argument("--dry-run", action="store_true")

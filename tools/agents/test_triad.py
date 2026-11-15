@@ -123,6 +123,68 @@ class TriadTests(unittest.TestCase):
         self.assertFalse(self.db.execute("SELECT * FROM triad_publish").fetchone())
 
 
+    def test_pending_legacy_review_does_not_block_next_owned_local_task(self):
+        checkpoint="e"*40
+        repo=triad.ROOT / ".agent-worktrees" / "chat-b"
+        self.db.execute(
+            "CREATE TABLE claims(task_id TEXT PRIMARY KEY,phase TEXT,agent TEXT,"
+            "worktree TEXT,branch TEXT,commit_sha TEXT)")
+        self.db.execute(
+            "INSERT INTO claims VALUES(?,?,?,?,?,?)",
+            ("LANE-B","review","chat-b",str(repo),
+             "agent/chat-b-g08-toolbar-accessibility",checkpoint))
+        calls=[]
+        def simulated_git(_repo,*args):
+            calls.append(args)
+            if args == ("status","--porcelain"):
+                return ""
+            if args == ("merge-base","--is-ancestor",checkpoint,"HEAD"):
+                return ""
+            raise AssertionError(f"unexpected Git call: {args!r}")
+        task = self.ids("B")[0]
+        with patch.object(triad,"git",side_effect=simulated_git):
+            result = triad.claim(self.db,"B","legacy-b",task,self.data,repo)
+        self.assertEqual(result["legacy_handoff_unchanged"], checkpoint)
+        self.assertIn(("merge-base","--is-ancestor",checkpoint,"HEAD"),calls)
+        legacy=self.db.execute("SELECT phase,commit_sha FROM claims WHERE task_id='LANE-B'").fetchone()
+        self.assertEqual((legacy["phase"],legacy["commit_sha"]),("review",checkpoint))
+
+    def test_legacy_review_requires_clean_descendant_not_rewritten_head(self):
+        checkpoint="f"*40
+        repo=triad.ROOT / ".agent-worktrees" / "chat-b"
+        self.db.execute(
+            "CREATE TABLE claims(task_id TEXT PRIMARY KEY,phase TEXT,agent TEXT,"
+            "worktree TEXT,branch TEXT,commit_sha TEXT)")
+        self.db.execute(
+            "INSERT INTO claims VALUES(?,?,?,?,?,?)",
+            ("LANE-B","review","chat-b",str(repo),
+             "agent/chat-b-g08-toolbar-accessibility",checkpoint))
+        task=self.ids("B")[0]
+        def rewritten_checkpoint(_repo,*args):
+            if args == ("status","--porcelain"):
+                return ""
+            if args == ("merge-base","--is-ancestor",checkpoint,"HEAD"):
+                raise triad.Blocked("checkpoint is not ancestor")
+            raise AssertionError(f"unexpected Git call {args!r}")
+        with patch.object(triad,"git",side_effect=rewritten_checkpoint):
+            with self.assertRaises(triad.Blocked):
+                triad.claim(self.db,"B","legacy-b",task,self.data,repo)
+        self.assertEqual(
+            self.db.execute("SELECT status FROM triad_tasks WHERE task_id=?",(task,)).fetchone()[0],
+            "pending")
+
+    def test_reviewed_task_does_not_block_unrelated_next_task_same_slot(self):
+        tasks=self.ids("C")[:2]
+        self.db.execute("UPDATE triad_slots SET session='new-c' WHERE slot='C'")
+        triad.claim(self.db,"C","new-c",tasks[0],self.data)
+        self.db.execute("UPDATE triad_tasks SET status='review' WHERE task_id=?", (tasks[0],))
+        next_task=triad.claim(self.db,"C","new-c",tasks[1],self.data)
+        self.assertEqual(next_task["status"],"active")
+        self.assertEqual(
+            self.db.execute("SELECT status FROM triad_tasks WHERE task_id=?",(tasks[0],)).fetchone()[0],
+            "review")
+
+
     def test_batch_ready_requires_all_five_reviews_or_deferrals(self):
         self.assertFalse(triad.batch_ready(self.db,"A",self.data)["ready_for_integration_review"])
         self.assertEqual(len(triad.batch_ready(self.db,"A",self.data)["remaining"]),5)
