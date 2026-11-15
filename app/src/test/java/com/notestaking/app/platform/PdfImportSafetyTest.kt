@@ -240,6 +240,16 @@ class PdfImportSafetyTest {
         assertFalse(PdfImportSafety.canAppendPageSizes(floatArrayOf(595f, Float.POSITIVE_INFINITY), one))
     }
 
+    @Test fun subsetAndClipboardGeometryRejectMalformedPagesEvenWithMatchingPageCount() {
+        val valid = floatArrayOf(612f, 792f, 842f, 595f) // portrait and landscape
+        assertArrayEquals(valid, PdfImportSafety.completePageSizes(2, valid)!!, 0f)
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(612f, 792f, 0f, 595f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(612f, 792f, Float.NaN, 595f)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(612f, 792f, 842f, Float.POSITIVE_INFINITY)))
+        assertNull(PdfImportSafety.completePageSizes(2, floatArrayOf(612f, 792f)))
+        assertNull(PdfImportSafety.completePageSizes(2, valid + floatArrayOf(100f, 100f)))
+    }
+
     @Test fun guardsPageCountAndMalformedPageDimensions() {
         assertFalse(PdfImportSafety.acceptsPageCount(0))
         assertTrue(PdfImportSafety.acceptsPageCount(1))

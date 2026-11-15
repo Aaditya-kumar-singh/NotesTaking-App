@@ -7083,7 +7083,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             withContext(Dispatchers.IO) {
                 val extra = cargoPdf(clip.cargo, clip.sourcePdf) ?: return@withContext null
                 val read = com.notestaking.app.platform.PdfSource.open(extra)
-                val sizes = try { read.allPageSizePoints() } finally { read.close() } ?: return@withContext null
+                val sizes = try {
+                    com.notestaking.app.platform.PdfImportSafety.completePageSizes(read.pageCount, read.allPageSizePoints())
+                } finally { read.close() } ?: return@withContext null
                 joinFile(extra, sizes, base, baseSource)
             }
         } finally {
@@ -7313,7 +7315,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** Every page's size in points of the PDF at [file], or null when it does not read. IO. */
     private fun pdfSizesOf(file: java.io.File): FloatArray? {
         val read = com.notestaking.app.platform.PdfSource.open(file)
-        return try { read.allPageSizePoints() } finally { read.close() }
+        return try {
+            com.notestaking.app.platform.PdfImportSafety.completePageSizes(read.pageCount, read.allPageSizePoints())
+        } finally { read.close() }
     }
 
     /** The name Extract suggests for the pages at [indices]: the note's, then which pages or how many. */
