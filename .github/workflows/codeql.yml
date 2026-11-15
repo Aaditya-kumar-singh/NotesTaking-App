@@ -10,7 +10,8 @@ on:
     paths: [".github/workflows/codeql.yml"]
     types: [opened, reopened, synchronize, ready_for_review]
   push:
-    branches: [master, main]
+    # Allow isolated validation of CodeQL fixes before the protected branches change.
+    branches: [master, main, 'qa/codeql-ci-*']
     paths:
       - "app/src/main/java/**"
       - "app/src/test/java/**"
@@ -33,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -70,8 +71,8 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          # CodeQL targets JVM sources; Android CI already validates native libraries and APKs.
-          ./gradlew --no-daemon --stacktrace --max-workers=2 \
+          # A cached JVM build leaves CodeQL with no sources: always recompile under the extractor.
+          ./gradlew --no-daemon --no-build-cache --rerun-tasks --stacktrace --max-workers=2 \
             :app:compileDebugKotlin :app:compileDebugJavaWithJavac
 
       - name: Upload CodeQL findings to GitHub code scanning
