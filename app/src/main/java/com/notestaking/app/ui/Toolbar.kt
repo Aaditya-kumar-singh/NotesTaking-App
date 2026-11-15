@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.tools.Tool
+import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.ToolConfig
 import com.notestaking.app.core.tools.ToolConversions
 import com.notestaking.app.core.tools.ToolbarItem
@@ -619,6 +620,12 @@ internal fun toolbarActionLabel(active: Boolean, hint: String?, explicitLabel: S
     explicitLabel ?: hint.takeIf { active }
 
 /** Keep the live eraser mode and brush size audible in both editor toolbars. */
+internal fun eraserModeLabelRes(mode: EraseMode): Int = when (mode) {
+    EraseMode.STROKE -> R.string.eraser_stroke
+    EraseMode.AREA -> R.string.eraser_area
+    EraseMode.MARKER -> R.string.eraser_marker
+}
+
 internal fun eraserAccessibilityText(name: String, mode: String, sizeLabel: String, size: Double): String =
     "$name: $mode, $sizeLabel: $size"
 
@@ -627,7 +634,7 @@ internal fun eraserToolbarDescription(host: ToolPopupHost): String {
     val config = host.toolConfig(Tool.ERASER)
     return eraserAccessibilityText(
         stringResource(R.string.tool_eraser),
-        stringResource(if (config.eraseMode == com.notestaking.app.core.tools.EraseMode.AREA) R.string.eraser_area else R.string.eraser_stroke),
+        stringResource(eraserModeLabelRes(config.eraseMode)),
         stringResource(R.string.caption_size),
         config.baseWidth,
     )

@@ -192,6 +192,7 @@
     <string name="title_eraser">Eraser</string>
     <string name="eraser_stroke">Stroke</string>
     <string name="eraser_area">Area</string>
+    <string name="eraser_marker">Highlighter only</string>
     <string name="caption_size">Size</string>
     <string name="caption_switch_back">Switch back</string>
     <string name="caption_erase_markups">Erase PDF text markups</string>

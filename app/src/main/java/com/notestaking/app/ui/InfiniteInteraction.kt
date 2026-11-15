@@ -174,6 +174,7 @@ class InfiniteInteraction(
     private val stylusButtons = StylusButtonLatch()
 
     private var eraseSession: EraseSession? = null
+    private var eraseModeForGesture = EraseMode.STROKE
     private var previousErasePoint: Pt? = null
 
     // The shape being dragged out with the shape tool.
@@ -1850,10 +1851,11 @@ class InfiniteInteraction(
         return if (cfg.scale) cfg.baseWidth else cfg.baseWidth / viewport.zoom
     }
 
-    private fun areaErase(): Boolean = configFor(Tool.ERASER).eraseMode == EraseMode.AREA
+    // Keep the mode fixed from pen down until the drag is committed.
 
     private fun beginErase(vx: Double, vy: Double) {
         eraseSession = onEraseBegin() ?: return
+        eraseModeForGesture = configFor(Tool.ERASER).eraseMode
         mode = CanvasPointerMode.ERASE
         previousErasePoint = null
         eraseAlong(vx, vy)
@@ -1882,7 +1884,7 @@ class InfiniteInteraction(
         val session = eraseSession ?: return
         onEraserCursor(Pt(vx, vy), eraserRadius() * viewport.zoom)
         val content = viewport.viewportToContent(Pt(vx, vy))
-        session.erase(content.x, content.y, eraserRadius(), areaErase())
+        session.erase(content.x, content.y, eraserRadius(), eraseModeForGesture)
         requestRender()
     }
 

@@ -1,9 +1,33 @@
 package com.notestaking.app.ui
 
+import com.notestaking.app.R
+import com.notestaking.app.core.tools.EraseMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EraserToolbarDescriptionTest {
+    @Test fun everyEraserModeHasItsOwnLocalizedLabel() {
+        assertEquals(R.string.eraser_stroke, eraserModeLabelRes(EraseMode.STROKE))
+        assertEquals(R.string.eraser_area, eraserModeLabelRes(EraseMode.AREA))
+        assertEquals(R.string.eraser_marker, eraserModeLabelRes(EraseMode.MARKER))
+    }
+
+    @Test fun markerModeIsAvailableToBothEraserSurfaces() {
+        fun source(relative: String): String = listOf(
+            java.io.File("src/main/java/com/notestaking/app/ui/$relative"),
+            java.io.File("app/src/main/java/com/notestaking/app/ui/$relative"),
+        ).first { it.isFile }.readText()
+        val popup = source("Popups.kt")
+        assertTrue(popup.contains("eraseMode = EraseMode.MARKER; emit()"))
+        assertTrue(popup.contains("R.string.eraser_marker"))
+        val infinite = source("InfiniteInteraction.kt")
+        assertTrue(infinite.contains("eraseModeForGesture = configFor(Tool.ERASER).eraseMode"))
+        assertTrue(infinite.contains("session.erase(content.x, content.y, eraserRadius(), eraseModeForGesture)"))
+        assertFalse(infinite.contains("session.erase(content.x, content.y, eraserRadius(), areaErase())"))
+    }
+
     @Test fun modeAndSizeAreIncludedInSpokenLabel() {
         assertEquals(
             "Eraser: Area, Size: 24.0",
