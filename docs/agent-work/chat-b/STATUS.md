@@ -900,4 +900,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Known out-of-ownership issues:** `CanvasWaypointsPopup.kt` Fit All under zoom lock and `PreferencesPane.kt` keyboard section reorder require Chat A/coordinator allocation. NP-089/NP-090/NP-092 cannot be marked fully accepted on source-only evidence. No push, merge, PR or protected-branch edits.
 
-**Forty-second implementation commit:** `c1e71efb01c3d5f7a476e7cedc8f5019a099f12e`. **Forty-second STATUS-only handoff commit:** immediately following local commit. **PUSH: NO / MERGE: NO / PR: NO.****
+**Forty-second implementation commit:** `c1e71efb01c3d5f7a476e7cedc8f5019a099f12e`. **Forty-second STATUS-only handoff commit:** `5280eaffa4d539d6749ce5cbfb2aab2e151f5e00`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Forty-third G08 checkpoint — NP-090 keyboard focus indication for sticker picker tiles (2026-11-15)
+
+**Observed gap:** `Toolbar.kt:StickerTile` exposes its 72dp preview and `combinedClickable` with both insertion and long-press removal, plus a TalkBack label, but lacks any visible keyboard-focus outline. Unlike nearby `ToolbarIcon`, `Swatch` and text actions, keyboard users cannot easily see which tile is focused before pressing Enter or the remove shortcut.
+
+**Smallest owned fix:** Reused the existing `toolbarFocusOutline(MaterialTheme.shapes.small)` modifier immediately after the sticker's `.size(72.dp)` and before its clip. The default 72dp hit target, border, label semantics, combined click/long-click callbacks, asynchronous preview and menu insertion/removal logic remain unchanged. One line in the owned `app/src/main/java/com/notestaking/app/ui/Toolbar.kt`; no new colors, strings, dependencies or UI abstractions.
+
+**Verification performed:** `python tools/agents/check_lane.py` PASS (21 changed owned paths since baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 Kotlin test sources, 22 XML, 39 PNG, zero issues); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS. Focused Python source assertions PASS for outline order, label, insert and remove callbacks, thumbnail decoding path. No new JUnit test for a one-line visual modifier. No Gradle, JVM/JUnit, Compose compilation, Android CI or APK/device tests run.
+
+**Required acceptance on device:** Open the sticker picker with a populated library, use hardware Tab/Shift+Tab to navigate tiles and confirm a visible, non-clipped focus outline at 1.3x/2x text scaling and in 240dp/320dp split panes. Press Enter/Space to insert a sticker, use TalkBack to locate and invoke Remove, confirm long-press removal still works and focus stays visible while the grid scrolls. Repeat with zero stickers and mouse/stylus hover. The one-line focus change is not full NP-089/090/092 acceptance; integrated CI and device QA remain outstanding.
+
+**Ownership/risk:** The section keyboard reorder in `PreferencesPane.kt` and zoom-lock Fit All in `CanvasWaypointsPopup.kt` remain Chat A/coordinator-owned. No protected branch, push, PR or merge.
+
+**Forty-third implementation commit:** `003fbd01aa9923dbbc45628a9a883fc48f57b2e5`. **Forty-third STATUS-only handoff commit:** following local commit. **PUSH: NO / MERGE: NO / PR: NO.**
