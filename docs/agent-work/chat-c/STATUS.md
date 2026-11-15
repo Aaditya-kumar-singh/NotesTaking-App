@@ -51,6 +51,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/infinite/EraseSessionTest.kt` regressions for a long sparse hit stroke with an adjacent untouched line and a locked line, exact one-command Undo/Redo order, and malformed eraser input under both modes.
 - Source-only checks, privacy/ownership/whitespace and A-Z integrity required before local commit. Android CI exact SHA, Kotlin execution, and real stylus stroke/sweep tests (NT-032) remain pending and are not to be marked passed.
 
+## NP-047 — dense-ink area eraser flicker (Batch B, P0)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `5cc3fb71b5eb4bbf02dc4b824779f1b66ba461b6` (NP-040 handed off in review). Claimed next independent P0 under updated nonblocking three-chat protocol.
+- Reviewed paged area eraser `InteractionController.eraseAt/eraseAreaFromPage`, `CanvasState` async ink/sharp caches, `CanvasView` blitting, shared `EraserSweep`, `UndoCacheRepairTest`, `PlaybackFadeCacheTest`, and 30-page S Pen NT-038 requirement. Existing B15 bounded repaint retained; no Android renderer or other lane files modified.
+- Source fix: while a previously uncached page has its initial `scheduleInk` job in flight, `repairRegion` now queues the dirty area for replay at the job's existing guarded publish rather than returning false and forcing `invalidatePage` to discard the in-flight build. Edits still replay against the current page items and cannot revive erased strokes.
+- Added `canvas/UndoCacheRepairTest.kt` source regression with a held async job: erase during cold build, assert no redundant build, publish once, replay the clear without painting the removed dot, and retain the resulting cache. This addresses a definite blank-frame latency path, not a claim that all dense-PDF flicker is fixed.
+- Source, A-Z, privacy, ownership, whitespace checks required. GitHub exact-SHA Kotlin/Android CI and real 30-page dense PDF erasing with stylus (NT-038) are still unverified; do not mark the batch or device gate complete.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

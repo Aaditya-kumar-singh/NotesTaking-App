@@ -1460,14 +1460,16 @@ class CanvasState(
      * items overlapping it, so the cost scales with the dirty area, not the page. The
      * separate background layer is untouched, so this works for PDF pages too.
      *
-     * Returns false when there is no live cache to repair; the caller should then
-     * [invalidatePage] for a full rebuild.
+     * Returns false only when no live cache or pending build can accept the repair;
+     * the caller should then [invalidatePage] for a full rebuild.
      */
     fun repairRegion(page: Page, dirtyRect: Rect): Boolean {
         repairSharpInk(page, dirtyRect) // erase from the sharp ink layer in place, no re-render
         if (pendingSharp) pendingSharpEdits.add(page to dirtyRect)
-        val entry = caches[page] ?: return false
-        repaintCached(entry, page, dirtyRect)
+        val entry = caches[page]
+        if (entry == null && page !in pendingInk) return false
+        // A cold cache is already building: replay the erase at publish instead of discarding that build.
+        if (entry != null) repaintCached(entry, page, dirtyRect)
         if (page in pendingInk) repairedMeanwhile[page] = repairedMeanwhile[page]?.union(dirtyRect) ?: dirtyRect
         return true
     }
