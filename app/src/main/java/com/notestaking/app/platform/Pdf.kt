@@ -172,6 +172,7 @@ object PdfExporter {
         flow: FlowExport = FlowExport.NONE,
         title: String = doc.title,
         headingBookmarks: Boolean = true,
+        editableInkAnnotations: Boolean = false,
     ) {
         // Text fonts read PdfBox's glyph list, which only loads once the resource loader is set up.
         PDFBoxResourceLoader.init(context.applicationContext)
@@ -184,13 +185,14 @@ object PdfExporter {
         val srcDoc = if (file != null) loadSource(file, mem) else null
         // A PDF background we can't parse with PdfBox: keep the working framework rasterizer.
         if (file != null && srcDoc == null) {
+            if (editableInkAnnotations) throw java.io.IOException("Editable PDF export needs a readable vector source")
             exportRasterized(doc, source, sink, paperColor, paintRuling, onProgress, isCancelled, flow)
             sink.flush()
             return
         }
         val tags = if (file == null) tagSetup(context, title) else null
         try {
-            exportVector(doc, srcDoc, sink, paperColor, paintRuling, onProgress, isCancelled, mem, flow, tags, headingBookmarks)
+            exportVector(doc, srcDoc, sink, paperColor, paintRuling, onProgress, isCancelled, mem, flow, tags, headingBookmarks, editableInkAnnotations)
         } finally {
             srcDoc?.runCatching { close() }
         }
@@ -223,6 +225,7 @@ object PdfExporter {
         flow: FlowExport,
         tags: PdfTags.Setup?,
         headingBookmarks: Boolean,
+        editableInkAnnotations: Boolean,
     ) {
         val s = 72.0 / doc.dpi
         val total = doc.pages.size
@@ -246,12 +249,12 @@ object PdfExporter {
                     // Flow text counts as content too: a typed-only page must still annotate, and so
                     // must a margined one — its extra paper is written by growing the page's boxes.
                     if (page.items.isNotEmpty() || flow.bounds(page) != null || !ins.isZero) {
-                        frames[index] = annotatePage(ctx, srcDoc.getPage(index), page, ins, s, paintRuling, flow)
+                        frames[index] = annotatePage(ctx, srcDoc.getPage(index), page, ins, s, paintRuling, flow, editableInkAnnotations)
                     } else if (page.markups.isNotEmpty()) {
                         srcDoc.getPage(index).let { pd -> PdfMarkups.write(ctx, pd, page.markups, sourceFrame(pd, s)) }
                     }
                 } else {
-                    frames[index] = vectorBlankPage(ctx, page, ins, s, paperColor, paintRuling, flow) // a blank note page appended after the PDF
+                    frames[index] = vectorBlankPage(ctx, page, ins, s, paperColor, paintRuling, flow, editableInkAnnotations) // a blank note page appended after the PDF
                 }
                 PdfItemRaster.releaseInkGeometry(page.items)
                 onProgress(index + 1, total)
@@ -283,9 +286,9 @@ object PdfExporter {
                 val srcIdx = page.pdfPage
                 val ins = page.insets(doc)
                 frames[index] = if (srcIdx != null && srcDoc != null && srcIdx in 0 until srcDoc.numberOfPages) {
-                    vectorImportedPage(ctx, srcDoc, srcIdx, page, ins, s, paintRuling, flow)
+                    vectorImportedPage(ctx, srcDoc, srcIdx, page, ins, s, paintRuling, flow, editableInkAnnotations)
                 } else {
-                    vectorBlankPage(ctx, page, ins, s, paperColor, paintRuling, flow)
+                    vectorBlankPage(ctx, page, ins, s, paperColor, paintRuling, flow, editableInkAnnotations)
                 }
                 PdfItemRaster.releaseInkGeometry(page.items)
                 onProgress(index + 1, total)
@@ -342,11 +345,11 @@ object PdfExporter {
     }
 
     /** Copy a source page in as vector, then overlay its ruling + annotations; returns where it drew. */
-    private fun vectorImportedPage(ctx: PdfExportContext, srcDoc: PDDocument, srcIdx: Int, page: Page, ins: PageInsets, s: Double, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport): PageFrame {
+    private fun vectorImportedPage(ctx: PdfExportContext, srcDoc: PDDocument, srcIdx: Int, page: Page, ins: PageInsets, s: Double, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport, editableInkAnnotations: Boolean): PageFrame {
         val pdfPage = ctx.doc.importPage(srcDoc.getPage(srcIdx))
         ownAnnotations(pdfPage)
         turnAsShown(pdfPage, page)
-        return annotatePage(ctx, pdfPage, page, ins, s, paintRuling, flow)
+        return annotatePage(ctx, pdfPage, page, ins, s, paintRuling, flow, editableInkAnnotations)
     }
 
     /** Turn [pdfPage], a source page in the export, as far past its own /Rotate as the note shows it. */
@@ -368,12 +371,12 @@ object PdfExporter {
      * Append [page]'s ruling + annotations as a new content stream over an existing [pdfPage] of the
      * export, then its markups; returns where it drew.
      */
-    private fun annotatePage(ctx: PdfExportContext, pdfPage: PDPage, page: Page, ins: PageInsets, s: Double, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport): PageFrame {
+    private fun annotatePage(ctx: PdfExportContext, pdfPage: PDPage, page: Page, ins: PageInsets, s: Double, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport, editableInkAnnotations: Boolean): PageFrame {
         val frame = sourceFrame(pdfPage, s)
         val cover = footprintOf(page, ins)
         growPageBox(pdfPage, frame, cover, ins)
         PDPageContentStream(ctx.doc, pdfPage, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-            paintItems(cs, ctx, pdfPage, page, frame, cover, paintRuling, flow)
+            paintItems(cs, ctx, pdfPage, page, frame, cover, paintRuling, flow, editableInkAnnotations)
         }
         PdfMarkups.write(ctx, pdfPage, page.markups, frame)
         return frame
@@ -403,7 +406,7 @@ object PdfExporter {
     }
 
     /** A note page with no PDF background: blank page filled with the paper colour, then ruling + annotations and markups; returns where it drew. */
-    private fun vectorBlankPage(ctx: PdfExportContext, page: Page, ins: PageInsets, s: Double, paperColor: (Page) -> Rgba, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport): PageFrame {
+    private fun vectorBlankPage(ctx: PdfExportContext, page: Page, ins: PageInsets, s: Double, paperColor: (Page) -> Rgba, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport, editableInkAnnotations: Boolean): PageFrame {
         val wPts = ((ins.left + page.width + ins.right) * s).toFloat().coerceAtLeast(1f)
         val hPts = ((ins.top + page.height + ins.bottom) * s).toFloat().coerceAtLeast(1f)
         val pdfPage = PDPage(PDRectangle(wPts, hPts))
@@ -417,22 +420,26 @@ object PdfExporter {
             cs.addRect(0f, 0f, wPts, hPts)
             cs.fill()
             if (ctx.tags != null) cs.appendRawCommands("EMC\n")
-            paintItems(cs, ctx, pdfPage, page, frame, footprintOf(page, ins), paintRuling, flow)
+            paintItems(cs, ctx, pdfPage, page, frame, footprintOf(page, ins), paintRuling, flow, editableInkAnnotations)
         }
         PdfMarkups.write(ctx, pdfPage, page.markups, frame)
         return frame
     }
 
     /** Draw a page's ruling (behind ink), the flow text, then its items in z-order, where [frame] puts them; [cover] is its paper. */
-    private fun paintItems(cs: PDPageContentStream, ctx: PdfExportContext, pdfPage: PDPage, page: Page, frame: PageFrame, cover: Rect, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport) {
+    private fun paintItems(cs: PDPageContentStream, ctx: PdfExportContext, pdfPage: PDPage, page: Page, frame: PageFrame, cover: Rect, paintRuling: (Page, Renderer) -> Unit, flow: FlowExport, editableInkAnnotations: Boolean) {
         val renderer = PdfBoxRenderer(cs, ctx, pdfPage, frame.ox, frame.oy, frame.s, frame.turn)
         renderer.beginMark(Mark.Decoration)
         paintRuling(page, renderer) // page ruling sits behind the ink
         renderer.endMark()
-        PageLayers.paint(page.items.forExport(), {
+        val printable = page.items.forExport()
+        val editable = if (editableInkAnnotations) PdfInkAnnotations.trailing(printable) else emptyList()
+        val detached = editable.toSet()
+        PageLayers.paint(printable, {
             flow.paint(page, renderer, cover, tagged = ctx.tags != null)
             for (link in flow.links(page)) renderer.addFlowLink(link)
         }) { item ->
+            if (item in detached) return@paint
             renderer.beginMark(PdfTags.markOf(item))
             if (PdfItemRaster.needsRaster(item)) {
                 PdfItemRaster.item(item, cover)?.let { raster ->
@@ -447,6 +454,7 @@ object PdfExporter {
             renderer.endMark()
         }
         renderer.endPage()
+        PdfInkAnnotations.write(ctx.doc, pdfPage, editable, frame)
     }
 
     /** [page]'s whole paper in page space, margins included (negative on a margined edge). */

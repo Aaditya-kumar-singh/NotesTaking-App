@@ -2677,6 +2677,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         out: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> },
         isCancelled: () -> Boolean = { false },
+        editableInkAnnotations: Boolean = false,
     ) {
         // A private PdfSource, not the live [pdfSource], which a note switch mid-export would
         // close. A plain note has no PDF and renders identically.
@@ -2690,6 +2691,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 flow = flowExportHooks(state.document),
                 title = title,
                 headingBookmarks = settings.prefs.pdfHeadingBookmarks,
+                editableInkAnnotations = editableInkAnnotations,
             )
         } finally {
             src?.close()
@@ -7538,6 +7540,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         out: OutputStream,
         onProgress: (Int, Int) -> Unit = { _, _ -> },
         isCancelled: () -> Boolean = { false },
+        editableInkAnnotations: Boolean = false,
     ) {
         val doc = state.document
         val pages = com.notestaking.app.platform.ExportPageSelection.resolve(doc.pages.toList(), indices)
@@ -7559,6 +7562,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
                 flow = flowExportHooks(doc),
                 title = title,
                 headingBookmarks = settings.prefs.pdfHeadingBookmarks,
+                editableInkAnnotations = editableInkAnnotations,
             )
         } finally {
             src?.close()
