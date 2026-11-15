@@ -34,8 +34,8 @@ def reactivate(handoff: str, integration: str, run_id: int, dry_run: bool) -> di
         raise coord.Blocked("Chat B HEAD changed since the reviewed handoff")
     if coord.git(WORKTREE, "status", "--porcelain"):
         raise coord.Blocked("Chat B worktree is not clean")
-    if coord.git(ROOT, "rev-parse", "HEAD") != integration:
-        raise coord.Blocked("Coordinator checkout is not at the reviewed integration SHA")
+    # The coordinator may have the next local batch staged atop the published integration.
+    coord.git(ROOT, "merge-base", "--is-ancestor", integration, "HEAD")
     remote = coord.git(ROOT, "ls-remote", "origin", "refs/heads/developer").split()[0]
     if remote != integration:
         raise coord.Blocked("Remote developer is not at the reviewed integration SHA")
@@ -44,7 +44,7 @@ def reactivate(handoff: str, integration: str, run_id: int, dry_run: bool) -> di
     if not db_path.is_file():
         raise coord.Blocked("Existing coordinator claims database not found")
     evidence = (
-        f"Checkpoint 41 handoff {handoff} reviewed; developer integration {integration}; "
+        f"Reviewed Chat B handoff {handoff}; developer integration {integration}; "
         f"GitHub Android CI https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/{run_id} "
         "completed successfully (source/privacy and Kotlin tests/lint/debug APK); "
         "physical keyboard, TalkBack and stylus acceptance remain pending"
@@ -67,7 +67,7 @@ def reactivate(handoff: str, integration: str, run_id: int, dry_run: bool) -> di
                 db.rollback()
                 return {"status": "eligible", "task": "LANE-B", "handoff": handoff,
                         "integration": integration, "ci_run": run_id, "changed": False}
-            note = f"Checkpoint 41 reviewed on developer {integration}; resume owned G08 work; device QA pending"
+            note = f"Reviewed handoff {handoff} on developer {integration}; resume owned G08 work; device QA pending"
             cur = db.execute(
                 "UPDATE claims SET phase='active', note=?, evidence=NULL, heartbeat_at=? "
                 "WHERE task_id='LANE-B' AND agent='chat-b' AND phase='review' AND commit_sha=?",
