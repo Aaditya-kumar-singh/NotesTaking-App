@@ -2126,16 +2126,13 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         }
     }
 
-    /** Navigate to the page an outline [entry] points at: the note page whose [Page.pdfPage] is the
-     *  entry's source PDF page, falling back to the nearest preceding imported page so an entry into a
-     *  trimmed import still lands somewhere. No-op when the entry has no resolvable page. */
+    /** Resolve the active PDF outline by source-page number, even after native-page reordering. */
+    fun outlinePageIndex(entry: com.notestaking.app.platform.PdfOutlineEntry): Int? =
+        if (toc.any { it === entry }) com.notestaking.app.platform.PageNavigation.outlineTarget(state.document.pages, entry.destPage)
+        else null
+
     fun goToTocEntry(entry: com.notestaking.app.platform.PdfOutlineEntry) {
-        val dest = entry.destPage
-        if (dest < 0) return
-        val pages = state.document.pages
-        val exact = pages.indexOfFirst { it.pdfPage == dest }
-        val target = if (exact >= 0) exact else pages.indexOfLast { (it.pdfPage ?: -1) in 0..dest }
-        if (target >= 0) goToPage(target)
+        outlinePageIndex(entry)?.let { goToPage(it) }
     }
 
     /** Records [doc] as the open note for source-PDF temp-file lifetime: deletes the previously open
@@ -3686,6 +3683,14 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         if (deg == 0) return bmp
         val m = android.graphics.Matrix().apply { postRotate(deg.toFloat()) }
         return android.graphics.Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, m, true)
+    }
+
+    /** A bookmark click is valid only for this open document and a surviving page. */
+    fun goToBookmark(mark: Bookmark): Boolean {
+        val index = com.notestaking.app.platform.PageNavigation.bookmarkTarget(state.document, mark)
+            ?: return false
+        goToPage(index)
+        return true
     }
 
     fun addBookmark(label: String) {
