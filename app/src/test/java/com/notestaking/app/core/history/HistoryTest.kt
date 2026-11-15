@@ -362,6 +362,82 @@ class HistoryTest {
         assertFalse(h.canRedo)
     }
 
+    @Test fun splitPaneUndoRedoBranchesStayIndependent() {
+        // Each Editor, including a secondary split pane, owns its own History instance.
+        val left = Page(100.0, 100.0)
+        val right = Page(100.0, 100.0)
+        val leftHistory = History()
+        val rightHistory = History()
+        val leftFirst = strokeAt(10.0)
+        val rightFirst = strokeAt(20.0)
+        left.items.add(leftFirst)
+        leftHistory.push(AddItem(left, leftFirst))
+        right.items.add(rightFirst)
+        rightHistory.push(AddItem(right, rightFirst))
+
+        leftHistory.undo()
+        assertTrue(left.items.isEmpty())
+        assertEquals(listOf<CanvasItem>(rightFirst), right.items)
+        assertTrue(leftHistory.canRedo)
+        assertFalse(rightHistory.canRedo)
+
+        rightHistory.undo()
+        assertTrue(right.items.isEmpty())
+        assertTrue(rightHistory.canRedo)
+        val leftSecond = strokeAt(30.0)
+        left.items.add(leftSecond)
+        leftHistory.push(AddItem(left, leftSecond))
+        assertFalse("a new left edit discards only left redo", leftHistory.canRedo)
+        assertTrue("the right pane retains its own redo branch", rightHistory.canRedo)
+
+        rightHistory.redo()
+        assertEquals(listOf<CanvasItem>(rightFirst), right.items)
+        assertEquals(listOf<CanvasItem>(leftSecond), left.items)
+        leftHistory.undo()
+        assertTrue(left.items.isEmpty())
+        assertEquals(listOf<CanvasItem>(rightFirst), right.items)
+        assertTrue(rightHistory.canUndo)
+        leftHistory.clear()
+        assertFalse(leftHistory.canUndo)
+        assertFalse(leftHistory.canRedo)
+        assertTrue("closing/resetting one pane must leave the other history intact", rightHistory.canUndo)
+    }
+
+    @Test fun observerFailureCannotLeaveAnAlreadyAppliedEditOutsideUndoHistory() {
+        val page = Page(100.0, 100.0)
+        val history = History()
+        val first = strokeAt(1.0)
+        page.items.add(first)
+        history.push(AddItem(page, first))
+        history.undo()
+        assertTrue(history.canRedo)
+
+        val second = strokeAt(2.0)
+        page.items.add(second)
+        val secondCommand = AddItem(page, second)
+        var notifications = 0
+        history.onPush = {
+            notifications++
+            assertSame(secondCommand, it)
+            assertSame("observer sees recorded edit", secondCommand, history.nextUndo)
+            assertFalse("observer sees cleared redo branch", history.canRedo)
+            throw IllegalStateException("observer failed after edit was applied")
+        }
+        org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+            history.push(secondCommand)
+        }
+        assertEquals(1, notifications)
+        assertSame(secondCommand, history.nextUndo)
+        assertFalse(history.canRedo)
+
+        history.undo()
+        assertTrue(page.items.isEmpty())
+        assertTrue(history.canRedo)
+        history.redo()
+        assertEquals(listOf<CanvasItem>(second), page.items)
+        assertEquals("undo and redo are not new-edit notifications", 1, notifications)
+    }
+
     // --- touched(): the regions an undo has to repaint (see CanvasState.repairInkRegions) ---
 
     /** A locator for commands that hold items but not pages; [HistoryTest] only ever has one page. */

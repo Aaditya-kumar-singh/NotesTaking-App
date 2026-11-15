@@ -28,10 +28,11 @@ class History(private val limit: Int = DEFAULT_LIMIT) {
 
     /** Record an already-applied edit and invalidate any redo branch. */
     fun push(command: Command) {
-        onPush?.invoke(command)
         undoStack.addLast(command)
         while (undoStack.size > limit) undoStack.removeFirst() // the oldest edit becomes unreachable
         redoStack.clear()
+        // Observers may fail; the applied edit must still be undoable with its old redo branch gone.
+        onPush?.invoke(command)
     }
 
     fun undo() {
