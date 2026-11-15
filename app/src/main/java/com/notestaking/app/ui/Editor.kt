@@ -457,6 +457,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      *  each other's saved document. */
     private val sessionDir = java.io.File(appContext.filesDir, if (pane == Pane.PRIMARY) "session" else "session-b")
     private val session = com.notestaking.app.platform.SessionStore(sessionDir, codec, pdfDir, imageDir)
+    private val versionHistory = com.notestaking.app.platform.VersionHistoryStore(
+        java.io.File(appContext.filesDir, "version-history"), codec, pdfDir, imageDir,
+    )
     private val canvasSession = com.notestaking.app.platform.CanvasSessionStore(sessionDir, canvasCodec, imageDir)
     private val viewStates = com.notestaking.app.platform.ViewStateStore(com.notestaking.app.platform.JsonStore.viewStates(appContext))
     private var lastSessionContentVersion = -1
@@ -3398,7 +3401,153 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     // --- side panel ---
 
-    /** A live snapshot of the document's pages, for the side panel (recompose keyed on [contentVersion]). */
+    /** Private, manually saved versions are scoped to this document's SAF identity. */
+    internal val versionHistoryAvailable: Boolean
+        get() = noteOpen && !canvasOpen && !state.document.path.isNullOrBlank()
+
+    internal var versionHistoryEntries by mutableStateOf<List<com.notestaking.app.platform.VersionHistoryStore.Entry>>(emptyList())
+        private set
+    internal var versionHistoryPreview by mutableStateOf<com.notestaking.app.platform.VersionHistoryStore.Preview?>(null)
+        private set
+    internal var versionHistoryBusy by mutableStateOf(false)
+        private set
+    private var versionHistoryGeneration = 0
+
+    internal fun cancelVersionHistory() {
+        versionHistoryGeneration++
+        versionHistoryBusy = false
+        versionHistoryPreview = null
+        versionHistoryEntries = emptyList()
+    }
+
+    /** A document switch invalidates an in-flight version operation without sticking in busy state. */
+    private fun versionOperationCurrent(generation: Int, doc: Document): Boolean {
+        if (generation != versionHistoryGeneration) return false
+        if (state.document !== doc) {
+            cancelVersionHistory()
+            return false
+        }
+        return true
+    }
+
+    internal fun loadVersionHistory() {
+        if (!versionHistoryAvailable) return
+        val current = state.document
+        val key = documentKey(current.path ?: return)
+        val generation = ++versionHistoryGeneration
+        versionHistoryBusy = true
+        versionHistoryPreview = null
+        autosaveScope.launch {
+            val entries = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.list(key) }.getOrDefault(emptyList())
+            }
+            if (!versionOperationCurrent(generation, current)) return@launch
+            versionHistoryEntries = entries
+            versionHistoryBusy = false
+        }
+    }
+
+    internal fun saveVersionSnapshot() {
+        if (!versionHistoryAvailable || versionHistoryBusy) return
+        flowText.endSession()
+        controller.commitTextEdit()
+        val current = state.document
+        val key = documentKey(current.path ?: return)
+        val snapshot = current.snapshot()
+        val generation = ++versionHistoryGeneration
+        versionHistoryBusy = true
+        autosaveScope.launch {
+            val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.capture(key, snapshot) }.getOrNull()
+            }
+            if (!versionOperationCurrent(generation, current)) return@launch
+            val entries = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.list(key) }.getOrDefault(emptyList())
+            }
+            if (!versionOperationCurrent(generation, current)) return@launch
+            versionHistoryEntries = entries
+            versionHistoryPreview = null
+            versionHistoryBusy = false
+            if (saved == null) message = "Could not save version. The note is unchanged."
+        }
+    }
+
+    internal fun previewVersionSnapshot(entry: com.notestaking.app.platform.VersionHistoryStore.Entry) {
+        if (!versionHistoryAvailable || versionHistoryBusy) return
+        val current = state.document
+        val key = documentKey(current.path ?: return)
+        val generation = ++versionHistoryGeneration
+        versionHistoryBusy = true
+        versionHistoryPreview = null
+        autosaveScope.launch {
+            val preview = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.preview(key, entry) }.getOrNull()
+            }
+            if (!versionOperationCurrent(generation, current)) return@launch
+            versionHistoryPreview = preview
+            versionHistoryBusy = false
+            if (preview == null) message = "This saved version is missing or damaged."
+        }
+    }
+
+    /** An explicit restore opens an unsaved copy; the previous live note is snapshotted first. */
+    internal fun restoreVersionAsCopy(
+        preview: com.notestaking.app.platform.VersionHistoryStore.Preview,
+        onRestored: () -> Unit,
+    ) {
+        if (!versionHistoryAvailable || versionHistoryBusy || versionHistoryPreview != preview) return
+        flowText.endSession()
+        controller.commitTextEdit()
+        val current = state.document
+        val key = documentKey(current.path ?: return)
+        val original = current.snapshot()
+        val version = contentVersion
+        val generation = ++versionHistoryGeneration
+        versionHistoryBusy = true
+        autosaveScope.launch {
+            val copy = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.restoreCopy(key, preview) }.getOrNull()
+            }
+            if (copy == null) {
+                if (generation == versionHistoryGeneration) {
+                    versionHistoryBusy = false
+                    message = "This version is no longer readable."
+                }
+                return@launch
+            }
+            val stillCurrent = generation == versionHistoryGeneration &&
+                state.document === current && contentVersion == version && noteOpen && !canvasOpen
+            if (!stillCurrent) {
+                copy.pdfFile?.delete()
+                deleteImageTemps(copy)
+                if (generation == versionHistoryGeneration) versionHistoryBusy = false
+                return@launch
+            }
+            val protected = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { versionHistory.capture(key, original) }.getOrNull()
+            }
+            val unchanged = generation == versionHistoryGeneration &&
+                state.document === current && contentVersion == version && noteOpen && !canvasOpen
+            if (protected == null || !unchanged) {
+                copy.pdfFile?.delete()
+                deleteImageTemps(copy)
+                if (generation == versionHistoryGeneration) {
+                    versionHistoryBusy = false
+                    message = if (protected == null) "Restore cancelled: current note could not be preserved." else "Restore cancelled: the note changed."
+                }
+                return@launch
+            }
+            replaceDocument(copy)
+            noteOpen = true
+            versionHistoryBusy = false
+            versionHistoryPreview = null
+            versionHistoryEntries = emptyList()
+            onRestored()
+            message = "Restored as an unsaved copy. Use Save As to keep it."
+        }
+    }
+
+    /** Pages as they stand now, for the panel keyed by [contentVersion]. */
     fun pagesSnapshot(): List<Page> = state.document.pages.toList()
 
     fun pageAt(index: Int): Page? = state.document.pages.getOrNull(index)

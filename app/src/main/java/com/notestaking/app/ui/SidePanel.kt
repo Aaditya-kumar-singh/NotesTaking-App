@@ -100,7 +100,7 @@ enum class SidePanelTab { PAGES, ANNOTATIONS, CONTENTS, BOOKMARKS, SEARCH }
 
 /** Quick page count and entry points; actual insert/reorder/export work stays in Editor. */
 @Composable
-private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport: () -> Unit) {
+private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport: () -> Unit, onHistory: () -> Unit) {
     val palette = LocalPalette.current
     val pages = remember(editor.contentVersion) { editor.pagesSnapshot() }
     val currentIndex = editor.pageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
@@ -142,6 +142,11 @@ private fun PagePanelHeader(editor: Editor, onInsertPdf: (Int) -> Unit, onExport
                 Text(stringResource(R.string.page_export_open))
             }
         }
+        if (!selecting && editor.versionHistoryAvailable) {
+            TextButton(onClick = onHistory, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                Text("Version history")
+            }
+        }
         if (!selecting && pages.size > 1) {
             Text(stringResource(R.string.page_reorder_hint), color = palette.textDim.toComposeColor(),
                 fontSize = 12.sp, maxLines = 2, modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 8.dp))
@@ -169,6 +174,13 @@ fun SidePanel(
     val palette = LocalPalette.current
     val tab = editor.sidePanelTab
     var pickingCover by remember { mutableStateOf(false) }
+    var historyOpen by remember(editor, editor.state.document) { mutableStateOf(false) }
+    if (historyOpen) {
+        VersionHistoryDialog(editor) {
+            historyOpen = false
+            editor.cancelVersionHistory()
+        }
+    }
     var exportStart by remember(editor, editor.state.document) { mutableStateOf<PageExportStart?>(null) }
     var exportPagesAtOpen by remember(editor, editor.state.document) { mutableStateOf<List<Page>>(emptyList()) }
     var exportDocumentAtOpen by remember(editor, editor.state.document) { mutableStateOf(editor.state.document) }
@@ -248,9 +260,11 @@ fun SidePanel(
             }
         }
         if (tab == SidePanelTab.PAGES) {
-            PagePanelHeader(editor, onInsertPdf) {
-                beginExport(PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL))
-            }
+            PagePanelHeader(
+                editor, onInsertPdf,
+                onExport = { beginExport(PageExportStart(editor.pageIndex, editor.selectedPageIndices(), PageExportScope.ALL)) },
+                onHistory = { historyOpen = true; editor.loadVersionHistory() },
+            )
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
             when (tab) {
@@ -1087,6 +1101,101 @@ private fun AnnotationsTab(editor: Editor) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun VersionHistoryDialog(editor: Editor, onDismiss: () -> Unit) {
+    val palette = LocalPalette.current
+    val entries = editor.versionHistoryEntries
+    val preview = editor.versionHistoryPreview
+    val busy = editor.versionHistoryBusy
+    var confirming by remember(editor.state.document) { mutableStateOf(false) }
+    fun whenSaved(time: Long): String =
+        java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)
+            .format(java.util.Date(time))
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Version history") },
+        text = {
+            Column {
+                Text(
+                    "Private snapshots for this note. Up to 4 versions, 128 MB in total. Older versions are removed as needed.",
+                    fontSize = 12.sp, color = palette.textDim.toComposeColor(),
+                )
+                TextButton(
+                    onClick = { editor.saveVersionSnapshot() },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) { Text("Save current version") }
+                if (busy) Text("Checking version…", fontSize = 13.sp)
+                if (entries.isEmpty() && !busy) {
+                    Text("No saved versions yet.", fontSize = 13.sp)
+                }
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 224.dp)) {
+                    itemsIndexed(entries) { _, entry ->
+                        val chosen = preview?.entry?.id == entry.id
+                        TextButton(
+                            enabled = !busy,
+                            onClick = { editor.previewVersionSnapshot(entry) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .background(
+                                    if (chosen) palette.selectionBackground.toComposeColor()
+                                    else androidx.compose.ui.graphics.Color.Transparent,
+                                )
+                                .semantics { selected = chosen },
+                        ) {
+                            Column(Modifier.fillMaxWidth()) {
+                                Text(whenSaved(entry.createdAt), maxLines = 1, fontSize = 13.sp)
+                                Text("${entry.sizeBytes / 1024} KB · Preview", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+                if (preview != null) {
+                    HorizontalDivider(color = palette.border.toComposeColor())
+                    Text(
+                        "Preview: ${preview.title} · ${preview.pages} pages",
+                        fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "Saved ${whenSaved(preview.entry.createdAt)}. Restoring will open a new, unsaved copy.",
+                        color = palette.textDim.toComposeColor(), fontSize = 12.sp,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { confirming = true }, enabled = preview != null && !busy) {
+                Text("Restore as copy")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+    if (confirming && preview != null) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text("Restore this version?") },
+            text = {
+                Text(
+                    "Your current working note will be saved as another private version first. " +
+                        "The selected version will open as a new unsaved copy. Your original note will not be overwritten."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirming = false
+                        editor.restoreVersionAsCopy(preview, onDismiss)
+                    },
+                    enabled = !busy,
+                ) { Text("Restore copy") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 }
 
