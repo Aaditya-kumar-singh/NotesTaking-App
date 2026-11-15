@@ -371,7 +371,7 @@ class InteractionController(
     /** Whole-stroke removals record their live z-slot in removal order, for one exact undo. */
     private val eraseRemovals = mutableListOf<Triple<Page, Int, CanvasItem>>()
     private var eraseAreaForGesture = false
-    private var eraseMarkerForGesture = false
+    private var eraseModeForGesture = EraseMode.STROKE
     /** AREA mode: each touched page's item list snapshotted on first contact this gesture, so the
      *  whole split-and-trim drag undoes/redoes as one [ReplacePageItems] step. */
     private val eraseSnapshots = linkedMapOf<Page, List<CanvasItem>>()
@@ -1540,15 +1540,14 @@ class InteractionController(
 
     /** Same viewport-space radius for the sweep and its cursor preview. */
     internal fun eraserCursorRadiusPx(): Double = eraserRadius() * state.zoom
-    private fun areaErase(): Boolean = configFor(Tool.ERASER).eraseMode == EraseMode.AREA
 
     internal fun beginErase(vx: Double, vy: Double) {
         eraseRemovals.clear()
         eraseSnapshots.clear()
         eraseMarkups.clear()
         eraseUnfilled.clear()
-        eraseAreaForGesture = areaErase() // a settings change mid-drag cannot change its undo representation
-        eraseMarkerForGesture = configFor(Tool.ERASER).eraseMode == EraseMode.MARKER
+        eraseModeForGesture = configFor(Tool.ERASER).eraseMode
+        eraseAreaForGesture = eraseModeForGesture == EraseMode.AREA // preserve undo representation mid-drag
         mode = PointerMode.ERASE
         previousErasePoint = null
         eraseAlong(vx, vy)
@@ -1605,10 +1604,12 @@ class InteractionController(
 
     /** Takes off [page]'s text markups the eraser circle touches, when the eraser is set to; true if any. */
     private fun eraseMarkupsFromPage(page: Page, cx: Double, cy: Double, radius: Double): Boolean {
-        if (page.markups.isEmpty() || !configFor(Tool.ERASER).eraseMarkups) return false
+        if (page.markups.isEmpty() || !configFor(Tool.ERASER).eraseMarkups ||
+            eraseModeForGesture == EraseMode.TAPE || eraseModeForGesture == EraseMode.SHAPE ||
+            eraseModeForGesture == EraseMode.CONNECTOR) return false
         val ptPerPx = 72.0 / state.document.dpi
         val hit = page.markups.filter {
-            (!eraseMarkerForGesture || it.type == MarkupType.HIGHLIGHT) &&
+            (eraseModeForGesture != EraseMode.MARKER || it.type == MarkupType.HIGHLIGHT) &&
                 MarkupPainter.touches(it, cx * ptPerPx, cy * ptPerPx, radius * ptPerPx)
         }
         if (hit.isEmpty()) return false
@@ -1621,11 +1622,8 @@ class InteractionController(
      *  all. Images and text boxes are deliberately-placed and protected (delete those via select +
      *  delete). Returns the repaint region, or null if nothing changed. */
     private fun eraseStrokesFromPage(page: Page, cx: Double, cy: Double, radius: Double): Rect? {
-        var dirty = if (eraseMarkerForGesture) null else unfillOnPage(page, cx, cy, radius)
-        val toRemove = page.items.filter {
-            (!eraseMarkerForGesture || EraseRule.erasable(it, markerOnly = true)) &&
-                EraseRule.takes(it, cx, cy, radius)
-        }
+        var dirty = if (eraseModeForGesture == EraseMode.STROKE) unfillOnPage(page, cx, cy, radius) else null
+        val toRemove = page.items.filter { EraseRule.takes(it, cx, cy, radius, eraseModeForGesture) }
         if (toRemove.isEmpty()) return dirty
         for (item in toRemove) {
             val at = page.items.indexOfFirst { it === item }
@@ -1731,7 +1729,7 @@ class InteractionController(
         eraseSnapshots.clear()
         eraseMarkups.clear()
         eraseUnfilled.clear()
-        eraseMarkerForGesture = false
+        eraseModeForGesture = EraseMode.STROKE
         eraserCursor = null
         previousErasePoint = null
         mode = PointerMode.IDLE

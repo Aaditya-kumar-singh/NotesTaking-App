@@ -40,6 +40,9 @@ class EraseSession(private val doc: InfiniteDocument) {
     /** Which original each live fragment came from, so a re-cut updates the right entry. */
     private val originOf = IdentityHashMap<CanvasItem, CanvasItem>()
 
+    /** The eraser's type filter is fixed for a drag, even if settings change before pen-up. */
+    private var gestureMode: EraseMode? = null
+
     /** Filled shapes whose fill alone this drag took, with the fill each had. */
     private val unfilled = ArrayList<RefillShapes.Entry>()
 
@@ -58,16 +61,16 @@ class EraseSession(private val doc: InfiniteDocument) {
     fun erase(cx: Double, cy: Double, radius: Double, area: Boolean): Rect? =
         erase(cx, cy, radius, if (area) EraseMode.AREA else EraseMode.STROKE)
 
-    /** Marker-only mode leaves pen ink, shapes and fills alone; existing modes are unchanged. */
+    /** Selective modes leave every other object kind alone; existing modes are unchanged. */
     fun erase(cx: Double, cy: Double, radius: Double, mode: EraseMode): Rect? {
         if (!cx.isFinite() || !cy.isFinite() || !radius.isFinite() || radius <= 0.0) return null
-        val markerOnly = mode == EraseMode.MARKER
-        val area = mode == EraseMode.AREA
+        val activeMode = gestureMode ?: mode.also { gestureMode = it }
+        val area = activeMode == EraseMode.AREA
         val box = Rect(cx - radius, cy - radius, radius * 2, radius * 2)
         var dirty: Rect? = null
         for (item in doc.itemsIn(box)) {
-            if (!EraseRule.erasable(item, markerOnly)) continue
-            if (EraseRule.takesFill(item, cx, cy, radius)) {
+            if (!EraseRule.erasable(item, activeMode)) continue
+            if ((activeMode == EraseMode.STROKE || area) && EraseRule.takesFill(item, cx, cy, radius)) {
                 val shape = item as ShapeItem
                 unfilled.add(RefillShapes.Entry(shape, shape.fillRgba, null))
                 shape.fillRgba = null
@@ -85,7 +88,7 @@ class EraseSession(private val doc: InfiniteDocument) {
                     else -> continue
                 }
             } else {
-                if (!EraseRule.takes(item, cx, cy, radius)) continue
+                if (!EraseRule.takes(item, cx, cy, radius, activeMode)) continue
                 emptyList()
             }
             for (f in fragments) {
