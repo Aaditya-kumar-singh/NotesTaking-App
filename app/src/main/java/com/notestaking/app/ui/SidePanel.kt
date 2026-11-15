@@ -737,7 +737,11 @@ private fun PageContextMenu(
 /** Extract or Move to new note: the name the new note gets, the note's own with which pages suggested, then the pages go into it. */
 @Composable
 private fun ExtractDialog(editor: Editor, indices: List<Int>, move: Boolean, onDismiss: () -> Unit) {
-    val suggested = remember(indices) { editor.extractName(indices) }
+    val originalIndices = remember { indices.toList() }
+    val originalDocument = remember { editor.state.document }
+    val originalPages = remember { editor.pagesSnapshot() }
+    val suggested = remember { editor.extractName(originalIndices) }
+    val staleSelectionError = stringResource(R.string.err_extract_pages)
     var name by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(suggested, androidx.compose.ui.text.TextRange(0, suggested.length))) }
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -754,7 +758,18 @@ private fun ExtractDialog(editor: Editor, indices: List<Int>, move: Boolean, onD
             )
         },
         confirmButton = {
-            TextButton(enabled = name.text.isNotBlank(), onClick = { onDismiss(); editor.extractPages(indices, name.text.trim(), move) }) {
+            TextButton(enabled = name.text.isNotBlank(), onClick = {
+                onDismiss()
+                if (editor.state.document === originalDocument &&
+                    com.notestaking.app.platform.ExportPageSelection.matchesSnapshot(
+                        originalPages, editor.pagesSnapshot(), originalIndices,
+                    )
+                ) {
+                    editor.extractPages(originalIndices, name.text.trim(), move)
+                } else {
+                    editor.message = staleSelectionError
+                }
+            }) {
                 Text(stringResource(if (move) R.string.move else R.string.extract))
             }
         },

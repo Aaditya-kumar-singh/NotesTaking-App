@@ -394,6 +394,32 @@ class DocumentCodecTest {
         }
     }
 
+    @Test fun singlePageSaveAsCreatesIndependentEditableNativeNote() {
+        val measurer = FakeTextMeasurer()
+        val source = Document.blank(count = 2)
+        val original = Stroke(Tool.PEN, ToolConfig(), listOf(
+            Sample(12.0, 24.0, 0.75), Sample(34.0, 45.0, 0.8),
+        ))
+        source.pages[1].items += original
+        val cargo = com.notestaking.app.core.model.PageCargo.pack(source, listOf(1), measurer)
+        val saved = Document(dpi = cargo.dpi)
+        saved.pages.addAll(cargo.unpack(saved, null, measurer))
+        val bytes = ByteArrayOutputStream().also { codec.write(saved, it) }.toByteArray()
+        assertTrue(com.notestaking.app.platform.NativeNoteReadback.verify(
+            { ByteArrayInputStream(bytes) }, codec, 1, false,
+            java.security.MessageDigest.getInstance("SHA-256").digest(bytes),
+        ))
+        val reopened = codec.read(ByteArrayInputStream(bytes))
+        assertEquals(1, reopened.pages.size)
+        val editable = reopened.pages.single().items.single() as Stroke
+        assertEquals(12.0, editable.sampleAt(0).x, 1e-6)
+        editable.setSamples(listOf(Sample(90.0, 91.0, 0.9), Sample(93.0, 95.0, 0.9)))
+        assertEquals(90.0, editable.sampleAt(0).x, 1e-6)
+        assertEquals(12.0, original.sampleAt(0).x, 1e-6)
+        assertEquals(12.0, (saved.pages.single().items.single() as Stroke).sampleAt(0).x, 1e-6)
+        assertEquals(2, source.pages.size)
+    }
+
     @Test fun cancellingExtractedNoteAssetWriteStopsStreaming() {
         val doc = Document.blank(count = 1)
         doc.pages[0].items.add(ImageItem(ImageData(imageFile(), 2, 2), Rect(0.0, 0.0, 10.0, 10.0)))

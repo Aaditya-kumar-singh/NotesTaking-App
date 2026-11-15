@@ -7151,8 +7151,11 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         if (importing) return
         val root = browseRoot ?: run { message = appContext.getString(R.string.err_extract_pages); return }
         val doc = state.document
-        val picked = indices.filter { it in doc.pages.indices }.distinct().sorted()
-        if (picked.isEmpty()) return
+        if (indices.isEmpty() || indices.any { it !in doc.pages.indices }) {
+            message = appContext.getString(R.string.err_extract_pages)
+            return
+        }
+        val picked = indices.distinct().sorted()
         if (move && picked.size >= doc.pages.size) {
             message = appContext.getString(R.string.err_keep_one_page)
             return
@@ -7169,7 +7172,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         autosaveScope.launch {
             val made = try {
                 withContext(Dispatchers.IO) {
-                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf, verifyReadback = move)?.let { made ->
+                    writeCargoNote(root, parentId, name, doc, cargo, sourcePdf)?.let { made ->
                         if (!importCancelled.get()) made else {
                             runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(made.uri)) }
                             null
@@ -7214,7 +7217,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
      */
     private fun writeCargoNote(
         root: String, parentId: String, rawName: String, from: Document,
-        cargo: com.notestaking.app.core.model.PageCargo, sourcePdf: java.io.File?, verifyReadback: Boolean,
+        cargo: com.notestaking.app.core.model.PageCargo, sourcePdf: java.io.File?,
     ): MadeFile? {
         if (importCancelled.get()) return null
         val note = Document(dpi = cargo.dpi, created = System.currentTimeMillis())
@@ -7235,16 +7238,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         note.bookmarks.addAll(cargo.bookmarks.map { Bookmark(it.page, it.label) })
         if (importCancelled.get()) return null
         val name = uniqueDocumentName(root, parentId, rawName, com.notestaking.app.core.util.DocumentKind.NOTE)
-        val digest = if (verifyReadback) java.security.MessageDigest.getInstance("SHA-256") else null
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
         val uri = createNoteFile(root, parentId, name) { output ->
-            writeCancellableNote(note, digest?.let { java.security.DigestOutputStream(output, it) } ?: output)
+            writeCancellableNote(note, java.security.DigestOutputStream(output, digest))
         } ?: return null
-        if (digest != null && !com.notestaking.app.platform.NativeNoteReadback.verify(
+        if (!com.notestaking.app.platform.NativeNoteReadback.verify(
                 { appContext.contentResolver.openInputStream(android.net.Uri.parse(uri)) },
                 codec, note.pages.size, pdf != null, digest.digest(), { importCancelled.get() },
             )
         ) {
-            // The provider may acknowledge an incomplete write; leave source pages untouched.
+            // Neither Save As nor Move should report success for a broken provider file.
             runCatching { android.provider.DocumentsContract.deleteDocument(appContext.contentResolver, android.net.Uri.parse(uri)) }
             return null
         }
