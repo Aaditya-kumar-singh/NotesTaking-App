@@ -136,6 +136,43 @@ class EraseSessionTest {
         assertEquals(listOf<CanvasItem>(miss), doc.items)
     }
 
+    @Test fun wholeStrokeModeRemovesOnlyTouchedInkAndUndoRestoresExactOrder() {
+        val hit = Stroke(
+            Tool.PEN, ToolDefaults.configFor(Tool.PEN),
+            listOf(Sample(0.0, 0.0, 0.7), Sample(100.0, 0.0, 0.9)),
+            straight = true,
+        )
+        val nearby = line(100.0, y = 11.0)
+        val locked = line(100.0).also { it.locked = true }
+        val original = listOf<CanvasItem>(hit, nearby, locked)
+        val doc = docOf(hit, nearby, locked)
+        val session = EraseSession(doc)
+        assertNotNull(session.erase(50.0, 0.0, 8.0, area = false))
+        assertEquals(listOf<CanvasItem>(nearby, locked), doc.items)
+        assertEquals(2, doc.itemCount) // no partial fragment survives in whole-stroke mode
+        session.buildCommand()!!.apply {
+            undo()
+            assertEquals(original, doc.items)
+            redo()
+            assertEquals(listOf<CanvasItem>(nearby, locked), doc.items)
+        }
+    }
+
+    @Test fun malformedEraserCoordinatesOrRadiusDoNotChangeAnyInk() {
+        val ink = line(100.0)
+        val doc = docOf(ink)
+        val session = EraseSession(doc)
+        for (area in listOf(false, true)) {
+            for (radius in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0.0, -1.0)) {
+                assertNull("area=$area radius=$radius", session.erase(50.0, 0.0, radius, area))
+            }
+            assertNull(session.erase(Double.NaN, 0.0, 8.0, area))
+            assertNull(session.erase(0.0, Double.POSITIVE_INFINITY, 8.0, area))
+        }
+        assertEquals(listOf<CanvasItem>(ink), doc.items)
+        assertNull(session.buildCommand())
+    }
+
     @Test fun wholeStrokeModeMissesWhatIsOutOfReach() {
         val doc = docOf(line(100.0))
         val session = EraseSession(doc)

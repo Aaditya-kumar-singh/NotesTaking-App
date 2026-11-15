@@ -55,6 +55,7 @@ class EraseSession(private val doc: InfiniteDocument) {
      * touches inside but not on its outline loses just its fill (see [EraseRule]).
      */
     fun erase(cx: Double, cy: Double, radius: Double, area: Boolean): Rect? {
+        if (!cx.isFinite() || !cy.isFinite() || !radius.isFinite() || radius <= 0.0) return null
         val box = Rect(cx - radius, cy - radius, radius * 2, radius * 2)
         var dirty: Rect? = null
         for (item in doc.itemsIn(box)) {

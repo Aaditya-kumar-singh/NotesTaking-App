@@ -43,6 +43,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/model/StrokeEraseTest.kt` coverage for sparse two-point ink split at 25%, 100%, 400% draw zoom (two independently editable fragments, interpolated pressure and time, original untouched), plus a broad calligraphy-nib grazing case.
 - Checks: A-Z integrity, Python source validator, backup privacy validator, Chat C file ownership and `git diff --check` required. Kotlin tests, exact-SHA CI, S Pen NT-031 and actual file save/reopen cannot run locally under Windows policy; all remain pending.
 
+## NP-040 — whole-stroke eraser removes only intersected lines (Batch B, P0)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `b1a082182cfb90ff389bc6036a9c4edc9feaea28` (NP-039 handed off in review). Claimed independently while Batch A review and CI are outstanding.
+- Inspected both paged `canvas/InteractionController.kt` and infinite `core/infinite/EraseSession.kt` erase paths, `core/model/{Stroke,EraseRule}.kt`, spatial index, existing whole/area tests, settings mode persistence and NT-032. Existing `EraseMode.STROKE` behavior already removes the full intersected item rather than partial fragments.
+- Hardened both permitted erase entry points to reject non-finite coordinates/radii and nonpositive eraser radii, preventing malformed inputs from reaching page/document removal or infinite-canvas spatial index queries. Did not change persisted settings, the separate area mode, or other lanes' source files.
+- Added `core/infinite/EraseSessionTest.kt` regressions for a long sparse hit stroke with an adjacent untouched line and a locked line, exact one-command Undo/Redo order, and malformed eraser input under both modes.
+- Source-only checks, privacy/ownership/whitespace and A-Z integrity required before local commit. Android CI exact SHA, Kotlin execution, and real stylus stroke/sweep tests (NT-032) remain pending and are not to be marked passed.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
