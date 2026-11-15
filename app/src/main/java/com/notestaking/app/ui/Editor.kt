@@ -6820,7 +6820,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun goToPage(index: Int) { state.goToPage(index); afterView() }
 
     /** Navigate by page/markup identity: a stale list tap must never land on an unrelated page. */
-    fun goToAnnotation(entry: com.notestaking.app.platform.AnnotationIndex.Entry): Boolean {
+    internal fun goToAnnotation(entry: com.notestaking.app.platform.AnnotationIndex.Entry): Boolean {
         val index = com.notestaking.app.platform.AnnotationIndex.resolve(state.document.pages, entry)
             ?: return false
         state.goToPage(index)
