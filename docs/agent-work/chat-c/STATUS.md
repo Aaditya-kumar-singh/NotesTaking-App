@@ -105,6 +105,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/model/BrushToolsTest.kt`: five distinct pen signatures (pressure, dashed polyline, calligraphy direction, taper tip, speed thinning), 20 strokes per brush across 25%/100%/400% zoom ensuring finite geometry and preserved snapshots, plus restyle/restore retaining speed, taper, direction and dash parameters without affecting another stroke.
 - A-Z catalog integrity, Python source validation (0 problems), private-backup guard, exclusive C file ownership and whitespace checks passed. Source-only validation cannot establish Kotlin test pass, real brush quality, persistence after restart, or device NT-027: these remain for exact-SHA GitHub Android CI and physical S Pen phone/tablet acceptance. No push, Gradle, APK build or release performed.
 
+## NP-031 — highlighter transparency and inverse blend (Batch F, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `993230120e11b19fe8552647b7aad218aa3c5211` (NP-030 in coordinator review). Claimed NP-031 independently, preserving all existing reviewed SHAs.
+- Inspected `core/model/Stroke.kt` opacity and blend dispatch, `core/infinite/ItemMesher.kt` MULTIPLY/SCREEN passes, read-only `gl/CanvasScene.kt` masked compositing, `canvas/{CanvasView,CanvasState}.kt` raster-backed highlighted live overlays, `core/pal/Renderer.kt`, `core/tools/ToolConfig.kt` highlighter intensity defaults and read-only settings/codecs, NT-027 and NP-031 acceptance.
+- Found a concrete 100%-intensity mismatch in shared Stroke.paint: `renderColor.a == 255` took the direct opaque-paint branch instead of the configured MULTIPLY or inverse SCREEN layer. This could affect paged overlays and export paths even though CanvasView highlighter-cache overlays and infinite mesh already choose blend correctly. Changed the opaque branch to exclude `Tool.HIGHLIGHTER`; the existing layer branch now handles the full intensity range without changing non-highlighter pens or persisted formats.
+- Added `core/model/HighlighterBlendTest.kt` source regression for normal/inverse ink at 10%, 35%, 90% and 100% alpha, verifying one blended layer with resolved alpha plus the matching infinite canvas pass, and that an ordinary opaque pen still paints without a blend layer.
+- A–Z catalog integrity, Python source (0 problems), backup privacy, exclusive C ownership and Git whitespace checks passed. Kotlin/JUnit, exact-SHA GitHub CI, real dark/light/PDF background display, 20 highlighter strokes, transparency and reopen/export checks are **not yet executed**; physical S Pen/phone NT-027 verification required. No push, merge or Android build.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

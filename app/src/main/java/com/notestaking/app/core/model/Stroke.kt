@@ -365,7 +365,7 @@ class Stroke(
             tool == Tool.DASHED -> paintDashed(r, g, color)
             // The highlighter never glows (a translucent marker; glow is meaningless there).
             config.neon && tool != Tool.HIGHLIGHTER -> paintNeon(r, g, color)
-            color.a >= 255 -> {
+            color.a >= 255 && tool != Tool.HIGHLIGHTER -> {
                 // Opaque ink: draw ribbon + caps directly.
                 paintFills(r, g, color)
             }
