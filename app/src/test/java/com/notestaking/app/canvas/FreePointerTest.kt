@@ -38,6 +38,30 @@ class FreePointerTest {
     }
 
     @Test
+    fun everyInkAndGestureToolHonorsTheFingerDrawingToggle() {
+        val stylusOnly = listOf(
+            Tool.PEN, Tool.DASHED, Tool.CALLIGRAPHY, Tool.SPEED, Tool.TAPER,
+            Tool.HIGHLIGHTER, Tool.ERASER, Tool.SELECT, Tool.LASSO,
+            Tool.SCREENSHOT, Tool.SHAPE, Tool.MARKUP, Tool.TAPE,
+        )
+        for (armed in stylusOnly) {
+            assertTrue("$armed must allow the finger to navigate", armed.fingerPansWhenOff)
+            assertEquals("$armed, stylus-only mode", Tool.PAN, finger(armed, fingerDraws = false))
+            assertEquals("$armed, finger drawing enabled", armed, finger(armed, fingerDraws = true))
+            // Only the finger's effective tool changes. The stylus always keeps the armed tool.
+            assertFalse("$armed, stylus remains active", FreePointer.isFree(armed, armed, isFinger = false))
+        }
+    }
+
+    @Test
+    fun typingPlacementAndPanToolsRemainUsableWithEitherPreference() {
+        for (armed in listOf(Tool.PAN, Tool.TEXT, Tool.TEXT_BOX, Tool.IMAGE)) {
+            assertEquals("$armed, finger drawing off", armed, finger(armed, fingerDraws = false))
+            assertEquals("$armed, finger drawing on", armed, finger(armed, fingerDraws = true))
+        }
+    }
+
+    @Test
     fun textToolsFreeNeither() {
         for (armed in listOf(Tool.TEXT, Tool.TEXT_BOX)) {
             assertFalse(FreePointer.isFree(armed, finger(armed, fingerDraws = false), isFinger = true))
