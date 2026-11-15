@@ -5,6 +5,7 @@ import com.notestaking.app.settings.ToolbarLook
 import com.notestaking.app.settings.ToolbarSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,6 +55,16 @@ class ToolbarMetricsTest {
             assertTrue("$size: keep favorites when they fit",
                 floatingFavoritesFit(320, normalCount, buttonDp))
         }
+    }
+
+    @Test
+    fun infiniteCanvasWarningsPreserveBothFailuresWithoutDuplicateSlots() {
+        val gl = "GL unavailable"
+        val memory = "Some ink hidden"
+        assertNull(infiniteCanvasFailureMessage(false, false, gl, memory))
+        assertEquals(gl, infiniteCanvasFailureMessage(true, false, gl, memory))
+        assertEquals(memory, infiniteCanvasFailureMessage(false, true, gl, memory))
+        assertEquals("$gl; $memory", infiniteCanvasFailureMessage(true, true, gl, memory))
     }
 
     @Test

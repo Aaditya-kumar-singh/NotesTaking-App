@@ -92,11 +92,20 @@ fun InfiniteToolbar(
     // opens it, so the five colours are both the ink and the way to change it.
     var switcherIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Pinned outside the scrolling strip so closing a split pane is always one tap away.
+    val failureMessage = infiniteCanvasFailureMessage(
+        editor.renderFailure != null,
+        editor.outOfMemory,
+        stringResource(R.string.gl_unavailable),
+        stringResource(R.string.canvas_out_of_memory),
+    )
+    // Keep critical failures visible alongside Close Pane, even when toolbar items scroll.
     ToolbarFrame(
         armed = editor.tool,
         trailing = { InfiniteCanvasQuickAccess(editor, onInsertImage, null) },
-        pinned = { onClosePane?.let { ClosePaneButton(it) } },
+        pinned = {
+            failureMessage?.let { InfiniteCanvasWarning(it) }
+            onClosePane?.let { ClosePaneButton(it) }
+        },
     ) {
         val sections = editor.toolbarLayout.visibleSections
         sections.forEachIndexed { index, section ->
@@ -254,51 +263,42 @@ fun InfiniteToolbar(
             }
         }
 
-        editor.renderFailure?.let {
-            Separator()
-            InfiniteCanvasWarning(stringResource(R.string.gl_unavailable))
-        }
-        if (editor.outOfMemory) {
-            Separator()
-            InfiniteCanvasWarning(stringResource(R.string.canvas_out_of_memory))
-        }
         Spacer(Modifier.padding(horizontal = 2.dp))
     }
 }
 
-/** Keep critical canvas failures visible even when the toolbar is docked vertically. */
+/** Preserve both failure messages while occupying just one pinned toolbar slot. */
+internal fun infiniteCanvasFailureMessage(
+    glFailed: Boolean,
+    lowMemory: Boolean,
+    glLabel: String,
+    memoryLabel: String,
+): String? = when {
+    glFailed && lowMemory -> "$glLabel; $memoryLabel"
+    glFailed -> glLabel
+    lowMemory -> memoryLabel
+    else -> null
+}
+
+/** Critical render failures must remain discoverable when the tool strip scrolls. */
 @Composable
 private fun InfiniteCanvasWarning(message: String) {
-    if (LocalBar.current.vertical) {
-        Tooltip(message) {
-            Box(
-                Modifier.size(LocalBar.current.button)
-                    .toolbarFocusOutline(CircleShape)
-                    .semantics {
-                        contentDescription = message
-                        liveRegion = LiveRegionMode.Polite
-                    }
-                    .focusable(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    NotesTakingIcons.info,
-                    contentDescription = null,
-                    modifier = Modifier.size(LocalBar.current.icon),
-                    tint = LocalPalette.current.textDim.toComposeColor(),
-                )
-            }
-        }
-    } else {
-        Tooltip(message) {
-            Label(
-                message,
-                Modifier.toolbarFocusOutline(MaterialTheme.shapes.extraSmall)
-                    .semantics {
-                        contentDescription = message
-                        liveRegion = LiveRegionMode.Polite
-                    }
-                    .focusable(),
+    Tooltip(message) {
+        Box(
+            Modifier.size(LocalBar.current.button)
+                .toolbarFocusOutline(CircleShape)
+                .semantics {
+                    contentDescription = message
+                    liveRegion = LiveRegionMode.Polite
+                }
+                .focusable(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                NotesTakingIcons.info,
+                contentDescription = null,
+                modifier = Modifier.size(LocalBar.current.icon),
+                tint = LocalPalette.current.textDim.toComposeColor(),
             )
         }
     }
