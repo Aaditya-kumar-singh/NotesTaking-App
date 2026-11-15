@@ -12,7 +12,9 @@ import com.notestaking.app.core.tools.ToolDefaults
 import com.notestaking.app.ui.theme.Palette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -77,6 +79,40 @@ class UndoCacheRepairTest {
             1,
             (after!!.surface as FakeRasterSurface).painter.ribbonRuns.size,
         )
+    }
+
+    @Test fun erasingDuringTheFirstAsyncCacheBuildReplaysWithoutDiscardingTheBuild() {
+        val victim = dot(20.0, 20.0)
+        val safe = dot(120.0, 120.0)
+        val page = Page(200.0, 200.0, mutableListOf(victim, safe))
+        val factory = FakeSurfaceFactory()
+        val jobs = ArrayDeque<() -> Unit>()
+        val landings = ArrayDeque<() -> Unit>()
+        val st = CanvasState(Document(mutableListOf(page)), factory, Palette.DEFAULT).apply {
+            viewportW = 800
+            viewportH = 1000
+            relayout()
+            runAsync = { jobs.addLast(it) }
+            postToMain = { landings.addLast(it) }
+        }
+        assertNull(st.cacheForOrSchedule(page)) // cold: background paint is in flight
+        assertEquals(1, jobs.size)
+        page.items.remove(victim)
+        assertTrue(st.repairRegion(page, victim.paintBounds().outset(2.0)))
+        assertNull(st.cacheForOrSchedule(page)) // same build continues; no second job is queued
+        assertEquals(1, jobs.size)
+        jobs.removeFirst().invoke() // original two-stroke snapshot was painted off-thread
+        assertEquals(1, landings.size)
+        landings.removeFirst().invoke() // erase replayed onto the arriving ink surface
+        assertEquals(0, jobs.size)
+        assertEquals(1, st.cacheSnapshot().inkPages)
+        assertSame(factory.created.single(), st.cacheForOrSchedule(page)?.surface)
+        val ops = factory.created.single().painter.ops
+        val lastClear = ops.lastIndexOf("clear")
+        assertTrue("a late erase must clear the original painted ink", lastClear >= 0)
+        assertTrue("the removed dot must not be repainted", ops.drop(lastClear + 1).none {
+            it == "fillCircle" || it == "fillPolygon"
+        })
     }
 
     @Test fun undoLeavesBackgroundCacheIntact() {
