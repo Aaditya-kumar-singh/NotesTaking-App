@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -1094,18 +1095,22 @@ private fun ContentsTab(editor: Editor) {
     val palette = LocalPalette.current
     // tocVersion bumps when the off-thread outline parse lands (and to empty on document swap).
     val version = editor.tocVersion
-    val entries = remember(version) { editor.tableOfContents }
+    val entries = remember(editor.state.document, version, editor.contentVersion) { editor.tableOfContents }
     if (entries.isEmpty()) {
         EmptyHint(stringResource(R.string.no_contents))
         return
     }
     LazyColumn(Modifier.fillMaxSize()) {
         itemsIndexed(entries) { _, e ->
-            val hasTarget = e.destPage >= 0
+            val target = editor.outlinePageIndex(e)
+            val isCurrent = target != null && target == editor.pageIndex
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .then(if (hasTarget) Modifier.clickable { editor.goToTocEntry(e) } else Modifier)
+                    .then(if (target != null) Modifier.clickable { editor.goToTocEntry(e) } else Modifier)
+                    .heightIn(min = 48.dp)
+                    .background(if (isCurrent) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
+                    .semantics { selected = isCurrent }
                     .padding(
                         start = (10 + e.level.coerceAtMost(6) * 12).dp,
                         end = 10.dp,
@@ -1116,12 +1121,20 @@ private fun ContentsTab(editor: Editor) {
             ) {
                 Text(
                     e.title,
-                    color = (if (hasTarget) palette.text else palette.textDim).toComposeColor(),
+                    color = (if (target != null) palette.text else palette.textDim).toComposeColor(),
                     fontSize = 12.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                if (target != null) {
+                    Text(
+                        stringResource(R.string.page_n, target + 1),
+                        color = palette.textDim.toComposeColor(),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -1134,7 +1147,7 @@ private fun BookmarksTab(editor: Editor) {
     var renaming by remember { mutableStateOf<com.notestaking.app.core.model.Bookmark?>(null) }
     // Read the version so the list recomposes on add/remove.
     val version = editor.bookmarkVersion
-    val bookmarks = remember(version) { editor.bookmarks }
+    val bookmarks = remember(editor.state.document, version) { editor.bookmarks }
 
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
@@ -1149,8 +1162,15 @@ private fun BookmarksTab(editor: Editor) {
         } else {
             LazyColumn(Modifier.fillMaxWidth()) {
                 itemsIndexed(bookmarks) { _, bm ->
+                    val target = com.notestaking.app.platform.PageNavigation.bookmarkTarget(editor.state.document, bm)
+                    val isCurrent = target != null && target == editor.pageIndex
                     Row(
-                        Modifier.fillMaxWidth().clickable { editor.goToPage(bm.page) }.padding(start = 10.dp, top = 2.dp, bottom = 2.dp),
+                        Modifier.fillMaxWidth()
+                            .then(if (target != null) Modifier.clickable { editor.goToBookmark(bm) } else Modifier)
+                            .heightIn(min = 48.dp)
+                            .background(if (isCurrent) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
+                            .semantics { selected = isCurrent }
+                            .padding(start = 10.dp, top = 2.dp, bottom = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
