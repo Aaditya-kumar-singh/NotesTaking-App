@@ -420,6 +420,9 @@
     <string name="drop_here">drop here</string>
     <string name="delete_section">Delete section</string>
     <string name="add_section">Add section</string>
+    <string name="toolbar_section_label">Section %1$d</string>
+    <string name="toolbar_section_move_up">Move section %1$d up</string>
+    <string name="toolbar_section_move_down">Move section %1$d down</string>
 
     <!-- Preferences -->
     <string name="back_to_home">Back to home</string>
@@ -485,7 +488,7 @@
     <string name="mono_suffix">"  mono"</string>
     <string name="remove">Remove</string>
     <string name="pref_toolbar">Toolbar</string>
-    <string name="pref_toolbar_help">Tap a tool to show or hide it. Long-press to drag it within or across sections. Long-press a section\'s top to move the whole section.</string>
+    <string name="pref_toolbar_help">Tap a tool to show or hide it. Long-press to drag it within or across sections. Long-press a section\'s top to move the whole section, or use its up/down buttons with a keyboard or screen reader.</string>
     <string name="toggle_pan">Toggle pan</string>
     <string name="toggle_eraser">Toggle eraser</string>
     <string name="toggle_previous">Toggle previous tool</string>

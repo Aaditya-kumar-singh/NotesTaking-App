@@ -646,6 +646,51 @@ fun PreferencesPane(
                 color = palette.textDim.toComposeColor(),
                 fontSize = 12.sp,
             )
+            // Accessible section reordering, independent of the pointer-only drag strip.
+            if (layout.sections.size > 1) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    layout.sections.indices.forEach { index ->
+                        Row(
+                            Modifier.border(1.dp, palette.border.toComposeColor(), RoundedCornerShape(8.dp)),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                stringResource(R.string.toolbar_section_label, index + 1),
+                                modifier = Modifier.padding(start = 8.dp),
+                                color = palette.text.toComposeColor(),
+                                fontSize = 12.sp,
+                            )
+                            IconButton(
+                                onClick = { applyEdited(editedLayout().moveSection(index, index - 1)) },
+                                enabled = index > 0,
+                                modifier = Modifier.size(48.dp),
+                            ) {
+                                Icon(
+                                    NotesTakingIcons.arrowUp,
+                                    contentDescription = stringResource(R.string.toolbar_section_move_up, index + 1),
+                                    tint = (if (index > 0) palette.text else palette.textDim).toComposeColor(),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            IconButton(
+                                onClick = { applyEdited(editedLayout().moveSection(index, index + 1)) },
+                                enabled = index < layout.sections.lastIndex,
+                                modifier = Modifier.size(48.dp),
+                            ) {
+                                Icon(
+                                    NotesTakingIcons.arrowDown,
+                                    contentDescription = stringResource(R.string.toolbar_section_move_down, index + 1),
+                                    tint = (if (index < layout.sections.lastIndex) palette.text else palette.textDim).toComposeColor(),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             ToolbarCustomizerBody(
                 layout = layout,
                 dragItem = dragItem,

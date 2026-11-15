@@ -368,6 +368,9 @@
     <string name="drop_here">放到此处</string>
     <string name="delete_section">删除分组</string>
     <string name="add_section">添加分组</string>
+    <string name="toolbar_section_label">第 %1$d 组</string>
+    <string name="toolbar_section_move_up">将第 %1$d 组上移</string>
+    <string name="toolbar_section_move_down">将第 %1$d 组下移</string>
 
     <!-- Preferences -->
     <string name="back_to_home">返回首页</string>
@@ -433,7 +436,7 @@
     <string name="mono_suffix">"  等宽"</string>
     <string name="remove">移除</string>
     <string name="pref_toolbar">工具栏</string>
-    <string name="pref_toolbar_help">点按工具以显示或隐藏。长按可在分组内或分组间拖动。长按分组顶部可移动整个分组。</string>
+    <string name="pref_toolbar_help">点按工具以显示或隐藏。长按可在分组内或分组间拖动。长按分组顶部可移动整个分组，也可以使用上移或下移按钮通过键盘或屏幕阅读器调整顺序。</string>
     <string name="toggle_pan">切换平移</string>
     <string name="toggle_eraser">切换橡皮擦</string>
     <string name="toggle_previous">切换上一个工具</string>
