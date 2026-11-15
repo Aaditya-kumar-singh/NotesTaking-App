@@ -11,6 +11,7 @@
 - `SOURCE`, `PARTIAL`, `LOCAL`, `PUBLISHED`, and `GAP` are **snapshot evidence classifications**, not task-completed states. The live ledger starts at pending until reviewed.
 - **Beta/debug APK is already buildable** (B67, exact SHA `75d89ba`, [CI #43679116911](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43679116911) passed). **Do not force 130 tasks before every debug build.** Public/signed-release gates require the selected P0/P1 scope, full-ABI CI, manual provider/stylus/device tests, and tag/signing/rollback review. P2/P3 can be deferred only with an explicit recorded scope decision; an incomplete required task cannot be silently waived.
 - **Five tasks form one review/integration batch.** Any combination of A, B, C and coordinator/device evidence can complete them. The batch is locally review-ready only when all five are `local_ready`, `device_verified`, or explicitly `deferred`. Run `python tools/agents/triad.py batch-ready A`. A ready batch is **not** CI-approved or safe to release. Never push unrelated or unreviewed work to force a five-task total.
+- **Automatic batch tick:** The [A-Z completion checklist](APK_BATCH_PROGRESS.md) and the checkbox under each batch in [the task list](APK_BATCH_A_TO_Z.md) show `[x]` only after **all five tasks** are accepted by the coordinator (`verified` after successful exact-SHA GitHub CI, or `device_verified` after real device evidence), or an optional task is explicitly `deferred`. Unreviewed local commits, CI-running/CI-failed tasks, and `local_ready` tasks keep `[ ]`. The summary displays verified vs deferred counts so a deferral never looks like an implemented feature. The mark updates automatically after coordinator `verify`, `manual-complete` or `defer`; workers never edit progress checkboxes. The files are local snapshots until included in the next reviewed `developer` push; live state is `triad.py status`. Coordinator can recover a stale snapshot with `python tools/agents/triad.py checklist --write` (no new Android CI just to tick). A completed batch is still not an overall signed APK release.
 - **Batches are independent planning units.** Worker A may implement a task in Batch F while B's Batch D is running CI and C starts a task in Batch H, provided file ownership/dependencies do not overlap. A task needs a single atomic claim, not a completed previous batch. CI only gates the **publish/merge/release of the affected commit**, never unrelated local work.
 
 ## Three slots, no shared working tree
@@ -48,6 +49,12 @@ python tools/agents/triad.py --repo .agent-worktrees/chat-a heartbeat --slot A -
 python tools/agents/triad.py --repo .agent-worktrees/chat-a handoff NP-071 --slot A --session legacy-a --commit <40-char-SHA> --evidence "Sources and tests reviewed; exact local commit and limitations documented"
 # Coordinator-only review (not a statement of CI/device success):
 python tools/agents/triad.py approve NP-071 --evidence "Reviewed precise worker commit, ownership, source tests and pending device QA"
+# After the code is integrated and GitHub CI passes on the exact SHA, and
+# applicable physical-device evidence has been reviewed:
+python tools/agents/triad.py verify NP-071 --ci-sha <exact-40-char-SHA> --ci-run <run-id> --evidence "Exact SHA build, regression tests and required device acceptance evidence reviewed"
+# A batch's [x] appears automatically only when all five task cards are resolved:
+python tools/agents/triad.py batch-ready A
+python tools/agents/triad.py checklist
 ```
 
 **The old LANE-A and LANE-B reservations still govern their active work.** The new task ledger is additive, not a release/ownership replacement. A/B must not claim a new NP task that conflicts with work held by legacy `coord.py`. The current independent C slot is available only after its worktree has been provisioned and verified.

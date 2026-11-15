@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fast source-only tests; never touch live Git state or build Android locally."""
+import json
 import sqlite3
 import sys
 import tempfile
@@ -147,6 +148,81 @@ class TriadTests(unittest.TestCase):
         with patch.object(triad,"assert_coordinator"):
             triad.ci_close(self.db,"505","Coordinator reviewed logs and correct retry for exact commit SHA.",triad.ROOT)
         self.assertFalse(triad.status(self.db,self.data)["ci_incidents"])
+
+
+    def test_local_ready_does_not_tick_batch(self):
+        cards = [t["id"] for t in self.data["tasks"] if t["batch"] == "A"]
+        for task in cards:
+            self.db.execute("UPDATE triad_tasks SET status='local_ready' WHERE task_id=?", (task,))
+        self.assertTrue(triad.batch_ready(self.db,"A",self.data)["ready_for_integration_review"])
+        self.assertFalse(triad.batch_progress(self.db,self.data)["A"]["checked"])
+        self.assertIn("- [ ] **Batch A** - 0/5 resolved",triad.checklist(self.db,self.data))
+        self.assertEqual(triad.status(self.db,self.data)["completed_batches"],0)
+
+    def test_fifth_verified_task_automatically_ticks_batch(self):
+        cards = [t["id"] for t in self.data["tasks"] if t["batch"] == "A"]
+        for task in cards:
+            self.db.execute("UPDATE triad_tasks SET status='verified' WHERE task_id=?", (task,))
+        self.db.execute("UPDATE triad_tasks SET status='local_ready' WHERE task_id=?", (cards[-1],))
+        self.assertFalse(triad.batch_progress(self.db,self.data)["A"]["checked"])
+        with patch.object(triad,"assert_coordinator"), patch.object(triad,"github_ci_passed",return_value=True):
+            out=triad.verify_task(self.db,cards[-1],"a"*40,"43679116911",
+                "Exact SHA CI passed, regression checks reviewed and applicable device QA signed off.",triad.ROOT)
+        self.assertEqual(out["status"],"verified")
+        self.assertTrue(triad.batch_progress(self.db,self.data)["A"]["checked"])
+        self.assertIn("- [x] **Batch A** - 5/5 resolved (5 verified, 0 deferred)",triad.checklist(self.db,self.data))
+        self.assertEqual(triad.status(self.db,self.data)["completed_batches"],1)
+        with patch.object(triad,"assert_coordinator"), patch.object(triad,"github_ci_passed",return_value=True):
+            with self.assertRaises(triad.Blocked):
+                triad.verify_task(self.db,cards[-1],"a"*40,"43679116911",
+                    "Duplicate verification must not rewrite an already accepted task status.",triad.ROOT)
+
+    def test_failed_ci_never_checks_batch(self):
+        t=next(t["id"] for t in self.data["tasks"] if t["batch"] == "A")
+        self.db.execute("UPDATE triad_tasks SET status='local_ready' WHERE task_id=?", (t,))
+        with patch.object(triad,"assert_coordinator"), patch.object(triad,"github_ci_passed",return_value=False):
+            with self.assertRaises(triad.Blocked):
+                triad.verify_task(self.db,t,"b"*40,"43682160649",
+                    "CI is still running; claiming complete would conceal the actual build status.",triad.ROOT)
+        self.assertEqual(self.db.execute("SELECT status FROM triad_tasks WHERE task_id=?", (t,)).fetchone()[0],"local_ready")
+        self.assertFalse(triad.batch_progress(self.db,self.data)["A"]["checked"])
+
+    def test_optional_deferral_explicit_in_batch_tick(self):
+        tasks=[t["id"] for t in self.data["tasks"] if t["batch"]=="V"]
+        self.assertEqual(len(tasks),5)
+        self.assertTrue(all(t["release_scope"]=="defer_by_decision"
+                            for t in self.data["tasks"] if t["batch"]=="V"))
+        with patch.object(triad,"assert_coordinator"):
+            for t in tasks:
+                triad.defer(self.db,t,
+                    "Coordinator explicitly postponed this P2/P3 feature until a future post-release scope.",self.data,triad.ROOT)
+        self.assertTrue(triad.batch_progress(self.db,self.data)["V"]["checked"])
+        self.assertIn("- [x] **Batch V** - 5/5 resolved (0 verified, 5 deferred)",triad.checklist(self.db,self.data))
+
+    def test_plan_tick_updates_only_matching_batch_line(self):
+        path=triad.ROOT / "docs/github/APK_BATCH_A_TO_Z.md"
+        original=path.read_text(encoding="utf-8")
+        cards=[t["id"] for t in self.data["tasks"] if t["batch"]=="A"]
+        self.db.executemany("UPDATE triad_tasks SET status='verified' WHERE task_id=?",
+                            [(id_,) for id_ in cards])
+        patched=triad.update_plan_checkboxes(original,triad.batch_progress(self.db,self.data))
+        self.assertIn("- [x] **Batch A resolved** - 5/5 (5 verified, 0 deferred)",patched)
+        self.assertIn("- [ ] **Batch B resolved** - 0/5 (0 verified, 0 deferred)",patched)
+        with self.assertRaises(triad.Blocked):
+            triad.update_plan_checkboxes("## Batch A only",triad.batch_progress(self.db,self.data))
+
+    def test_exact_sha_ci_verification(self):
+        from io import BytesIO
+        class FakeResponse(BytesIO):
+            def __enter__(self): return self
+            def __exit__(self,*_): self.close()
+        payload=json.dumps({"head_sha":"a"*40,"status":"completed","conclusion":"success"}).encode()
+        with patch.object(triad.urllib.request,"urlopen",return_value=FakeResponse(payload)):
+            self.assertTrue(triad.github_ci_passed("43679116911","a"*40))
+        with patch.object(triad.urllib.request,"urlopen",return_value=FakeResponse(payload)):
+            self.assertFalse(triad.github_ci_passed("43679116911","b"*40))
+        with self.assertRaises(triad.Blocked):
+            triad.github_ci_passed("invalid","a"*40)
 
 
 if __name__ == "__main__":

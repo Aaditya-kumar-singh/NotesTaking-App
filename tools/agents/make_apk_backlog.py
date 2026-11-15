@@ -148,6 +148,10 @@ def markdown(data: dict) -> str:
         "release gates W-Z. Beta builds can continue before all tasks are accepted; "
         "P2/P3 scope requires explicit deferral decisions, never silent removal.",
         "",
+        "Batch checkmarks are driven by the live coordinator ledger. See the "
+        "[A-Z batch completion checklist](APK_BATCH_PROGRESS.md) for the latest "
+        "published snapshot; use `python tools/agents/triad.py status` for live state.",
+        "",
         "Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks "
         "are not automatically assigned to GPT A/B/C. Any change touching unowned "
         "files needs coordinator-approved allocation. ChatGPT sessions do not run "
@@ -157,6 +161,7 @@ def markdown(data: dict) -> str:
     for i in range(26):
         letter = chr(ord("A") + i)
         lines.extend([f"## Batch {letter}", "",
+                      f"- [ ] **Batch {letter} resolved** - 0/5 (0 verified, 0 deferred)", "",
                       "| # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |",
                       "|---|---|---|---|---|---|---|"])
         for t in data["tasks"][i * 5:(i + 1) * 5]:
@@ -205,6 +210,8 @@ def main() -> None:
     path = OUT / "APK_BATCH_TASKS.json"
     md = OUT / "APK_BATCH_A_TO_Z.md"
     if args.write:
+        if md.exists() and re.search(r"(?m)^- \[x\] \*\*Batch [A-Z] resolved\*\*", md.read_text(encoding="utf-8")):
+            raise SystemExit("BLOCKED: live batch checkmarks exist; use triad.py checklist --write, not catalog regeneration")
         data = generate()
         verify(data)
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

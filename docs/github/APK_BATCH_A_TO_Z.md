@@ -4,9 +4,13 @@ This is the complete **planning queue**, not evidence that tasks have failed or 
 
 **26 batches A-Z, exactly five tasks each (130 tasks):** 110 NP feature checks and 20 release-readiness checks. Priority is P0 -> P1 -> P2 -> P3, with release gates W-Z. Beta builds can continue before all tasks are accepted; P2/P3 scope requires explicit deferral decisions, never silent removal.
 
+Batch checkmarks are driven by the live coordinator ledger. See the [A-Z batch completion checklist](APK_BATCH_PROGRESS.md) for the latest published snapshot; use `python tools/agents/triad.py status` for live state.
+
 Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks are not automatically assigned to GPT A/B/C. Any change touching unowned files needs coordinator-approved allocation. ChatGPT sessions do not run without a user turn. Review [the three-chat protocol](THREE_GPT_APK_WORKFLOW.md).
 
 ## Batch A
+
+- [ ] **Batch A resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -18,6 +22,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch B
 
+- [ ] **Batch B resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-040 | P0 | C | SOURCE | Whole-stroke eraser removes full intersected line - Touch removes entire stroke, no neighboring strokes | NT-032 |
@@ -27,6 +33,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-071 | P0 | A | SOURCE | Native .xnote/.xcanvas saves preserve editable strokes - Sample/pressure/page content identical after reopen | NT-054 |
 
 ## Batch C
+
+- [ ] **Batch C resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -38,6 +46,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch D
 
+- [ ] **Batch D resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-003 | P1 | COORD | SOURCE | Fast launch into recent/home library - Reopen last note or create one in fewer than three actions | NT-011 |
@@ -47,6 +57,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-009 | P1 | COORD | SOURCE | Paper/cover template preview - Preview equals created cover/paper appearance | NT-013 |
 
 ## Batch E
+
+- [ ] **Batch E resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -58,6 +70,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch F
 
+- [ ] **Batch F resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-027 | P1 | C | SOURCE | Two/three finger gestures and pinch zoom - Gesture action triggers once; zoom keeps ink anchored | - |
@@ -67,6 +81,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-031 | P1 | C | SOURCE | Highlighter transparency and inverse mode - Highlight is consistent with/without inverted paper | - |
 
 ## Batch G
+
+- [ ] **Batch G resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -78,6 +94,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch H
 
+- [ ] **Batch H resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-049 | P1 | C | SOURCE | Separate Undo/Redo stack and branch policy - Undo/redo deterministic, no other pane modified | NT-040 |
@@ -87,6 +105,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-057 | P1 | A | SOURCE | Single/multi-page thumbnail navigation - Thumbnail jumps correctly with stable cover handling | NT-046 |
 
 ## Batch I
+
+- [ ] **Batch I resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -98,6 +118,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch J
 
+- [ ] **Batch J resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-072 | P1 | A | PARTIAL | Export this/selected/all/custom page ranges - Exact PDF/PNG page count, no partial range export | NT-009, NT-055 |
@@ -107,6 +129,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-089 | P1 | B | PARTIAL | 48dp touch regions on primary actions - All finger actions have ≥48dp hit area | NT-067 |
 
 ## Batch K
+
+- [ ] **Batch K resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -118,6 +142,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch L
 
+- [ ] **Batch L resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-007 | P2 | A | SOURCE | Import documents directly from Create menu - Import valid PDF/notes; fail cleanly on unsupported DOCX | - |
@@ -127,6 +153,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-012 | P2 | A | SOURCE | Notebook title and safe naming - Named note opens without overwriting another | - |
 
 ## Batch M
+
+- [ ] **Batch M resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -138,6 +166,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch N
 
+- [ ] **Batch N resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-033 | P2 | B | SOURCE | Floating favorite pen dock - Dock remains tappable across orientations | NT-029 |
@@ -147,6 +177,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-038 | P2 | C | SOURCE | Audio recording and synchronized playback - Playback works after relaunch; no lost recording | - |
 
 ## Batch O
+
+- [ ] **Batch O resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -158,6 +190,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch P
 
+- [ ] **Batch P resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-051 | P2 | C | SOURCE | Lasso select/resize/recolor/copy to another page - Editable selected objects retain positions and undo | NT-042 |
@@ -167,6 +201,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-063 | P2 | A | SOURCE | Page Bookmarks, contents and outline navigation - Jump uses correct page and survives reopen | NT-049 |
 
 ## Batch Q
+
+- [ ] **Batch Q resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -178,6 +214,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch R
 
+- [ ] **Batch R resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-076 | P2 | C | GAP | Export background/paper inclusion toggle - PDF/png includes or excludes background accurately | NT-059 |
@@ -187,6 +225,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-086 | P2 | A | GAP | Version history/recovery snapshot UI - Restore past version without touching unrelated notes | NT-065 |
 
 ## Batch S
+
+- [ ] **Batch S resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -198,6 +238,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch T
 
+- [ ] **Batch T resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-097 | P2 | B | PARTIAL | Tooltips and contextual first-use guidance - Novice can write/erase/export without blocking canvas | NT-075 |
@@ -207,6 +249,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-106 | P2 | A | GAP | Note lock or secure notebook - Correct lock/unlock without data-loss or false security claims | - |
 
 ## Batch U
+
+- [ ] **Batch U resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -218,6 +262,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch V
 
+- [ ] **Batch V resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-103 | P3 | COORD | OPTIONAL | AI summarization or assistant - Core note app remains usable with feature disabled | NT-079 |
@@ -227,6 +273,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | NP-108 | P3 | COORD | OPTIONAL | Account, Google/Microsoft login - Guest mode unaffected; privacy/security reviewed | - |
 
 ## Batch W
+
+- [ ] **Batch W resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
@@ -238,6 +286,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch X
 
+- [ ] **Batch X resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | REL-06 | P0 | A | NOT_VERIFIED | Test PDF import/export and source preservation with SAF - Evidence signed off by coordinator; missing physical tests recorded as blockers. | NT-006 |
@@ -248,6 +298,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 
 ## Batch Y
 
+- [ ] **Batch Y resolved** - 0/5 (0 verified, 0 deferred)
+
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | REL-11 | P0 | DEVICE | NOT_VERIFIED | Validate zoom, crop, rotation, split pane and page anchoring - Evidence signed off by coordinator; missing physical tests recorded as blockers. | - |
@@ -257,6 +309,8 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | 5 | REL-15 | P0 | COORD | NOT_VERIFIED | Review privacy, backup, dependencies and secret hygiene - Evidence signed off by coordinator; missing physical tests recorded as blockers. | - |
 
 ## Batch Z
+
+- [ ] **Batch Z resolved** - 0/5 (0 verified, 0 deferred)
 
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
