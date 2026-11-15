@@ -59,6 +59,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `canvas/UndoCacheRepairTest.kt` source regression with a held async job: erase during cold build, assert no redundant build, publish once, replay the clear without painting the removed dot, and retain the resulting cache. This addresses a definite blank-frame latency path, not a claim that all dense-PDF flicker is fixed.
 - Source, A-Z, privacy, ownership, whitespace checks required. GitHub exact-SHA Kotlin/Android CI and real 30-page dense PDF erasing with stylus (NT-038) are still unverified; do not mark the batch or device gate complete.
 
+## NP-025 — live ink smoothing and pen-up commit (Batch E, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `f6ac847acd00345765dc6bae7e1a8bc4e8495991` (NP-047 remains in review). Claimed independently with the current three-chat protocol; no other agent's files or reviewed SHAs changed.
+- Reviewed paged `canvas/InteractionController.kt` live/finished stroke routing and stroke simplification, `canvas/FrontInk.kt` pending front-buffer takeover and cache handoff, `canvas/CanvasView.kt` frame commit callbacks, `canvas/WetInkCache.kt`, `core/model/Stroke.kt`, plus infinite-canvas calls (read only) and existing wet ribbon/GL pad tests. The wet ribbon already preserves smooth ink while drawing and changes to finished geometry at pen-up.
+- Fixed a delayed front-buffer takeover: a queued frame callback may run after the originating stroke was finished, abandoned, or replaced. Activation now requires the same still-live stroke on both direct and stand-down paths. A genuinely live stroke that activates after a frame delay immediately presents its latest ribbon even when no later MOVE event arrives, avoiding a blank/reappearing nib.
+- Added `canvas/FrontInkHandoffTest.kt` source coverage for abandoned, replaced, finished, and still-active takeover ownership. Added `canvas/WetInkCacheTest.kt` source coverage that committed strokes do not also reuse a stale live raster (single owner/paint path after pen-up). Existing taper, speed, smoothing, PDF/page-crossing behavior and native note codecs untouched.
+- Source, A-Z, backup privacy, C ownership and `git diff --check` checks required before local commit. Kotlin/JUnit and Android tests are forbidden locally; GitHub exact-SHA CI plus physical S Pen frame timing, cancellations, rapid consecutive strokes and no-duplicate-ink acceptance remain unverified.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
