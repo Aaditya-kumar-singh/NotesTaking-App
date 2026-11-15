@@ -43,6 +43,23 @@ class ToolbarMetricsTest {
     }
 
     @Test
+    fun collapsedFloatingDockFitsGripFavoritesAndExpandAtExactBoundaries() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value.toInt()
+            for (favoriteCount in 1..4) {
+                // 16dp outer clearance, 48dp grip, 8dp grip gap, then padded icon slots.
+                val minimum = 16 + 48 + 8 + (favoriteCount + 1) * (button + 8)
+                assertFalse("$size: $favoriteCount favorites must not clip at ${minimum - 1}dp",
+                    floatingFavoritesFit(minimum - 1, favoriteCount, button))
+                assertTrue("$size: $favoriteCount favorites should fit at ${minimum}dp",
+                    floatingFavoritesFit(minimum, favoriteCount, button))
+                assertEquals("$size: show the available favorites in either dock orientation",
+                    favoriteCount, ToolbarLook.visibleFavoriteCount(200, minimum, button))
+            }
+        }
+    }
+
+    @Test
     fun collapsedFloatingToolbarHidesFavoritesWhenEvenOneWouldOverflow() {
         for (size in ToolbarSize.entries) {
             val buttonDp = barMetrics(size).button.value.toInt()
