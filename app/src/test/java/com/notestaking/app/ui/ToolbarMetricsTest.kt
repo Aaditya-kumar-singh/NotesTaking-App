@@ -5,6 +5,7 @@ import com.notestaking.app.settings.ToolbarLook
 import com.notestaking.app.settings.ToolbarSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -30,6 +31,53 @@ class ToolbarMetricsTest {
     }
 
     @Test
+    fun shortDockedPanesScrollQuickActionsInsteadOfCrowdingTheToolStrip() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value
+            assertTrue("$size: 320dp split pane needs reachable tools", toolbarScrollsTrailing(false, 320f, button))
+            val boundary = (button + 8f) * 7f + 1f
+            assertTrue(toolbarScrollsTrailing(false, boundary - 1f, button))
+            assertFalse("$size: full-size docked bar keeps quick actions pinned", toolbarScrollsTrailing(false, boundary, button))
+            assertFalse(toolbarScrollsTrailing(false, 600f, button))
+            assertTrue(toolbarScrollsTrailing(true, 600f, button))
+        }
+    }
+
+    @Test
+    fun splitPaneBudgetsAllPinnedButtonsBeforeKeepingQuickActionsFixed() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value
+            for (pins in 0..3) {
+                val boundary = (button + 8f) * (6 + pins) + (if (pins > 0) 1f else 0f)
+                assertTrue("$size pinned=$pins: short pane scrolls trailing tools",
+                    toolbarScrollsTrailing(false, boundary - 1f, button, pins))
+                assertFalse("$size pinned=$pins: matching pane can pin trailing tools",
+                    toolbarScrollsTrailing(false, boundary, button, pins))
+                assertTrue(toolbarScrollsTrailing(true, boundary + 200f, button, pins))
+            }
+            assertTrue("$size: second fixed control must trigger scrolling earlier",
+                toolbarScrollsTrailing(false, (button + 8f) * 8f, button, 2))
+        }
+    }
+
+    @Test
+    fun collapsedFloatingDockFitsGripFavoritesAndExpandAtExactBoundaries() {
+        for (size in ToolbarSize.entries) {
+            val button = barMetrics(size).button.value.toInt()
+            for (favoriteCount in 1..4) {
+                // 16dp outer clearance, 48dp grip, 8dp grip gap, then padded icon slots.
+                val minimum = 16 + 48 + 8 + (favoriteCount + 1) * (button + 8)
+                assertFalse("$size: $favoriteCount favorites must not clip at ${minimum - 1}dp",
+                    floatingFavoritesFit(minimum - 1, favoriteCount, button))
+                assertTrue("$size: $favoriteCount favorites should fit at ${minimum}dp",
+                    floatingFavoritesFit(minimum, favoriteCount, button))
+                assertEquals("$size: show the available favorites in either dock orientation",
+                    favoriteCount, ToolbarLook.visibleFavoriteCount(200, minimum, button))
+            }
+        }
+    }
+
+    @Test
     fun collapsedFloatingToolbarHidesFavoritesWhenEvenOneWouldOverflow() {
         for (size in ToolbarSize.entries) {
             val buttonDp = barMetrics(size).button.value.toInt()
@@ -42,6 +90,16 @@ class ToolbarMetricsTest {
             assertTrue("$size: keep favorites when they fit",
                 floatingFavoritesFit(320, normalCount, buttonDp))
         }
+    }
+
+    @Test
+    fun infiniteCanvasWarningsPreserveBothFailuresWithoutDuplicateSlots() {
+        val gl = "GL unavailable"
+        val memory = "Some ink hidden"
+        assertNull(infiniteCanvasFailureMessage(false, false, gl, memory))
+        assertEquals(gl, infiniteCanvasFailureMessage(true, false, gl, memory))
+        assertEquals(memory, infiniteCanvasFailureMessage(false, true, gl, memory))
+        assertEquals("$gl; $memory", infiniteCanvasFailureMessage(true, true, gl, memory))
     }
 
     @Test

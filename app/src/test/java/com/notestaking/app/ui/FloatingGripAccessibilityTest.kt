@@ -23,7 +23,7 @@ class FloatingGripAccessibilityTest {
     }
 
     @Test
-    fun keyboardArrowsUseExistingBoundedTenPercentNudges() {
+    fun keyboardArrowsMapToExistingGripNudgeDirections() {
         assertEquals(-0.1f to 0f, floatingGripKeyStep(Key.DirectionLeft))
         assertEquals(0.1f to 0f, floatingGripKeyStep(Key.DirectionRight))
         assertEquals(0f to -0.1f, floatingGripKeyStep(Key.DirectionUp))
@@ -32,14 +32,13 @@ class FloatingGripAccessibilityTest {
     }
 
     @Test
-    fun parentPreviewYieldsOnlyPlainArrowsToFocusedGrip() {
-        assertTrue(floatingGripOwnsArrow(true, Key.DirectionLeft, false, false, false))
-        assertTrue(floatingGripOwnsArrow(true, Key.DirectionDown, false, false, false))
-        assertFalse(floatingGripOwnsArrow(false, Key.DirectionLeft, false, false, false))
-        assertFalse(floatingGripOwnsArrow(true, Key.Enter, false, false, false))
-        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, true, false, false))
-        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, false, true, false))
-        assertFalse(floatingGripOwnsArrow(true, Key.DirectionLeft, false, false, true))
+    fun dragClampsToolbarInsidePaneAndIgnoresStationaryAxes() {
+        assertEquals(0.75f, floatingGripDragFraction(0.5f, 25f, 100f), 0f)
+        assertEquals(0.25f, floatingGripDragFraction(0.5f, -25f, 100f), 0f)
+        assertEquals(0f, floatingGripDragFraction(0.5f, -500f, 100f), 0f)
+        assertEquals(1f, floatingGripDragFraction(0.5f, 500f, 100f), 0f)
+        assertEquals(0.5f, floatingGripDragFraction(0.5f, 500f, 0f), 0f)
+        assertEquals(0.5f, floatingGripDragFraction(0.5f, -500f, -10f), 0f)
     }
 
     @Test

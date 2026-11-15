@@ -92,11 +92,21 @@ fun InfiniteToolbar(
     // opens it, so the five colours are both the ink and the way to change it.
     var switcherIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Pinned outside the scrolling strip so closing a split pane is always one tap away.
+    val failureMessage = infiniteCanvasFailureMessage(
+        editor.renderFailure != null,
+        editor.outOfMemory,
+        stringResource(R.string.gl_unavailable),
+        stringResource(R.string.canvas_out_of_memory),
+    )
+    // Keep critical failures visible alongside Close Pane, even when toolbar items scroll.
     ToolbarFrame(
         armed = editor.tool,
+        pinnedButtons = (if (failureMessage != null) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { InfiniteCanvasQuickAccess(editor, onInsertImage, null) },
-        pinned = { onClosePane?.let { ClosePaneButton(it) } },
+        pinned = {
+            failureMessage?.let { InfiniteCanvasWarning(it) }
+            onClosePane?.let { ClosePaneButton(it) }
+        },
     ) {
         val sections = editor.toolbarLayout.visibleSections
         sections.forEachIndexed { index, section ->
@@ -146,9 +156,11 @@ fun InfiniteToolbar(
                                 // Tapping the armed tool again opens its settings, as the paged bar does.
                                 val armed = editor.tool == tool
                                 val configurable = tool.isStroke || tool == Tool.ERASER || tool == Tool.SHAPE || tool == Tool.SELECT || tool == Tool.TAPE
+                                val name = if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes)
+                                val description = if (armed && tool.isStroke) strokeToolAnnouncement(editor, tool, name) else name
                                 ToolbarIcon(
                                     icon,
-                                    stringResource(tool.labelRes),
+                                    description,
                                     active = armed,
                                     glideKey = tool,
                                     hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,
@@ -222,11 +234,19 @@ fun InfiniteToolbar(
                         }
 
                     ToolbarItem.ZOOM -> {
-                        ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) {
+                        val viewport = editor.viewport
+                        val zoomOutEnabled = toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, editor.zoomLocked, zoomIn = false)
+                        val zoomInEnabled = toolbarZoomStepEnabled(viewport.zoom, viewport.minZoom, viewport.maxZoom, editor.zoomLocked, zoomIn = true)
+                        ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = zoomOutEnabled, shortcut = Keys.ZOOM_OUT) {
                             editor.zoomBy(1.0 / InfiniteEditor.ZOOM_STEP)
                         }
-                        Label("${editor.zoomPercent}%")
-                        ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_IN) {
+                        val zoomDescription = stringResource(
+                            R.string.caption_value_percent,
+                            stringResource(R.string.title_zoom),
+                            editor.zoomPercent,
+                        )
+                        Label("${editor.zoomPercent}%", Modifier.semantics { contentDescription = zoomDescription })
+                        ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = zoomInEnabled, shortcut = Keys.ZOOM_IN) {
                             editor.zoomBy(InfiniteEditor.ZOOM_STEP)
                         }
                     }
@@ -246,51 +266,42 @@ fun InfiniteToolbar(
             }
         }
 
-        editor.renderFailure?.let {
-            Separator()
-            InfiniteCanvasWarning(stringResource(R.string.gl_unavailable))
-        }
-        if (editor.outOfMemory) {
-            Separator()
-            InfiniteCanvasWarning(stringResource(R.string.canvas_out_of_memory))
-        }
         Spacer(Modifier.padding(horizontal = 2.dp))
     }
 }
 
-/** Keep critical canvas failures visible even when the toolbar is docked vertically. */
+/** Preserve both failure messages while occupying just one pinned toolbar slot. */
+internal fun infiniteCanvasFailureMessage(
+    glFailed: Boolean,
+    lowMemory: Boolean,
+    glLabel: String,
+    memoryLabel: String,
+): String? = when {
+    glFailed && lowMemory -> "$glLabel; $memoryLabel"
+    glFailed -> glLabel
+    lowMemory -> memoryLabel
+    else -> null
+}
+
+/** Critical render failures must remain discoverable when the tool strip scrolls. */
 @Composable
 private fun InfiniteCanvasWarning(message: String) {
-    if (LocalBar.current.vertical) {
-        Tooltip(message) {
-            Box(
-                Modifier.size(LocalBar.current.button)
-                    .toolbarFocusOutline(CircleShape)
-                    .semantics {
-                        contentDescription = message
-                        liveRegion = LiveRegionMode.Polite
-                    }
-                    .focusable(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    NotesTakingIcons.info,
-                    contentDescription = null,
-                    modifier = Modifier.size(LocalBar.current.icon),
-                    tint = LocalPalette.current.textDim.toComposeColor(),
-                )
-            }
-        }
-    } else {
-        Tooltip(message) {
-            Label(
-                message,
-                Modifier.toolbarFocusOutline(MaterialTheme.shapes.extraSmall)
-                    .semantics {
-                        contentDescription = message
-                        liveRegion = LiveRegionMode.Polite
-                    }
-                    .focusable(),
+    Tooltip(message) {
+        Box(
+            Modifier.size(LocalBar.current.button)
+                .toolbarFocusOutline(CircleShape)
+                .semantics {
+                    contentDescription = message
+                    liveRegion = LiveRegionMode.Polite
+                }
+                .focusable(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                NotesTakingIcons.info,
+                contentDescription = null,
+                modifier = Modifier.size(LocalBar.current.icon),
+                tint = LocalPalette.current.textDim.toComposeColor(),
             )
         }
     }

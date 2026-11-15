@@ -17,6 +17,15 @@ class ToolbarCustomizerKeyboardTest {
     }
 
     @Test
+    fun modifiedEnterAndSpaceDoNotToggleToolbarChips() {
+        for (key in listOf(Key.Enter, Key.NumPadEnter, Key.Spacebar)) {
+            assertFalse(toolbarChipActivationKey(key, KeyEventType.KeyDown, modified = true))
+            assertFalse(toolbarChipActivationKey(key, KeyEventType.KeyUp, modified = true))
+            assertTrue(toolbarChipActivationKey(key, KeyEventType.KeyUp, modified = false))
+        }
+    }
+
+    @Test
     fun tabArrowsAndEscapeRemainAvailableForNavigation() {
         for (key in listOf(Key.Tab, Key.DirectionUp, Key.DirectionDown, Key.Escape)) {
             assertFalse(toolbarChipActivationKey(key, KeyEventType.KeyDown))

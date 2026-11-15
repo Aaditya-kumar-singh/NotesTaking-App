@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,13 +42,15 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -59,12 +63,33 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
+import com.notestaking.app.core.tools.ToolbarEntry
 import com.notestaking.app.core.tools.ToolbarItem
 import com.notestaking.app.core.tools.ToolbarLayout
 import com.notestaking.app.core.tools.ToolbarSection
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
+
+/** Search returns original section and entry indexes; it never changes layout order. */
+internal fun toolbarSearchResults(
+    layout: ToolbarLayout,
+    query: String,
+    label: (ToolbarItem) -> String,
+): List<Triple<Int, Int, ToolbarEntry>> {
+    val needle = query.trim()
+    if (needle.isEmpty()) return emptyList()
+    return layout.sections.flatMapIndexed { sectionIndex, section ->
+        section.entries.mapIndexedNotNull { entryIndex, entry ->
+            val item = entry.item
+            if (label(item).contains(needle, ignoreCase = true) ||
+                item.id.contains(needle, ignoreCase = true) ||
+                item.id.replace('_', ' ').contains(needle, ignoreCase = true)
+            ) Triple(sectionIndex, entryIndex, entry) else null
+        }
+    }
+}
+
 
 /**
  * The toolbar customizer, rendered inline inside Preferences. Each section is a bordered card whose
@@ -100,6 +125,52 @@ fun ToolbarCustomizerBody(
     val palette = LocalPalette.current
     val dragging = dragItem != null
     val draggingSection = dragSection != null
+    var search by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val matches = toolbarSearchResults(layout, search) { context.getString(it.labelRes) }
+    OutlinedTextField(
+        value = search,
+        onValueChange = { search = it },
+        label = { Text(stringResource(R.string.search)) },
+        singleLine = true,
+        leadingIcon = { Icon(NotesTakingIcons.search, contentDescription = null) },
+        trailingIcon = {
+            if (search.isNotEmpty()) {
+                IconButton(onClick = { search = "" }) {
+                    Icon(NotesTakingIcons.close, contentDescription = stringResource(R.string.clear_search))
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    if (search.isNotBlank() && !dragging && !draggingSection) {
+        if (matches.isEmpty()) {
+            Text(
+                stringResource(R.string.no_matches),
+                modifier = Modifier.padding(8.dp),
+                color = palette.textDim.toComposeColor(),
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                matches.forEach { (sec, idx, entry) ->
+                    ChipFace(
+                        entry.item,
+                        entry.visible,
+                        Modifier
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Checkbox
+                                toggleableState = if (entry.visible) ToggleableState.On else ToggleableState.Off
+                            }
+                            .clickable(role = Role.Checkbox) { onToggle(sec, idx) },
+                    )
+                }
+            }
+        }
+        return
+    }
     FlowRow(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -108,6 +179,7 @@ fun ToolbarCustomizerBody(
         layout.sections.forEachIndexed { sec, section ->
             if (draggingSection && sectionDropTarget == sec) SectionCaret()
             SectionCard(
+                sectionNumber = sec + 1,
                 canDelete = layout.sections.size > 1,
                 targeted = dragging && dropTarget?.first == sec,
                 dimmed = dragSection == sec,
@@ -210,6 +282,7 @@ internal fun toolbarSectionDropTarget(
  */
 @Composable
 private fun SectionCard(
+    sectionNumber: Int,
     canDelete: Boolean,
     targeted: Boolean,
     dimmed: Boolean,
@@ -223,6 +296,7 @@ private fun SectionCard(
     content: @Composable () -> Unit,
 ) {
     val palette = LocalPalette.current
+    val deleteLabel = "${stringResource(R.string.delete_section)} $sectionNumber"
     SectionCardScaffold(
         modifier = Modifier
             .alpha(if (dimmed) 0.35f else 1f)
@@ -242,10 +316,10 @@ private fun SectionCard(
                     onDrop = onGrabDrop,
                     onCancel = onGrabCancel,
                 )
-                Tooltip(stringResource(R.string.delete_section)) {
+                Tooltip(deleteLabel) {
                     IconButton(onClick = onDelete, enabled = canDelete, modifier = Modifier.size(48.dp)) {
                         Icon(
-                            NotesTakingIcons.close, stringResource(R.string.delete_section),
+                            NotesTakingIcons.close, deleteLabel,
                             tint = (if (canDelete) palette.textDim else palette.border).toComposeColor(),
                             modifier = Modifier.size(14.dp),
                         )
@@ -306,8 +380,8 @@ private fun SectionDragStrip(
 }
 
 /** Handle one activation per key press, without interfering with the chip's drag gestures. */
-internal fun toolbarChipActivationKey(key: Key, type: KeyEventType): Boolean =
-    type == KeyEventType.KeyUp && (key == Key.Enter || key == Key.NumPadEnter || key == Key.Spacebar)
+internal fun toolbarChipActivationKey(key: Key, type: KeyEventType, modified: Boolean = false): Boolean =
+    !modified && type == KeyEventType.KeyUp && (key == Key.Enter || key == Key.NumPadEnter || key == Key.Spacebar)
 
 @Composable
 private fun ChipCell(
@@ -344,7 +418,7 @@ private fun ChipCell(
                 onClick { tap(); true }
             }
             .onKeyEvent { event ->
-                if (toolbarChipActivationKey(event.key, event.type)) {
+                if (toolbarChipActivationKey(event.key, event.type, event.isAltPressed || event.isCtrlPressed || event.isMetaPressed)) {
                     tap()
                     true
                 } else false
@@ -369,7 +443,7 @@ private fun ChipFace(item: ToolbarItem, visible: Boolean, modifier: Modifier = M
     val palette = LocalPalette.current
     Row(
         modifier
-            .heightIn(min = 48.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .alpha(if (!visible) 0.4f else 1f)
             .clip(MaterialTheme.shapes.small)
             .background(palette.surface.toComposeColor())

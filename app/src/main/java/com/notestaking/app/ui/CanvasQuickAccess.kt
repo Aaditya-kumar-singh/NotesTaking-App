@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,10 +17,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
-import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.ui.icons.NotesTakingIcons
 
@@ -53,10 +58,11 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
     var viewOpen by remember { mutableStateOf(false) }
     var stylesOpen by remember { mutableStateOf(false) }
     var pageJumpOpen by remember { mutableStateOf(false) }
-    if (editor.hasPdf) PdfModeButton(editor)
-    PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
-    if (editor.hasPdf) PinnedFingerDrawing(editor)
-    PinnedPageInsertion(editor)
+    if (!pdfReadingToolbarActive(editor.hasPdf, editor.tool)) {
+        PinnedEraser(editor, editor.tool == Tool.ERASER) { editor.selectTool(Tool.ERASER) }
+        if (editor.hasPdf) PinnedFingerDrawing(editor)
+        PinnedPageInsertion(editor)
+    }
     CanvasAllTools(
         host = editor,
         selected = editor.tool,
@@ -71,17 +77,17 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 HorizontalDivider()
                 Text(stringResource(R.string.pdf_reader_tools), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                QuickActionRow(stringResource(R.string.pdf_read_mode), enabled = editor.tool != Tool.PAN) {
+                QuickActionRow(stringResource(R.string.pdf_read_mode), enabled = editor.tool != Tool.PAN, isSelected = editor.tool == Tool.PAN) {
                     dismiss(); editor.setPdfReadingMode(true)
                 }
-                QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN) {
+                QuickActionRow(stringResource(R.string.pdf_annotate_mode), enabled = editor.tool == Tool.PAN, isSelected = editor.tool != Tool.PAN) {
                     dismiss(); editor.setPdfReadingMode(false)
                 }
                 QuickActionRow(stringResource(if (editor.preferences.fingerDraws)
-                    R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable)) {
+                    R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable), isSelected = editor.preferences.fingerDraws) {
                     dismiss(); editor.toggleFingerDrawing()
                 }
-                QuickActionRow(stringResource(R.string.tool_markup)) { dismiss(); editor.selectTool(Tool.MARKUP) }
+                QuickActionRow(stringResource(R.string.tool_markup), isSelected = editor.tool == Tool.MARKUP) { dismiss(); editor.selectTool(Tool.MARKUP) }
                 QuickActionRow(stringResource(R.string.pdf_search_text)) { dismiss(); editor.openSearch() }
                 QuickActionRow(stringResource(R.string.title_go_to_page)) { dismiss(); pageJumpOpen = true }
                 QuickActionRow(stringResource(R.string.fit_width), enabled = !editor.zoomLocked) { dismiss(); editor.fitWidth() }
@@ -94,8 +100,8 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
                 if (!editor.sidebarVisible) editor.toggleSidebar()
             }
             QuickActionRow(stringResource(R.string.tool_image)) { dismiss(); onInsertImage() }
-            QuickActionRow(stringResource(R.string.tool_wand)) { dismiss(); editor.toggleWand() }
-            QuickActionRow(stringResource(R.string.tool_ruler)) { dismiss(); editor.toggleRuler() }
+            QuickActionRow(stringResource(R.string.tool_wand), isSelected = editor.wandEnabled) { dismiss(); editor.toggleWand() }
+            QuickActionRow(stringResource(R.string.tool_ruler), isSelected = editor.rulerVisible) { dismiss(); editor.toggleRuler() }
             QuickActionRow(stringResource(R.string.toolbar_styles)) { dismiss(); stylesOpen = true }
             QuickActionRow(stringResource(R.string.toolbar_view)) { dismiss(); viewOpen = true }
         },
@@ -109,12 +115,14 @@ private fun PagedQuickButtons(editor: Editor, onInsertImage: () -> Unit, onImpor
 @Composable
 internal fun PdfModeButton(editor: Editor) {
     val reading = editor.tool == Tool.PAN
+    val toggleLabel = stringResource(if (reading) R.string.pdf_annotate_mode else R.string.pdf_read_mode)
     ToolbarIcon(
         if (reading) NotesTakingIcons.pan else NotesTakingIcons.edit,
         stringResource(if (reading) R.string.pdf_reading_active else R.string.pdf_annotating_active),
         active = reading,
         reportSelection = true,
-        hint = stringResource(if (reading) R.string.pdf_annotate_mode else R.string.pdf_read_mode),
+        hint = toggleLabel,
+        actionLabel = toggleLabel,
     ) { editor.setPdfReadingMode(!reading) }
 }
 
@@ -158,9 +166,9 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
         extras = { dismiss ->
             HorizontalDivider()
             QuickActionRow(stringResource(R.string.tool_image)) { dismiss(); onInsertImage() }
-            QuickActionRow(stringResource(R.string.tool_wand)) { dismiss(); editor.toggleWand() }
+            QuickActionRow(stringResource(R.string.tool_wand), isSelected = editor.wandEnabled) { dismiss(); editor.toggleWand() }
             QuickActionRow(stringResource(R.string.toolbar_fit), enabled = !editor.zoomLocked) { dismiss(); editor.zoomToFit() }
-            QuickActionRow(stringResource(R.string.toolbar_minimap)) { dismiss(); editor.toggleMinimap() }
+            QuickActionRow(stringResource(R.string.toolbar_minimap), isSelected = editor.minimapVisible) { dismiss(); editor.toggleMinimap() }
             QuickActionRow(stringResource(R.string.toolbar_waypoints)) { dismiss(); waypointsOpen = true }
             QuickActionRow(stringResource(R.string.toolbar_styles)) { dismiss(); stylesOpen = true }
         },
@@ -169,17 +177,23 @@ private fun InfiniteQuickButtons(editor: InfiniteEditor, onInsertImage: () -> Un
     if (waypointsOpen) Box { CanvasWaypointsPopup(editor) { waypointsOpen = false } }
 }
 
+/** Preserve the usual menu size while fitting Android's narrower multi-window bounds. */
+internal fun quickAccessMenuWidth(windowWidthDp: Int, preferredWidth: Dp): Dp =
+    minOf(preferredWidth, (windowWidthDp.dp - 16.dp).coerceAtLeast(1.dp))
+
 /** PDF-only shortcut: a disabled finger draws no ink, while two fingers always navigate. */
 @Composable
 private fun PinnedFingerDrawing(editor: Editor) {
     val revision = editor.prefsVersion
     val enabled = remember(revision) { editor.preferences.fingerDraws }
+    val toggleLabel = stringResource(if (enabled) R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable)
     ToolbarIcon(
         NotesTakingIcons.edit,
         stringResource(if (enabled) R.string.pdf_finger_inking_enabled else R.string.pdf_finger_inking_disabled),
         active = enabled,
         reportSelection = true,
-        hint = stringResource(if (enabled) R.string.pdf_finger_inking_disable else R.string.pdf_finger_inking_enable),
+        hint = toggleLabel,
+        actionLabel = toggleLabel,
     ) { editor.toggleFingerDrawing() }
 }
 
@@ -190,13 +204,11 @@ private fun PinnedEraser(
     selectEraser: () -> Unit,
 ) {
     var settingsOpen by remember { mutableStateOf(false) }
-    val area = host.toolConfig(Tool.ERASER).eraseMode == EraseMode.AREA
-    val name = stringResource(R.string.tool_eraser)
-    val mode = stringResource(if (area) R.string.eraser_area else R.string.eraser_stroke)
+    val description = eraserToolbarDescription(host)
     Box {
         ToolbarIcon(
             NotesTakingIcons.eraser,
-            "$name: $mode",
+            description,
             active = active,
             reportSelection = true,
             hint = stringResource(R.string.canvas_eraser_tool_hint),
@@ -216,7 +228,7 @@ private fun PinnedPageInsertion(editor: Editor) {
             stringResource(R.string.add_page),
             active = open,
         ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(224.dp)) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 224.dp))) {
             Text(
                 stringResource(R.string.add_page),
                 style = MaterialTheme.typography.titleSmall,
@@ -254,22 +266,45 @@ private fun CanvasAllTools(
     var open by remember { mutableStateOf(false) }
     var eraserOpen by remember { mutableStateOf(false) }
     var penOpen by remember { mutableStateOf(false) }
+    var guideOpen by remember { mutableStateOf(false) }
     val penForConfig = selected.takeIf { it.isStroke } ?: Tool.PEN
     Box {
         ToolbarIcon(
             NotesTakingIcons.more,
             stringResource(R.string.canvas_all_tools),
             active = open,
-        ) { open = true }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.width(248.dp)) {
+        ) { guideOpen = false; open = true }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false; guideOpen = false }, modifier = Modifier.width(quickAccessMenuWidth(LocalConfiguration.current.screenWidthDp, 248.dp))) {
             Text(
                 stringResource(R.string.canvas_all_tools),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             HorizontalDivider()
+            // Guidance stays opt-in: opening an editor never places a tutorial over the page.
+            QuickActionRow(stringResource(R.string.markup_note_hint)) { guideOpen = !guideOpen }
+            if (guideOpen) {
+                listOf(
+                    R.string.tool_pen to R.string.markup_note_hint,
+                    R.string.tool_eraser to R.string.canvas_eraser_tool_hint,
+                    R.string.export_pdf to R.string.page_export_pdf_hint,
+                ).forEach { (title, detail) ->
+                    Text(
+                        "${stringResource(title)}: ${stringResource(detail)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+                Text(
+                    stringResource(R.string.pref_finger_draws),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                QuickActionRow(stringResource(R.string.done)) { guideOpen = false }
+                HorizontalDivider()
+            }
             tools.forEach { tool ->
-                QuickActionRow(stringResource(tool.labelRes)) {
+                QuickActionRow(if (tool == Tool.ERASER) eraserToolbarDescription(host) else stringResource(tool.labelRes), isSelected = tool == selected) {
                     open = false
                     select(tool)
                 }
@@ -298,7 +333,14 @@ private fun CanvasAllTools(
 private fun QuickActionRow(
     label: String,
     enabled: Boolean = true,
+    isSelected: Boolean? = null,
     onClick: () -> Unit,
 ) {
-    DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = onClick)
+    DropdownMenuItem(
+        text = { Text(label) },
+        trailingIcon = if (isSelected == true) ({ Icon(NotesTakingIcons.check, contentDescription = null, modifier = Modifier.size(18.dp)) }) else null,
+        modifier = if (isSelected == null) Modifier else Modifier.semantics { selected = isSelected == true },
+        enabled = enabled,
+        onClick = onClick,
+    )
 }

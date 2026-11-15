@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,8 +256,13 @@ private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: Strin
     }
 }
 
-/** At larger Android text scales, keep keyboard hints from squeezing the tooltip label. */
-internal fun tooltipStackShortcut(fontScale: Float): Boolean = fontScale >= 1.3f
+/** Leave room for the popup shadow and screen edges before positioning the tooltip. */
+internal fun tooltipMaxWidth(screenWidth: Dp): Dp =
+    minOf(TIP_MAX_WIDTH, (screenWidth - (TIP_SHADOW_ROOM + 8.dp) * 2).coerceAtLeast(1.dp))
+
+/** Stack shortcuts when large text or a narrow window would squeeze the label. */
+internal fun tooltipStackShortcut(fontScale: Float, screenWidthDp: Int): Boolean =
+    fontScale >= 1.3f || tooltipMaxWidth(screenWidthDp.dp) < TIP_MAX_WIDTH
 
 @Composable
 private fun TipChip(text: String, hint: String?, shortcut: String?) {
@@ -264,12 +270,14 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
     val bg = m.inverseSurface.toComposeColor()
     val fg = m.inverseOnSurface.toComposeColor()
     val shape = MaterialTheme.shapes.small
-    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale)
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale, screenWidthDp)
+    val maxWidth = tooltipMaxWidth(screenWidthDp.dp)
     Column(
         Modifier
             .shadow(TIP_ELEVATION, shape)
             .background(bg, shape)
-            .widthIn(max = TIP_MAX_WIDTH)
+            .widthIn(max = maxWidth)
             .padding(start = 10.dp, end = if (shortcut != null) 6.dp else 10.dp, top = 6.dp, bottom = 6.dp),
     ) {
         val name: @Composable (Modifier) -> Unit = { modifier ->
@@ -280,7 +288,7 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
                 shortcut.orEmpty(),
                 color = fg.copy(alpha = 0.72f),
                 fontSize = 11.sp,
-                maxLines = 1,
+                maxLines = if (stackShortcut) 2 else 1,
                 modifier = Modifier
                     .border(1.dp, fg.copy(alpha = 0.22f), TIP_KEY_SHAPE)
                     .padding(horizontal = 5.dp, vertical = 1.dp),

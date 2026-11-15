@@ -27,15 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -63,11 +60,15 @@ internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boole
 internal fun floatingGripCanNudge(travel: Float, fraction: Float, step: Float): Boolean =
     travel > 0f && (fraction + step).coerceIn(0f, 1f) != fraction
 
+/** Dragging uses normalized, pane-bounded coordinates; a stationary axis cannot move. */
+internal fun floatingGripDragFraction(fraction: Float, deltaPx: Float, travelPx: Float): Float =
+    if (travelPx > 0f) (fraction + deltaPx / travelPx).coerceIn(0f, 1f) else fraction
+
 /** Reset is only an accessibility action when it changes the stored position. */
 internal fun floatingGripCanReset(x: Float, y: Float, defaultX: Float, defaultY: Float): Boolean =
     x != defaultX || y != defaultY
 
-/** Use the same bounded movement for hardware keys and TalkBack. */
+/** Use the same normalized nudge increments for keyboard and TalkBack movement. */
 internal fun floatingGripKeyStep(key: Key): Pair<Float, Float>? = when (key) {
     Key.DirectionLeft -> -0.1f to 0f
     Key.DirectionRight -> 0.1f to 0f
@@ -75,10 +76,6 @@ internal fun floatingGripKeyStep(key: Key): Pair<Float, Float>? = when (key) {
     Key.DirectionDown -> 0f to 0.1f
     else -> null
 }
-
-/** Parent preview lets these arrows reach the grip only while it owns focus. */
-internal fun floatingGripOwnsArrow(focused: Boolean, key: Key, alt: Boolean, ctrl: Boolean, meta: Boolean): Boolean =
-    focused && !alt && !ctrl && !meta && floatingGripKeyStep(key) != null
 
 /**
  * The existing floating toolbar, plus an isolated drag grip. Only the grip consumes drag events;
@@ -90,7 +87,6 @@ internal fun MovableFloatingToolbar(
     bar: @Composable () -> Unit,
     favorites: @Composable (Int) -> Unit,
     onDrop: (Float, Float) -> Unit,
-    onGripFocusChange: (Boolean) -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -143,7 +139,7 @@ internal fun MovableFloatingToolbar(
                     .clip(shape)
                     .background(palette.panel.toComposeColor())
                     .border(1.dp, palette.border.toComposeColor(), shape)
-                    .onFocusChanged { onGripFocusChange(it.isFocused) }
+                    .toolbarFocusOutline(shape)
                     .semantics {
                         contentDescription = dragLabel
                         customActions = buildList {
@@ -165,12 +161,13 @@ internal fun MovableFloatingToolbar(
                         }
                     }
                     .onKeyEvent { event ->
-                        if (!floatingGripOwnsArrow(true, event.key, event.isAltPressed, event.isCtrlPressed, event.isMetaPressed)) false
+                        if (event.isAltPressed || event.isCtrlPressed || event.isMetaPressed) false
                         else {
-                            if (event.type == KeyEventType.KeyDown) {
-                                floatingGripKeyStep(event.key)?.let { (dx, dy) -> nudge(dx, dy) }
+                            val step = floatingGripKeyStep(event.key)
+                            if (step == null) false else {
+                                if (event.type == KeyEventType.KeyDown) nudge(step.first, step.second)
+                                true // Consume arrows at the edge instead of turning pages or panning ink.
                             }
-                            true // Edges still consume the arrow instead of turning pages or panning ink.
                         }
                     }
                     .focusable()
@@ -181,8 +178,8 @@ internal fun MovableFloatingToolbar(
                             onDragCancel = { x = dragStartX; y = dragStartY },
                         ) { change, delta ->
                             change.consume()
-                            if (travelX > 0f) x = (x + delta.x / travelX).coerceIn(0f, 1f)
-                            if (travelY > 0f) y = (y + delta.y / travelY).coerceIn(0f, 1f)
+                            x = floatingGripDragFraction(x, delta.x, travelX)
+                            y = floatingGripDragFraction(y, delta.y, travelY)
                         }
                     },
                 contentAlignment = Alignment.Center,

@@ -1,5 +1,6 @@
 package com.notestaking.app.ui
 
+import android.animation.ValueAnimator
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -83,7 +84,10 @@ import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
 import com.notestaking.app.core.model.Rgba
 import com.notestaking.app.core.tools.Tool
+import com.notestaking.app.core.tools.ToolConfig
+import com.notestaking.app.core.tools.ToolConversions
 import com.notestaking.app.core.tools.ToolbarItem
+import com.notestaking.app.core.tools.ToolbarLayout
 import com.notestaking.app.platform.ImageDecoder
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
@@ -92,10 +96,54 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** Describe actual ink and stroke settings without changing the saved preset. */
+internal fun strokeStyleDescription(
+    tool: Tool,
+    config: ToolConfig,
+    activeInk: Rgba,
+    name: String,
+    colourLabel: String,
+    widthLabel: String,
+    pressureLabel: String,
+    sensitivityLabel: String,
+    offLabel: String,
+): String {
+    val ink = config.colorOverride ?: activeInk
+    val base = "$name, $colourLabel ${Rgba.toHex(ink)}, $widthLabel ${"%.1f".format(config.baseWidth)}"
+    if (tool != Tool.PEN && tool != Tool.CALLIGRAPHY && tool != Tool.SPEED && tool != Tool.TAPER) return base
+    val value = if (config.pressureEnabled) {
+        "$sensitivityLabel ${ToolConversions.minFactorToSensitivity(config.pressureMinFactor).roundToInt()}%"
+    } else offLabel
+    return "$base, $pressureLabel $value"
+}
+
+/** The armed stroke preview is shared by paged and infinite toolbars. */
+@Composable
+internal fun strokeToolAnnouncement(host: ToolPopupHost, tool: Tool, name: String): String {
+    val config = host.toolConfig(tool)
+    val activeInk = host.hostToolbarColors.getOrNull(host.hostActiveColorIndex) ?: config.rgba
+    return strokeStyleDescription(
+        tool, config, activeInk, name,
+        stringResource(R.string.colour), stringResource(R.string.caption_width),
+        stringResource(R.string.caption_pressure), stringResource(R.string.caption_sensitivity),
+        stringResource(R.string.off),
+    )
+}
+
+internal fun pdfReadingToolbarActive(hasPdf: Boolean, tool: Tool): Boolean = hasPdf && tool == Tool.PAN
+
+/** Reading PDF uses a short navigation-first strip; the saved annotation layout stays untouched. */
+internal fun pagedToolbarSections(layout: ToolbarLayout, readingPdf: Boolean): List<List<ToolbarItem>> =
+    if (readingPdf) listOf(listOf(
+        ToolbarItem.PAGE_NAV, ToolbarItem.SIDEBAR, ToolbarItem.FIT,
+        ToolbarItem.FULLSCREEN, ToolbarItem.HOME,
+    )) else layout.visibleSections.map { section -> section.visibleEntries.map { it.item } }
 
 @Composable
 fun Toolbar(
@@ -133,20 +181,31 @@ fun Toolbar(
     var configForTool by remember { mutableStateOf<Tool?>(null) }
     var switcherIndex by remember { mutableStateOf<Int?>(null) }
     var renaming by remember { mutableStateOf(false) }
-    // Pinned outside the scrolling strip so closing a split pane is always one tap away.
+    val readingPdf = pdfReadingToolbarActive(editor.hasPdf, editor.tool)
+    LaunchedEffect(readingPdf) {
+        if (readingPdf) {
+            configForTool = null
+            switcherIndex = null
+        }
+    }
+    // PDF Read/Annotate and split-pane Close remain visible while the tool strip scrolls.
     ToolbarFrame(
         armed = editor.tool,
+        pinnedButtons = (if (editor.hasPdf) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { PagedCanvasQuickAccess(editor, onInsertImage, onImportTemplate, null) },
-        pinned = { onClosePane?.let { ClosePaneButton(it) } },
+        pinned = {
+            if (editor.hasPdf) PdfModeButton(editor)
+            onClosePane?.let { ClosePaneButton(it) }
+        },
     ) {
-        // The bar is driven by the user-customisable layout; separators sit between non-empty
+        // Annotate follows the saved layout; Read uses essential navigation. Separators sit between non-empty
         // sections, and each item dispatches to its renderer (see ToolbarItemView).
-        editor.toolbarLayout.visibleSections.forEachIndexed { si, section ->
+        pagedToolbarSections(editor.toolbarLayout, readingPdf).forEachIndexed { si, section ->
             if (si > 0) Separator()
-            section.visibleEntries.forEach { entry ->
+            section.forEach { item ->
                 ToolbarItemView(
                     editor = editor,
-                    item = entry.item,
+                    item = item,
                     toolIcons = toolIcons,
                     configForTool = configForTool,
                     setConfigForTool = { configForTool = it },
@@ -179,6 +238,14 @@ fun Toolbar(
     }
 }
 
+/** Page arrows move between rows, not between pages within a two-page spread. */
+internal fun pageNavigationEnabled(row: IntRange, pageCount: Int, forward: Boolean): Boolean =
+    if (forward) row.last < pageCount - 1 else row.first > 0
+
+/** Match CanvasState's zoom clamp and tolerance so boundary buttons cannot offer no-op steps. */
+internal fun toolbarZoomStepEnabled(zoom: Double, minZoom: Double, maxZoom: Double, locked: Boolean, zoomIn: Boolean): Boolean =
+    !locked && (if (zoomIn) zoom < maxZoom - 1e-9 else zoom > minZoom + 1e-9)
+
 /** Renders one toolbar item by id, reusing the same controls/popups the bar has always used. */
 @Composable
 private fun ToolbarItemView(
@@ -204,14 +271,18 @@ private fun ToolbarItemView(
         ToolbarItem.WAYPOINTS, ToolbarItem.MINIMAP -> Unit
 
         ToolbarItem.HOME -> ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.toolbar_home)) { onOpenBackstage() }
-        // A name has no room down a side rail.
-        ToolbarItem.TITLE -> if (!LocalBar.current.vertical) {
+        // Show a compact rename action on a side rail instead of hiding the Title item.
+        ToolbarItem.TITLE -> {
             val renameLabel = stringResource(R.string.rename_note)
-            Tooltip(renameLabel) {
-                Label(
-                    if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
-                    modifier = Modifier.widthIn(max = 160.dp).toolbarTextAction(renameLabel, onRename),
-                )
+            if (LocalBar.current.vertical) {
+                ToolbarIcon(NotesTakingIcons.edit, renameLabel, onClick = onRename)
+            } else {
+                Tooltip(renameLabel) {
+                    Label(
+                        if (editor.state.document.displayName == null && editor.state.document.path == null) stringResource(R.string.untitled) else editor.title,
+                        modifier = Modifier.widthIn(max = 160.dp).toolbarTextAction(renameLabel, onRename),
+                    )
+                }
             }
         }
         ToolbarItem.SIDEBAR ->
@@ -240,7 +311,12 @@ private fun ToolbarItemView(
         ToolbarItem.REDO -> ToolbarIcon(NotesTakingIcons.redo, stringResource(R.string.redo), enabled = editor.canRedo, shortcut = Keys.REDO) { editor.redo() }
 
         ToolbarItem.PAGE_NAV -> {
-            ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.previous_page), shortcut = Keys.PREV_PAGE) { editor.prevPage() }
+            val currentRow = if (editor.pageCount > 0) editor.state.rowOf(editor.pageIndex) else 0..0
+            ToolbarIcon(
+                NotesTakingIcons.prev, stringResource(R.string.previous_page),
+                enabled = pageNavigationEnabled(currentRow, editor.pageCount, forward = false),
+                shortcut = Keys.PREV_PAGE,
+            ) { editor.prevPage() }
             var jumpOpen by remember { mutableStateOf(false) }
             Box {
                 val jumpLabel = stringResource(R.string.title_go_to_page)
@@ -255,14 +331,21 @@ private fun ToolbarItemView(
                 }
                 if (jumpOpen) PageJumpPopup(editor) { jumpOpen = false }
             }
-            ToolbarIcon(NotesTakingIcons.next, stringResource(R.string.next_page), shortcut = Keys.NEXT_PAGE) { editor.nextPage() }
+            ToolbarIcon(
+                NotesTakingIcons.next, stringResource(R.string.next_page),
+                enabled = pageNavigationEnabled(currentRow, editor.pageCount, forward = true),
+                shortcut = Keys.NEXT_PAGE,
+            ) { editor.nextPage() }
         }
         ToolbarItem.STYLES -> StylesButton(editor, onImportTemplate)
         ToolbarItem.MARGINS -> MarginsButton(editor)
         ToolbarItem.VIEW -> ViewButton(editor)
 
         ToolbarItem.ZOOM -> {
-            ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_OUT) { editor.zoomOut() }
+            val zoom = editor.state.zoom
+            val zoomOutEnabled = toolbarZoomStepEnabled(zoom, editor.state.minZoom, editor.state.maxZoom, editor.zoomLocked, zoomIn = false)
+            val zoomInEnabled = toolbarZoomStepEnabled(zoom, editor.state.minZoom, editor.state.maxZoom, editor.zoomLocked, zoomIn = true)
+            ToolbarIcon(NotesTakingIcons.zoomOut, stringResource(R.string.zoom_out), enabled = zoomOutEnabled, shortcut = Keys.ZOOM_OUT) { editor.zoomOut() }
             var zoomMenuOpen by remember { mutableStateOf(false) }
             Box {
                 val zoomLabel = stringResource(R.string.title_zoom)
@@ -276,7 +359,7 @@ private fun ToolbarItemView(
                 }
                 if (zoomMenuOpen) ZoomMenuPopup(editor) { zoomMenuOpen = false }
             }
-            ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = !editor.zoomLocked, shortcut = Keys.ZOOM_IN) { editor.zoomIn() }
+            ToolbarIcon(NotesTakingIcons.zoomIn, stringResource(R.string.zoom_in), enabled = zoomInEnabled, shortcut = Keys.ZOOM_IN) { editor.zoomIn() }
         }
         ToolbarItem.FIT -> FitMenu(editor)
         ToolbarItem.ZOOM_LOCK -> ToolbarIcon(
@@ -315,10 +398,12 @@ private fun ToolButton(
     if (icon == null) return
     val armed = editor.tool == tool
     val configurable = tool.isStroke || tool == Tool.SHAPE || tool == Tool.ERASER || tool == Tool.SELECT || tool == Tool.TEXT || tool == Tool.MARKUP || tool == Tool.TAPE
+    val name = if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes)
+    val description = if (armed && tool.isStroke) strokeToolAnnouncement(editor, tool, name) else name
     Box {
         ToolbarIcon(
             icon,
-            stringResource(tool.labelRes),
+            description,
             active = armed,
             glideKey = tool,
             hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,
@@ -430,7 +515,7 @@ internal class ToolGlide {
 internal val LocalToolGlide = staticCompositionLocalOf<ToolGlide?> { null }
 
 /** One hop of the glide along the bar: where it set out from and is headed, and how far it may stretch. */
-private class GlideTrip {
+internal class GlideTrip {
     var from = 0f
     var to = 0f
     /** Where the circle sits across the bar. */
@@ -438,6 +523,15 @@ private class GlideTrip {
     var stretch = 0f
     /** Stretch left over from a hop cut short, let go of over the new one. */
     var carry = 0f
+
+    /** A disabled animator must settle an interrupted hop without any leftover stretch. */
+    fun settle(along: Float, across: Float) {
+        from = along
+        to = along
+        this.across = across
+        stretch = 0f
+        carry = 0f
+    }
 
     /** Where the circle's centre is at [t] of the way: eased in and out along a half cosine. */
     fun x(t: Float) = from + (to - from) * (1 - cos(PI * t).toFloat()) / 2
@@ -461,12 +555,19 @@ internal fun Modifier.toolGlide(glide: ToolGlide, armed: Any?): Modifier {
     val progress = remember { Animatable(1f) }
     val shown = remember { Animatable(0f) }
     LaunchedEffect(target) {
+        val animationsEnabled = ValueAnimator.areAnimatorsEnabled()
         if (target == null) {
-            shown.animateTo(0f, tween(SELECT_FADE_MS))
+            if (animationsEnabled) shown.animateTo(0f, tween(SELECT_FADE_MS)) else shown.snapTo(0f)
             return@LaunchedEffect
         }
         val t = progress.value
         val along = if (bar.vertical) target.y else target.x
+        if (!animationsEnabled) {
+            trip.settle(along, if (bar.vertical) target.x else target.y)
+            progress.snapTo(1f)
+            shown.snapTo(1f)
+            return@LaunchedEffect
+        }
         trip.carry = if (shown.value == 0f) 0f else trip.drawnOut(t)
         trip.from = if (shown.value == 0f) along else trip.x(t)
         trip.to = along
@@ -513,6 +614,25 @@ internal fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
         .then(if (focused) Modifier.border(2.dp, accent, shape) else Modifier)
 }
 
+/** Named toggle actions work in both states; re-tap settings hints only work when armed. */
+internal fun toolbarActionLabel(active: Boolean, hint: String?, explicitLabel: String?): String? =
+    explicitLabel ?: hint.takeIf { active }
+
+/** Keep the live eraser mode and brush size audible in both editor toolbars. */
+internal fun eraserAccessibilityText(name: String, mode: String, sizeLabel: String, size: Double): String =
+    "$name: $mode, $sizeLabel: $size"
+
+@Composable
+internal fun eraserToolbarDescription(host: ToolPopupHost): String {
+    val config = host.toolConfig(Tool.ERASER)
+    return eraserAccessibilityText(
+        stringResource(R.string.tool_eraser),
+        stringResource(if (config.eraseMode == com.notestaking.app.core.tools.EraseMode.AREA) R.string.eraser_area else R.string.eraser_stroke),
+        stringResource(R.string.caption_size),
+        config.baseWidth,
+    )
+}
+
 /** Tools and persistent toggles announce selection; one-shot actions do not. */
 internal fun toolbarSelectionState(active: Boolean, glideKey: Any?, reportSelection: Boolean): Boolean? =
     if (glideKey != null || reportSelection) active else null
@@ -531,6 +651,7 @@ internal fun ToolbarIcon(
     glideKey: Any? = null,
     reportSelection: Boolean = false,
     hint: String? = null,
+    actionLabel: String? = null,
     shortcut: String? = null,
     onClick: () -> Unit,
 ) {
@@ -561,7 +682,7 @@ internal fun ToolbarIcon(
                 .size(bar.button)
                 .toolbarFocusOutline(CircleShape)
                 .then(if (selectionState != null) Modifier.semantics { selected = selectionState } else Modifier)
-                .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
+                .clickable(interaction, indication = null, enabled = enabled, onClickLabel = toolbarActionLabel(active, hint, actionLabel), role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -601,7 +722,7 @@ internal fun Swatch(
     val bar = LocalBar.current
     val colourLabel = stringResource(R.string.colour)
     val accessibleLabel = if (ink != null) "$colourLabel ${Rgba.toHex(ink)}" else colourLabel
-    Tooltip(accessibleLabel) {
+    Tooltip(accessibleLabel, hint = if (active) stringResource(R.string.material_custom_colour) else null) {
         Box(
             modifier = Modifier
                 .padding(if (bar.vertical) PaddingValues(vertical = 4.dp) else PaddingValues(horizontal = 4.dp))
@@ -609,14 +730,14 @@ internal fun Swatch(
                 .toolbarFocusOutline(CircleShape)
                 .then(if (drag != null && ink != null) Modifier.colorDragSource(drag, ink, bar.vertical) else Modifier)
                 .semantics { contentDescription = accessibleLabel; selected = active }
-                .clickable(role = Role.Button, onClick = onClick),
+                .clickable(onClickLabel = if (active) stringResource(R.string.material_custom_colour) else null, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 Modifier
                     .size(bar.swatch)
-                    // The selection ring takes the swatch's own colour, not the theme accent.
-                    .then(if (active) Modifier.border(2.dp, color, CircleShape) else Modifier)
+                    // Use a themed contrast ring so black or white ink remains selected on matching chrome.
+                    .then(if (active) Modifier.border(2.dp, LocalPalette.current.text.toComposeColor(), CircleShape) else Modifier)
                     .padding(4.dp)
                     .clip(CircleShape)
                     .background(color),
@@ -715,7 +836,7 @@ private fun StickersMenu(editor: Editor, onAddStickers: () -> Unit, onDismiss: (
         DropdownMenuItem(
             text = { Text(stringResource(R.string.add_stickers)) },
             leadingIcon = { Icon(NotesTakingIcons.plus, contentDescription = null, modifier = Modifier.size(18.dp)) },
-            onClick = onAddStickers,
+            onClick = { onDismiss(); onAddStickers() },
         )
         if (editor.stickers.isEmpty()) {
             Text(
