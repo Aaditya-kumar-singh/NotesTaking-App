@@ -4713,8 +4713,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val result = runCatching {
             android.provider.DocumentsContract.renameDocument(appContext.contentResolver, android.net.Uri.parse(docUri), newName)
         }
-        if (result.isFailure) return false
-        val resultUri = result.getOrNull()?.toString() ?: docUri
+        val resultUri = result.getOrNull()?.toString() ?: return false
         if (state.document.path == docUri) {
             state.document.path = resultUri
             state.document.displayName = newName

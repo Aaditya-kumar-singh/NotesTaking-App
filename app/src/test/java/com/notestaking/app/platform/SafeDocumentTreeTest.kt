@@ -64,6 +64,44 @@ class SafeDocumentTreeTest {
         assertTrue(File(root, "note (1).xnote").exists())
     }
 
+    @Test fun unchangedNameAndSameParentMoveDoNotDuplicateOrDeleteNotes() = withTree { tree, root, _ ->
+        val folder = tree.create("root", "Projects", true)
+        val note = tree.create(folder, "Meeting.xnote", false)
+        val bytes = ByteArray(512) { (it % 251).toByte() }
+        tree.resolve(note).writeBytes(bytes)
+
+        assertEquals(folder, tree.rename(folder, "Projects"))
+        assertEquals(note, tree.rename(note, "Meeting.xnote"))
+        assertEquals(note, tree.move(note, folder, folder))
+        assertArrayEquals(bytes, tree.resolve(note).readBytes())
+        assertEquals(listOf("Projects"), root.listFiles()!!.map { it.name })
+        assertEquals(listOf("Meeting.xnote"), tree.resolve(folder).listFiles()!!.map { it.name })
+    }
+
+    @Test fun renameAndMoveConflictsPreserveBothCopiesAndSourceIdentity() = withTree { tree, _, _ ->
+        val from = tree.create("root", "From", true)
+        val to = tree.create("root", "To", true)
+        val note = tree.create(from, "Draft.xnote", false)
+        val existing = tree.create(to, "Draft.xnote", false)
+        val original = byteArrayOf(0, 1, 2, 3, 4)
+        tree.resolve(note).writeBytes(original)
+        tree.resolve(existing).writeText("other note")
+
+        rejected { tree.move(note, from, to) }
+        rejected { tree.rename(note, "invalid/name") }
+        assertArrayEquals(original, tree.resolve(note).readBytes())
+        assertEquals("other note", tree.resolve(existing).readText())
+
+        val renamed = tree.rename(note, "Final.xnote")
+        assertEquals("root/From/Final.xnote", renamed)
+        val moved = tree.move(renamed, from, to)
+        assertEquals("root/To/Final.xnote", moved)
+        assertArrayEquals(original, tree.resolve(moved).readBytes())
+        assertEquals("other note", tree.resolve(existing).readText())
+        assertTrue(tree.resolve(from).listFiles()!!.isEmpty())
+        assertEquals(2, tree.resolve(to).listFiles()!!.size)
+    }
+
     @Test fun cannotCopyOrMoveDirectoryIntoItselfOrDescendant() = withTree { tree, root, _ ->
         val folder = File(root, "folder").apply { mkdir() }
         File(folder, "child").mkdir()
