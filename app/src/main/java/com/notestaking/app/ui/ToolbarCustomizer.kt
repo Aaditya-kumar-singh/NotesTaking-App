@@ -41,6 +41,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -308,8 +311,8 @@ private fun SectionDragStrip(
 }
 
 /** Handle one activation per key press, without interfering with the chip's drag gestures. */
-internal fun toolbarChipActivationKey(key: Key, type: KeyEventType): Boolean =
-    type == KeyEventType.KeyUp && (key == Key.Enter || key == Key.NumPadEnter || key == Key.Spacebar)
+internal fun toolbarChipActivationKey(key: Key, type: KeyEventType, modified: Boolean = false): Boolean =
+    !modified && type == KeyEventType.KeyUp && (key == Key.Enter || key == Key.NumPadEnter || key == Key.Spacebar)
 
 @Composable
 private fun ChipCell(
@@ -346,7 +349,7 @@ private fun ChipCell(
                 onClick { tap(); true }
             }
             .onKeyEvent { event ->
-                if (toolbarChipActivationKey(event.key, event.type)) {
+                if (toolbarChipActivationKey(event.key, event.type, event.isAltPressed || event.isCtrlPressed || event.isMetaPressed)) {
                     tap()
                     true
                 } else false
