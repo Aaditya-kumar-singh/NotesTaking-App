@@ -79,6 +79,39 @@ class CanvasSessionStoreTest {
         }
     }
 
+    @Test fun metadataOnlySaveRejectsCorruptNonemptyCanvasAndFullSaveRepairs() {
+        val dir = Files.createTempDirectory("notestaking-canvas-corrupt").toFile()
+        val images = Files.createTempDirectory("notestaking-canvas-corrupt-images").toFile()
+        try {
+            val store = CanvasSessionStore(dir, codec(), images)
+            assertTrue(store.save(InfiniteDocument(dpi = 144), writeDocument = true))
+            val sidecar = dir.resolve("canvas-session.json")
+            val oldMetadata = sidecar.readBytes()
+            val slot = dir.resolve("canvas.xcanvas")
+            slot.writeText("nonempty but not a canvas ZIP")
+
+            assertFalse(store.save(InfiniteDocument(dpi = 200), writeDocument = false))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertEquals("nonempty but not a canvas ZIP", slot.readText())
+            val withoutManifest = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(withoutManifest).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("assets/unused.bin"))
+                zip.write(byteArrayOf(1, 2, 3))
+                zip.closeEntry()
+            }
+            slot.writeBytes(withoutManifest.toByteArray())
+            assertFalse(store.save(InfiniteDocument(dpi = 200), writeDocument = false))
+            assertArrayEquals(oldMetadata, sidecar.readBytes())
+            assertArrayEquals(withoutManifest.toByteArray(), slot.readBytes())
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
+            assertTrue(store.save(InfiniteDocument(dpi = 300), writeDocument = true))
+            assertEquals(300, store.load()!!.dpi)
+        } finally {
+            dir.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun blockedMetadataCannotOverwriteLastGoodCanvas() {
         val sessionDir = Files.createTempDirectory("notestaking-canvas-metadata").toFile()
         val imageDir = Files.createTempDirectory("notestaking-canvas-images").toFile()
