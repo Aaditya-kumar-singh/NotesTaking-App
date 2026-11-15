@@ -1,6 +1,7 @@
 package com.notestaking.app.platform
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -36,6 +37,15 @@ class PageSelectionSafetyTest {
         val selected = mutableListOf(old)
         PageSelectionSafety.prune(selected, listOf(replacement))
         assertTrue(selected.isEmpty())
+    }
+
+    @Test fun destructiveSelectionRejectsMissingPagesInsteadOfCuttingOnlyTheValidSubset() {
+        assertEquals(listOf(1, 3), PageSelectionSafety.checkedIndices(5, listOf(3, 1, 3)))
+        assertEquals(listOf(0, 1), PageSelectionSafety.checkedIndices(2, listOf(1, 0)))
+        assertNull(PageSelectionSafety.checkedIndices(5, emptyList()))
+        assertNull(PageSelectionSafety.checkedIndices(5, listOf(1, -1)))
+        assertNull(PageSelectionSafety.checkedIndices(5, listOf(1, 5)))
+        assertNull(PageSelectionSafety.checkedIndices(0, listOf(0)))
     }
 
     @Test fun removingLastSelectedPageExitsSelectionMode() {

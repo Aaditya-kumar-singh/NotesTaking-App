@@ -7086,25 +7086,38 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     }
 
     /** Put copies of the pages at [indices] (note order) on the page clipboard, for a paste in any note. */
-    fun copyPages(indices: List<Int>) = putPagesBy(indices, cut = false)
+    fun copyPages(indices: List<Int>) { putPagesBy(indices, cut = false) }
 
     /** Copy [indices] to the clipboard then delete them (kept ≥ 1 page). */
     fun cutPages(indices: List<Int>) {
-        if (indices.isEmpty()) return
-        if (indices.distinct().size >= state.document.pages.size) {
+        val picked = com.notestaking.app.platform.PageSelectionSafety.checkedIndices(state.document.pages.size, indices)
+            ?: return
+        if (picked.size >= state.document.pages.size) {
             message = appContext.getString(R.string.err_keep_one_page)
             return
         }
-        putPagesBy(indices, cut = true)
-        deletePages(indices)
+        if (putPagesBy(picked, cut = true)) deletePages(picked)
     }
 
-    private fun putPagesBy(indices: List<Int>, cut: Boolean) {
+    private fun putPagesBy(indices: List<Int>, cut: Boolean): Boolean {
         val doc = state.document
-        val cargo = com.notestaking.app.core.model.PageCargo.pack(doc, indices, textMeasurer)
-        if (cargo.size == 0) return
-        val pdf = doc.pdfFile?.takeIf { cargo.pdfIndices.isNotEmpty() }?.let { keepPdf(it) }
+        val picked = com.notestaking.app.platform.PageSelectionSafety.checkedIndices(doc.pages.size, indices)
+            ?: return false
+        val cargo = com.notestaking.app.core.model.PageCargo.pack(doc, picked, textMeasurer)
+        if (cargo.size == 0) return false
+        val pdf = if (cargo.pdfIndices.isNotEmpty()) {
+            val source = doc.pdfFile
+            if (source == null) {
+                message = appContext.getString(R.string.err_read_file)
+                return false
+            }
+            keepPdf(source) ?: run {
+                message = appContext.getString(R.string.err_read_file)
+                return false
+            }
+        } else null
         PageClipboard.put(PageClipboard.Clip(cargo, java.lang.ref.WeakReference(doc), pdf, cut))
+        return true
     }
 
     /** [file] under a second name in the PDF temp dir, else a copy, so it outlives its note; null when neither worked. */
@@ -7126,7 +7139,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val cargo = clip.cargo
         when {
             clip.isFrom(doc) -> landPages(cargo.unpackHome(doc, textMeasurer), index, if (clip.cut) cargo.bookmarks else emptyList())
-            cargo.pdfIndices.isEmpty() || clip.sourcePdf == null -> landPages(cargo.unpack(doc, null, textMeasurer), index, cargo.bookmarks)
+            cargo.pdfIndices.isEmpty() -> landPages(cargo.unpack(doc, null, textMeasurer), index, cargo.bookmarks)
+            clip.sourcePdf?.isFile != true -> message = appContext.getString(R.string.err_paste_pages)
             else -> autosaveScope.launch { pasteWithPdf(clip, index) }
         }
     }
