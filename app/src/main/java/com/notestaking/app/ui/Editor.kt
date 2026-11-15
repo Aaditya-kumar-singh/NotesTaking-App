@@ -6949,20 +6949,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     }
 
     fun deleteCurrentPage() {
-        if (state.document.pages.size <= 1) {
-            message = appContext.getString(R.string.err_keep_one_page)
-            return
-        }
-        val index = state.currentPageIndex()
-        val page = state.document.pages[index]
-        history.push(DeletePage(state.document, page, index).also { it.redo() })
-        if (selectedPages.isNotEmpty()) com.notestaking.app.platform.PageSelectionSafety.prune(selectedPages, state.document.pages)
-        bookmarkVersion++
-        state.document.dirty = true
-        state.invalidatePage(page)
-        state.relayout()
-        refreshContent()
-        view.requestRender()
+        deletePages(listOf(state.currentPageIndex()))
     }
 
     // --- side-panel page operations (operate on explicit page indices) ---
@@ -7458,6 +7445,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
 
     /** Turn the pages at [indices] [turns] quarter turns clockwise, content and all, as one undo step. */
     fun rotatePages(indices: List<Int>, turns: Int) {
+        if (PageTurn.normalize(turns) == 0) return
         val pages = indices.distinct().sorted().mapNotNull { pageAt(it) }
         if (pages.isEmpty()) return
         pdfText.clear()
