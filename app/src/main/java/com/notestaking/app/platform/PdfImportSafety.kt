@@ -100,6 +100,10 @@ internal object PdfImportSafety {
                     if (needed > 0) {
                         buffer.copyInto(header, destinationOffset = prefixSize, startIndex = 0, endIndex = needed)
                         prefixSize += needed
+                        if (prefixSize == HEADER_SCAN_BYTES && !hasPdfHeader(header, prefixSize)) {
+                            failure = if (isCancelled()) StageFailure.CANCELLED else StageFailure.INVALID_PDF
+                            throw IOException("Missing PDF signature or import cancelled")
+                        }
                     }
                     output.write(buffer, 0, read)
                     total += read

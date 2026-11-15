@@ -40,6 +40,35 @@ class PdfImportSafetyTest {
         assertTrue(dir.listFiles()!!.isEmpty())
     }
 
+    @Test fun invalidPdfStopsAfterHeaderScanWithoutExhaustingProvider() = withDirectory { dir ->
+        val failures = mutableListOf<PdfImportSafety.StageFailure>()
+        val input = object : ByteArrayInputStream(ByteArray(2048) { 'x'.code.toByte() }) {
+            var reads = 0
+            var closed = false
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (reads++ > 0) throw AssertionError("Invalid PDF must not read past its header")
+                return super.read(b, off, len.coerceAtMost(1024))
+            }
+            override fun close() {
+                closed = true
+                super.close()
+            }
+        }
+        assertNull(PdfImportSafety.stage(input, dir, onFailure = { failures += it }))
+        assertEquals(listOf(PdfImportSafety.StageFailure.INVALID_PDF), failures)
+        assertEquals(1, input.reads)
+        assertTrue(input.closed)
+        assertTrue(dir.listFiles()!!.isEmpty())
+    }
+
+    @Test fun acceptsPdfSignatureAtLastAllowedHeaderOffset() = withDirectory { dir ->
+        val original = ByteArray(1019) { ' '.code.toByte() } + pdf(512)
+        val staged = PdfImportSafety.stage(ByteArrayInputStream(original), dir)
+        assertArrayEquals(original, staged!!.readBytes())
+        staged.delete()
+        assertTrue(dir.listFiles()!!.isEmpty())
+    }
+
     @Test fun recognizesPdfSignatureAfterShortPreamble() = withDirectory { dir ->
         val data = (ByteArray(30) { 32 } + pdf(512))
         val staged = PdfImportSafety.stage(ByteArrayInputStream(data), dir)
