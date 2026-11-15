@@ -98,6 +98,13 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - No production behavior changed because there is no demonstrated missing feature or bug in the in-scope policy, and `ui/Editor.kt` / toolbar wiring is another agent's ownership. Added four focused cases to `core/tools/PdfReadingToolChoiceTest.kt`: exact NT-026 Read → Annotate → Eraser → Read → Annotate (plus Highlighter); every supported editing tool restored; transient tools and repeated Read ignored; independent split-pane tool memory.
 - Source-only A–Z integrity, source/privacy, ownership and whitespace checks required before local commit. Kotlin/JUnit and Android builds are prohibited locally; GitHub exact-SHA CI, viewport/page preservation, mode button UI, and NT-026 phone/tablet gestures remain **unverified** and must not be marked complete. No push, rebase, manual checklist ticks or non-owned files modified.
 
+## NP-030 — pen, dashed, calligraphy, taper and speed brushes (Batch F, P1)
+
+- Session `C-20261115-1120-gpt6`, parent local commit `f570af43c31a72b7ac3cdf7d429517fee6c75a8f` (NP-029 is in review). Continued the active `NP-030` claim after the preceding Chat C turn was interrupted; no duplicate claim or session replacement.
+- Inspected shared `core/tools/{ToolConfig,Tool}.kt` defaults and persistence, `core/stroke/{StrokeEngine,WetRibbon,StrokeGeometry}.kt` pressure/speed/direction/taper geometry, `core/model/{Stroke,DrawStyle}.kt` live and finished rendering/config snapshots, `core/infinite/{ItemMesher,StrokeTessellator}.kt` paged/infinite brush signatures, read-only paged `canvas/InteractionController.kt` pen-down settings, and existing unit tests. All five brushes already have independent implementations; no demonstrated production bug warranted a risky geometry change.
+- Added `core/model/BrushToolsTest.kt`: five distinct pen signatures (pressure, dashed polyline, calligraphy direction, taper tip, speed thinning), 20 strokes per brush across 25%/100%/400% zoom ensuring finite geometry and preserved snapshots, plus restyle/restore retaining speed, taper, direction and dash parameters without affecting another stroke.
+- A-Z catalog integrity, Python source validation (0 problems), private-backup guard, exclusive C file ownership and whitespace checks passed. Source-only validation cannot establish Kotlin test pass, real brush quality, persistence after restart, or device NT-027: these remain for exact-SHA GitHub Android CI and physical S Pen phone/tablet acceptance. No push, Gradle, APK build or release performed.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
