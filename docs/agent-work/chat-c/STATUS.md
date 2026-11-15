@@ -35,6 +35,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/model/LiveStrokeRibbonTest.kt` regression source for negative/over-range/NaN/infinite pressure and for light versus firm pressure width at 25%, 100%, and 400% zoom, before and after pen-up.
 - Verification: `check_project.py`, `check_backup_privacy.py`, `check_lane.py` and `git diff --check` passed. Local Kotlin/Gradle execution prohibited by repo policy. GitHub exact-SHA CI and S Pen device pressure/width/last-frame checks (NT-023) remain required; source checks alone do not establish hardware pass.
 
+## NP-039 — area eraser splitting and surviving segments (Batch A, P0)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `8eed0b62bd964189dbbde039f75e2df21fef96d3` (NP-023 remains in review). Task was already claimed in the shared triad ledger; resumed that active claim without another writer or branch mutation.
+- Examined both consumers of `Stroke.erasedBy`: paged `canvas/InteractionController.kt` and infinite `core/infinite/EraseSession.kt`, raw/polyline geometry, zoom-scaled eraser radii, current `StrokeEraseTest` and `EraseSessionTest`, test NT-031. The established two-point segment clipping and interpolated pressure/time logic remain intact.
+- Fixed a calligraphic edge case: the eraser hit test and area splitter now use a conservative bound on the largest nib half-width, including directional width variation, so visible broad nib ink cannot escape clipping when the eraser touches past the base-width radius. Plain pen behavior is unchanged.
+- Added `core/model/StrokeEraseTest.kt` coverage for sparse two-point ink split at 25%, 100%, 400% draw zoom (two independently editable fragments, interpolated pressure and time, original untouched), plus a broad calligraphy-nib grazing case.
+- Checks: A-Z integrity, Python source validator, backup privacy validator, Chat C file ownership and `git diff --check` required. Kotlin tests, exact-SHA CI, S Pen NT-031 and actual file save/reopen cannot run locally under Windows policy; all remain pending.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
