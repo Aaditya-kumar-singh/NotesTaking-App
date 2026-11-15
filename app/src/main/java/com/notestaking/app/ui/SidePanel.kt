@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -94,7 +95,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /** The side panel's tabs. */
-enum class SidePanelTab { PAGES, CONTENTS, BOOKMARKS, SEARCH }
+enum class SidePanelTab { PAGES, ANNOTATIONS, CONTENTS, BOOKMARKS, SEARCH }
 
 /** Quick page count and entry points; actual insert/reorder/export work stays in Editor. */
 @Composable
@@ -222,10 +223,28 @@ fun SidePanel(
             .background(palette.panel.toComposeColor()),
     ) {
         Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            SegIcon(NotesTakingIcons.thumbnails, stringResource(R.string.pages), tab == SidePanelTab.PAGES) { editor.sidePanelTab = SidePanelTab.PAGES }
+            SegIcon(NotesTakingIcons.thumbnails, stringResource(R.string.pages), tab == SidePanelTab.PAGES || tab == SidePanelTab.ANNOTATIONS) { editor.sidePanelTab = SidePanelTab.PAGES }
             SegIcon(NotesTakingIcons.contents, stringResource(R.string.contents), tab == SidePanelTab.CONTENTS) { editor.sidePanelTab = SidePanelTab.CONTENTS }
             SegIcon(NotesTakingIcons.bookmark, stringResource(R.string.bookmarks), tab == SidePanelTab.BOOKMARKS) { editor.sidePanelTab = SidePanelTab.BOOKMARKS }
             SegIcon(NotesTakingIcons.search, stringResource(R.string.search), tab == SidePanelTab.SEARCH, shortcut = Keys.SEARCH) { editor.sidePanelTab = SidePanelTab.SEARCH }
+        }
+        if (tab == SidePanelTab.PAGES || tab == SidePanelTab.ANNOTATIONS) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                TextButton(
+                    onClick = { editor.sidePanelTab = SidePanelTab.PAGES },
+                    modifier = Modifier.weight(1f).height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (tab == SidePanelTab.PAGES) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
+                        .semantics { selected = tab == SidePanelTab.PAGES },
+                ) { Text(stringResource(R.string.pages)) }
+                TextButton(
+                    onClick = { editor.sidePanelTab = SidePanelTab.ANNOTATIONS },
+                    modifier = Modifier.weight(1f).height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (tab == SidePanelTab.ANNOTATIONS) palette.selectionBackground.toComposeColor() else androidx.compose.ui.graphics.Color.Transparent)
+                        .semantics { selected = tab == SidePanelTab.ANNOTATIONS },
+                ) { Text("Annotations") }
+            }
         }
         if (tab == SidePanelTab.PAGES) {
             PagePanelHeader(editor, onInsertPdf) {
@@ -242,6 +261,7 @@ fun SidePanel(
                     onInsertPdf = onInsertPdf,
                     onPickCover = { pickingCover = true },
                 )
+                SidePanelTab.ANNOTATIONS -> AnnotationsTab(editor)
                 SidePanelTab.CONTENTS -> ContentsTab(editor)
                 SidePanelTab.BOOKMARKS -> BookmarksTab(editor)
                 SidePanelTab.SEARCH -> SearchTab(editor)
@@ -979,6 +999,94 @@ private fun VerticalScrollbar(listState: LazyListState, modifier: Modifier = Mod
                 )
             },
     )
+}
+
+@Composable
+private fun AnnotationsTab(editor: Editor) {
+    val palette = LocalPalette.current
+    var currentOnly by remember(editor.state.document) { mutableStateOf(false) }
+    var selectedEntry by remember(editor.state.document) {
+        mutableStateOf<com.notestaking.app.platform.AnnotationIndex.Entry?>(null)
+    }
+    val version = editor.contentVersion
+    val current = editor.pageIndex
+    val entries = remember(editor.state.document, version, currentOnly, current) {
+        com.notestaking.app.platform.AnnotationIndex.list(editor.pagesSnapshot(), if (currentOnly) current else null)
+    }
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = !currentOnly,
+                onClick = { currentOnly = false },
+                label = { Text(stringResource(R.string.all_pages)) },
+                modifier = Modifier.height(48.dp),
+            )
+            FilterChip(
+                selected = currentOnly,
+                onClick = { currentOnly = true },
+                label = { Text(stringResource(R.string.current_page)) },
+                modifier = Modifier.height(48.dp),
+            )
+        }
+        Text(
+            "Annotations (${entries.size})",
+            color = palette.textDim.toComposeColor(),
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        )
+        if (entries.isEmpty()) {
+            EmptyHint("No annotations on ${if (currentOnly) "this page" else "these pages"}.")
+        } else {
+            LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+                itemsIndexed(entries) { _, entry ->
+                    val mark = entry.markup
+                    val kind = when (mark.type) {
+                        com.notestaking.app.core.model.MarkupType.HIGHLIGHT -> stringResource(R.string.markup_highlight)
+                        com.notestaking.app.core.model.MarkupType.UNDERLINE -> stringResource(R.string.underline)
+                        com.notestaking.app.core.model.MarkupType.STRIKEOUT -> stringResource(R.string.strikethrough)
+                        com.notestaking.app.core.model.MarkupType.SQUIGGLY -> stringResource(R.string.markup_squiggly)
+                    }
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .background(
+                                if (selectedEntry?.page === entry.page && selectedEntry?.markup === mark)
+                                    palette.selectionBackground.toComposeColor()
+                                else androidx.compose.ui.graphics.Color.Transparent,
+                            )
+                            .clickable { if (editor.goToAnnotation(entry)) selectedEntry = entry }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    ) {
+                        Text(
+                            "${stringResource(R.string.page_n, entry.index + 1)} · $kind",
+                            color = palette.textDim.toComposeColor(),
+                            fontSize = 12.sp,
+                        )
+                        val preview = mark.text.ifBlank { mark.note.orEmpty() }.ifBlank { kind }
+                        Text(
+                            preview,
+                            color = palette.text.toComposeColor(),
+                            fontSize = 13.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        mark.note?.takeIf { it.isNotBlank() && it != preview }?.let { note ->
+                            Text(
+                                note,
+                                color = palette.textDim.toComposeColor(),
+                                fontSize = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = palette.border.toComposeColor())
+                }
+            }
+        }
+    }
 }
 
 @Composable

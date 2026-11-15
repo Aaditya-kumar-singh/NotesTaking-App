@@ -6814,6 +6814,22 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun nextPage() { state.goToPage(state.nextPageIndex(state.currentPageIndex())); afterView() }
     fun goToPage(index: Int) { state.goToPage(index); afterView() }
 
+    /** Navigate by page/markup identity: a stale list tap must never land on an unrelated page. */
+    fun goToAnnotation(entry: com.notestaking.app.platform.AnnotationIndex.Entry): Boolean {
+        val index = com.notestaking.app.platform.AnnotationIndex.resolve(state.document.pages, entry)
+            ?: return false
+        state.goToPage(index)
+        com.notestaking.app.core.pdf.MarkupPainter.bounds(entry.markup)?.let { b ->
+            val s = state.document.dpi / 72.0
+            state.scrollIntoView(
+                state.fromPageSpaceRect(index, Rect(b.x * s, b.y * s, b.w * s, b.h * s)),
+                12.0 * state.devicePxPerDp,
+            )
+        }
+        afterView()
+        return true
+    }
+
     fun toggleZoomLock() {
         zoomLocked = !zoomLocked
         state.zoomLocked = zoomLocked
