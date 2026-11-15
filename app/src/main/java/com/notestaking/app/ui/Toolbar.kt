@@ -1,5 +1,6 @@
 package com.notestaking.app.ui
 
+import android.animation.ValueAnimator
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -474,7 +475,7 @@ internal class ToolGlide {
 internal val LocalToolGlide = staticCompositionLocalOf<ToolGlide?> { null }
 
 /** One hop of the glide along the bar: where it set out from and is headed, and how far it may stretch. */
-private class GlideTrip {
+internal class GlideTrip {
     var from = 0f
     var to = 0f
     /** Where the circle sits across the bar. */
@@ -482,6 +483,15 @@ private class GlideTrip {
     var stretch = 0f
     /** Stretch left over from a hop cut short, let go of over the new one. */
     var carry = 0f
+
+    /** A disabled animator must settle an interrupted hop without any leftover stretch. */
+    fun settle(along: Float, across: Float) {
+        from = along
+        to = along
+        this.across = across
+        stretch = 0f
+        carry = 0f
+    }
 
     /** Where the circle's centre is at [t] of the way: eased in and out along a half cosine. */
     fun x(t: Float) = from + (to - from) * (1 - cos(PI * t).toFloat()) / 2
@@ -505,12 +515,19 @@ internal fun Modifier.toolGlide(glide: ToolGlide, armed: Any?): Modifier {
     val progress = remember { Animatable(1f) }
     val shown = remember { Animatable(0f) }
     LaunchedEffect(target) {
+        val animationsEnabled = ValueAnimator.areAnimatorsEnabled()
         if (target == null) {
-            shown.animateTo(0f, tween(SELECT_FADE_MS))
+            if (animationsEnabled) shown.animateTo(0f, tween(SELECT_FADE_MS)) else shown.snapTo(0f)
             return@LaunchedEffect
         }
         val t = progress.value
         val along = if (bar.vertical) target.y else target.x
+        if (!animationsEnabled) {
+            trip.settle(along, if (bar.vertical) target.x else target.y)
+            progress.snapTo(1f)
+            shown.snapTo(1f)
+            return@LaunchedEffect
+        }
         trip.carry = if (shown.value == 0f) 0f else trip.drawnOut(t)
         trip.from = if (shown.value == 0f) along else trip.x(t)
         trip.to = along
