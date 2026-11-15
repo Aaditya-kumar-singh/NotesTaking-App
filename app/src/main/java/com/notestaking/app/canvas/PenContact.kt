@@ -14,6 +14,8 @@ internal object PenContact {
     fun canStartScrollbar(toolType: Int, stylusType: Int, eraserType: Int): Boolean =
         !isPen(toolType, stylusType, eraserType)
 
+    fun scrollbarOwnerLifted(ownerId: Int, liftedId: Int): Boolean = ownerId >= 0 && ownerId == liftedId
+
     fun finishesGesture(penActive: Boolean, ownsGesture: Boolean, activeId: Int, liftedId: Int): Boolean =
         penActive && ownsGesture && activeId == liftedId
 
