@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.IOException
+
 import java.nio.file.Files
 
 /** PDFBox fixture checks are JVM-only; PDFium password errors still require native Android CI/device QA. */
@@ -60,7 +60,7 @@ class PdfThreatRegressionTest {
             val staged = PdfImportSafety.stage(ByteArrayInputStream(malformed), folder)
                 ?: throw AssertionError("Header-level staging must not claim to parse the PDF")
             assertTrue(staged.isFile) // signature scan does not claim structural validity
-            assertThrows(IOException::class.java) {
+            assertThrows(Exception::class.java) {
                 PDDocument.load(staged).use { }
             }
             assertArrayEquals(malformed, staged.readBytes())

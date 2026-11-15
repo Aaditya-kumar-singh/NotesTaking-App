@@ -232,7 +232,10 @@ def next_tasks(db, slot: str, session: str, data: dict, include_optional=False):
         for t in data["tasks"]
         if states[t["id"]]["status"] == "pending"
         and (states[t["id"]]["slot"] or t["owner"]) == slot
-        and (include_optional or t["release_scope"] == "required")
+        # A coordinator-reserved optional task is already an explicit scope decision.
+        # Surface it in default next so B/C don't falsely report zero eligible work.
+        and (include_optional or t["release_scope"] == "required"
+             or states[t["id"]]["slot"] == slot)
     ]
     return sorted(available, key=lambda task: not task["allocated"])[:10]
 

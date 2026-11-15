@@ -67,6 +67,10 @@ class TriadTests(unittest.TestCase):
         self.db.execute("UPDATE triad_slots SET session='test-c' WHERE slot='C'")
         next_items=triad.next_tasks(self.db,"C","test-c",self.data,include_optional=True)
         self.assertEqual(next_items[0]["task"],item)
+        # Reserved optional work must appear without --include-optional too.
+        default_next=triad.next_tasks(self.db,"C","test-c",self.data)
+        self.assertEqual(default_next[0]["task"],item)
+        self.assertNotIn("NP-024",[offered["task"] for offered in default_next])
         self.assertEqual(self.data["tasks"][0]["id"],"NP-020")  # original order unchanged
         triad.claim(self.db,"C","test-c",item,self.data)
         self.assertEqual(self.db.execute("SELECT status FROM triad_tasks WHERE task_id='NP-024'").fetchone()[0],"pending")
