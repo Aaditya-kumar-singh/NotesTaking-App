@@ -82,6 +82,15 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `canvas/MultiFingerTapTest.kt` pure JVM source tests for clean two/three-finger action once, movement at pointer transitions and final lift without MOVE, short pinch-span drift, replacement pointer IDs, stylus/mouse mixed gestures, cancelled lifts, long press, and four-finger noninterference. No other lane source or preferences/format files changed.
 - Permitted A-Z catalog, source, privacy, C-ownership and whitespace checks must pass before committing. Kotlin/JUnit/Android execution, exact-SHA GitHub CI, and physical phone/tablet multi-finger tap/pinch anchor/no-phantom-ink acceptance remain unverified. No local build or push.
 
+## NP-028 — stylus side-button and rear-eraser mappings (Batch F, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `4d627d6b8c2a22b592a16f208c2d8245b258ff44` (NP-027 remains in review). Claimed atomically; previous reviewed SHAs preserved.
+- Inspected shared `canvas/StylusButtons.kt` and matching `StylusButtonLatchTest.kt` / `ButtonClickTest.kt`, paged `canvas/InteractionController.kt`, read-only infinite editor/controller and `ui/Editor.kt` keycode mapping, preferences persistence, `MainActivity.kt` focus/touch forwarding, and NT-025 tablet acceptance. Both canvases already give `TOOL_TYPE_ERASER` precedence over configured side-button tools and restore the armed tool on new tip contact without changing persisted tool state.
+- Fixed shared key hold latch: earlier a single `keyHeld` boolean let a different stylus button's key-up clear an active button. A shared per-key pressed-code set now retains the effective hold until all keys release; focus loss clears the set and cancelled clicks. All key-repeat events are idempotent.
+- Fixed shared button click-versus-hold policy to treat `TOOL_TYPE_ERASER` as pen contact, so reversing the pen while a button is pressed cannot fire a tap-only gesture. Added pure tool-type overload for `heldFor` to test rear eraser/finger/mouse isolation.
+- Added regression coverage for overlapping stylus keys across panes, unpaired key-up, focus loss, rear-eraser precedence, and rear-tip click suppression. No edits to shared UI, platform, settings, source documents or other lanes.
+- A–Z integrity, source Python (0 problems), privacy, C ownership and whitespace checks passed before commit. Kotlin/JUnit/Android execution, exact-SHA GitHub CI, and real S Pen tablet NT-025 button/eraser/hover/auto-repeat/focus-restore acceptance remain pending. No push or APK build.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
