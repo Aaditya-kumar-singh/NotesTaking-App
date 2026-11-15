@@ -9,12 +9,13 @@ import com.notestaking.app.core.model.ConnectorItem
 import com.notestaking.app.core.model.EraseRule
 import com.notestaking.app.core.model.ShapeItem
 import com.notestaking.app.core.model.Stroke
+import com.notestaking.app.core.tools.EraseMode
 import java.util.IdentityHashMap
 
 /**
  * One eraser drag, from pen down to pen up.
  *
- * Both modes reduce to the same shape: an item is swapped for whatever survives it, which is
+ * All modes reduce to the same shape: an item is swapped for whatever survives it, which is
  * nothing at all in whole-item mode and the surviving fragments in area mode. That gives one undo
  * command for both, and one argument for why it is correct.
  *
@@ -54,12 +55,18 @@ class EraseSession(private val doc: InfiniteDocument) {
      * what a lock is for. A fill it touches at all goes whole, in both modes; a filled shape it
      * touches inside but not on its outline loses just its fill (see [EraseRule]).
      */
-    fun erase(cx: Double, cy: Double, radius: Double, area: Boolean): Rect? {
+    fun erase(cx: Double, cy: Double, radius: Double, area: Boolean): Rect? =
+        erase(cx, cy, radius, if (area) EraseMode.AREA else EraseMode.STROKE)
+
+    /** Marker-only mode leaves pen ink, shapes and fills alone; existing modes are unchanged. */
+    fun erase(cx: Double, cy: Double, radius: Double, mode: EraseMode): Rect? {
         if (!cx.isFinite() || !cy.isFinite() || !radius.isFinite() || radius <= 0.0) return null
+        val markerOnly = mode == EraseMode.MARKER
+        val area = mode == EraseMode.AREA
         val box = Rect(cx - radius, cy - radius, radius * 2, radius * 2)
         var dirty: Rect? = null
         for (item in doc.itemsIn(box)) {
-            if (!EraseRule.erasable(item)) continue
+            if (!EraseRule.erasable(item, markerOnly)) continue
             if (EraseRule.takesFill(item, cx, cy, radius)) {
                 val shape = item as ShapeItem
                 unfilled.add(RefillShapes.Entry(shape, shape.fillRgba, null))
