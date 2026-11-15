@@ -106,6 +106,7 @@ class CanvasView @JvmOverloads constructor(
 
     // Scrollbar drag state; the thumb is tracked as a fraction so fast drags don't drift.
     private var scrollbarDragging = false
+    private var scrollbarPointerId = -1
     private var scrollbarFrac = 0.0
     private var scrollbarLastY = 0f
     private val scrollbarPaint = Paint()
@@ -212,13 +213,20 @@ class CanvasView @JvmOverloads constructor(
                 val onBand = if (st.verticalScroll) e.x >= st.viewportW - st.insetRight - band else e.y >= st.viewportH - st.insetBottom - band
                 if (!onBand) return false
                 scrollbarDragging = true
+                scrollbarPointerId = e.getPointerId(0)
                 scrollbarLastY = if (st.verticalScroll) e.y else e.x
                 scrollbarFrac = scrollbarFraction(st)
                 requestRender()
                 return true
             }
             MotionEvent.ACTION_MOVE -> if (scrollbarDragging) {
-                val pos = if (st.verticalScroll) e.y else e.x
+                val index = e.findPointerIndex(scrollbarPointerId)
+                if (index < 0) {
+                    scrollbarPointerId = -1 // Swallow the rest of this touch; no substitute finger takes over.
+                    requestRender()
+                    return true
+                }
+                val pos = if (st.verticalScroll) e.getY(index) else e.getX(index)
                 val delta = pos - scrollbarLastY
                 scrollbarLastY = pos
                 val track = if (st.verticalScroll) st.clearH.toFloat() else st.clearW.toFloat()
@@ -247,13 +255,21 @@ class CanvasView @JvmOverloads constructor(
                     !PenContact.canStartScrollbar(e.getToolType(e.actionIndex), MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)
                 ) {
                     scrollbarDragging = false
+                    scrollbarPointerId = -1
                     requestRender()
                     return false // PenContactRouter turns this into the pen's own ACTION_DOWN.
+                }
+                if (e.actionMasked == MotionEvent.ACTION_POINTER_UP &&
+                    PenContact.scrollbarOwnerLifted(scrollbarPointerId, e.getPointerId(e.actionIndex))
+                ) {
+                    scrollbarPointerId = -1 // Only the original finger controls the thumb.
+                    requestRender()
                 }
                 return true // additional fingers never control the canvas mid-scrollbar drag
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (scrollbarDragging) {
                 scrollbarDragging = false
+                scrollbarPointerId = -1
                 requestRender()
                 return true
             }
@@ -268,7 +284,7 @@ class CanvasView @JvmOverloads constructor(
         val barW = SCROLLBAR_WIDTH_DP * d
         val thumb = scrollbarThumb(st)
         val frac = scrollbarFraction(st).toFloat()
-        scrollbarPaint.color = (if (scrollbarDragging) st.palette.accent else st.palette.textDim).toArgb()
+        scrollbarPaint.color = (if (scrollbarDragging && scrollbarPointerId >= 0) st.palette.accent else st.palette.textDim).toArgb()
         // Inside the clear area, so a floating toolbar never sits on it.
         val right = (st.viewportW - st.insetRight).toFloat()
         val bottom = (st.viewportH - st.insetBottom).toFloat()

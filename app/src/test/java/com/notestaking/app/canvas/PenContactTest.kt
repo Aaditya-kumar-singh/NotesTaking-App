@@ -30,6 +30,14 @@ class PenContactTest {
         assertTrue(PenContact.canStartWhileFingersDown(intArrayOf(finger, eraser), 1, finger, stylus, eraser))
     }
 
+    @Test fun scrollbarDragStaysWithTheFingerThatStartedIt() {
+        assertFalse(PenContact.scrollbarOwnerLifted(ownerId = 7, liftedId = 9))
+        assertTrue(PenContact.scrollbarOwnerLifted(ownerId = 7, liftedId = 7))
+        assertFalse(PenContact.scrollbarOwnerLifted(ownerId = -1, liftedId = 9))
+        assertFalse(PenContact.scrollbarOwnerLifted(ownerId = -1, liftedId = -1))
+        assertTrue(PenContact.scrollbarOwnerLifted(ownerId = 0, liftedId = 0))
+    }
+
     @Test fun onlyActivePenLiftCommitsItsGesture() {
         assertTrue(PenContact.finishesGesture(true, true, activeId = 7, liftedId = 7))
         assertFalse(PenContact.finishesGesture(true, true, activeId = 7, liftedId = 4))

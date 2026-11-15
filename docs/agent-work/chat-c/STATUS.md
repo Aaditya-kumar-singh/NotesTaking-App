@@ -20,6 +20,13 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Regression source: `canvas/PenContactTest.kt` covers mixed pointer down/up, finger-first continuation, pen termination and system cancellation. Kotlin unit test has not run locally (Windows Android build/test execution prohibited).
 - Validation: Python source check, backup privacy check, exclusive C ownership check, and `git diff --check`; CI, MotionEvent replay, and physical pen/palm hardware acceptance remain pending.
 
+## NP-022 — stylus/eraser bypasses page scrollbar (Batch A, P0)
+
+- Session: `C-20261115-1120-gpt6`; parent local commit: `a292a5b5034549a77a08b8ba7765034095a87c70` (NP-021 in coordinator review).
+- Inspected `canvas/CanvasView.kt` scrollbar interception, shared `PenContact` and `PenContactRouter`, `canvas/InteractionController.kt` consumer, `gl/InfiniteCanvasView.kt` (no page scrollbar), existing `PenContactTest.kt`, and B09 engineering notes. B09 had already implemented stylus/eraser bypass and finger-scrollbar-to-pen takeover; preserved both paths.
+- Edge-case fix: track the exact finger pointer ID that began a scrollbar drag, rather than assuming index 0 remains the owner. When that finger lifts while another remains, ignore the remaining finger's motion instead of moving the scrollbar; the next stylus/eraser tip may still take over. Reset the tracked pointer on completion/cancellation and display active thumb styling only while its owner is present.
+- Regression source: `canvas/PenContactTest.kt` checks initial scrollbar owner vs unrelated finger lift and cleared owner. Existing tests check stylus/eraser exclusion and finger-first takeover. Android/Kotlin execution prohibited locally; pending GitHub CI and S Pen tablet NT-019/020/021/022, vertical and horizontal bands, palm, mouse/finger, and data safety acceptance.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
