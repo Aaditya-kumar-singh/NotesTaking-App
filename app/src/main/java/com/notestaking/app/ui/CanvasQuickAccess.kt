@@ -280,7 +280,7 @@ private fun CanvasAllTools(
             )
             HorizontalDivider()
             tools.forEach { tool ->
-                QuickActionRow(stringResource(tool.labelRes), isSelected = tool == selected) {
+                QuickActionRow(if (tool == Tool.ERASER) eraserToolbarDescription(host) else stringResource(tool.labelRes), isSelected = tool == selected) {
                     open = false
                     select(tool)
                 }
