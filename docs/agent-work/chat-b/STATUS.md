@@ -886,4 +886,18 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 
 **Remaining ownership/risk:** The `CanvasWaypointsPopup.kt` Fit All zoom-lock discrepancy and `PreferencesPane.kt` toolbar-section keyboard reorder still need coordinator allocation or Chat A handling. G08 NP-089/090/092 overall acceptance remains pending integrated CI and phone/tablet accessibility QA. No push/PR/merge or protected-branch modifications.
 
-**Forty-first implementation commit:** `ee24d810810d4c6265c7f2d1c529f52f45246daa`. **Forty-first STATUS-only handoff commit:** following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+**Forty-first implementation commit:** `ee24d810810d4c6265c7f2d1c529f52f45246daa`. **Forty-first STATUS-only handoff commit:** `b2e75785e08192f29c7d0ab051b6ee76dcb73d25`. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## Forty-second G08 checkpoint — NP-090 shared swatch tooltip on hover and keyboard focus (2026-11-15)
+
+**Observed gap:** `ui/Toolbar.kt` wraps tool buttons in the existing `Tooltip` for hover and hardware-keyboard focus, but the shared `Swatch` displayed no tooltip even though its TalkBack `accessibleLabel` already contains `Colour <hex>`. The paged `Toolbar` and `InfiniteToolbar` both call that same shared swatch, so the problem affects both without needing per-caller patches.
+
+**Smallest owned fix:** Wrapped only `Swatch`'s unchanged outer `Box` in the existing `Tooltip(accessibleLabel)`. The same localized color name and `Rgba.toHex(ink)` now appear on hover and keyboard focus. Preserved the original focus outline, button size, `colorDragSource`, contentDescription/selected semantics, click action, inner active-ring rendering, and underlying color settings. No new strings, dependencies, extra event handlers or edits outside owned `Toolbar.kt`.
+
+**Permitted verification actually passed:** `python tools/agents/check_lane.py` PASS (21 owned paths since baseline); `python tools/ci/check_project.py` PASS (388 Kotlin sources, 234 test files, 22 XML, 39 PNG, 0 problems); `python tools/ci/check_backup_privacy.py` PASS; `git diff --check` and staged whitespace PASS. A targeted Python source assertion verified the shared wrapper, hex label, existing swipe/drag, click, selection semantics and both toolbar call paths. No new JVM test for a declarative wrapper. No Kotlin/JUnit execution, Gradle, Compose compile, Android lint/build/APK, integrated CI or physical-device test was performed for this checkpoint.
+
+**Acceptance still required:** With paged and infinite toolbars in top/bottom/left/right and floating configurations, hover each swatch with mouse and stylus, then Tab/Shift+Tab to focus it with hardware keyboard. Expect a non-focusable, non-touchable tooltip showing its actual color hex string, without obscuring adjacent controls. Verify Tap selects/opens color customization and long-drag onto ink still fills with the correct color; test compact/regular/comfortable, 240dp/320dp split-pane, 1.3x/2x font scale and TalkBack. Must confirm that the added wrapper does not steal drag gestures. Full integrated SHA CI and device accessibility evidence remain required.
+
+**Known out-of-ownership issues:** `CanvasWaypointsPopup.kt` Fit All under zoom lock and `PreferencesPane.kt` keyboard section reorder require Chat A/coordinator allocation. NP-089/NP-090/NP-092 cannot be marked fully accepted on source-only evidence. No push, merge, PR or protected-branch edits.
+
+**Forty-second implementation commit:** `c1e71efb01c3d5f7a476e7cedc8f5019a099f12e`. **Forty-second STATUS-only handoff commit:** immediately following local commit. **PUSH: NO / MERGE: NO / PR: NO.****
