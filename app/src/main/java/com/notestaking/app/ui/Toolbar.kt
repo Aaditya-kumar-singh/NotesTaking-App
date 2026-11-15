@@ -342,7 +342,7 @@ private fun ToolButton(
     Box {
         ToolbarIcon(
             icon,
-            stringResource(tool.labelRes),
+            if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes),
             active = armed,
             glideKey = tool,
             hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,
@@ -540,6 +540,21 @@ internal fun Modifier.toolbarFocusOutline(shape: Shape): Modifier {
 /** Named toggle actions work in both states; re-tap settings hints only work when armed. */
 internal fun toolbarActionLabel(active: Boolean, hint: String?, explicitLabel: String?): String? =
     explicitLabel ?: hint.takeIf { active }
+
+/** Keep the live eraser mode and brush size audible in both editor toolbars. */
+internal fun eraserAccessibilityText(name: String, mode: String, sizeLabel: String, size: Double): String =
+    "$name: $mode, $sizeLabel: $size"
+
+@Composable
+internal fun eraserToolbarDescription(host: ToolPopupHost): String {
+    val config = host.toolConfig(Tool.ERASER)
+    return eraserAccessibilityText(
+        stringResource(R.string.tool_eraser),
+        stringResource(if (config.eraseMode == com.notestaking.app.core.tools.EraseMode.AREA) R.string.eraser_area else R.string.eraser_stroke),
+        stringResource(R.string.caption_size),
+        config.baseWidth,
+    )
+}
 
 /** Tools and persistent toggles announce selection; one-shot actions do not. */
 internal fun toolbarSelectionState(active: Boolean, glideKey: Any?, reportSelection: Boolean): Boolean? =

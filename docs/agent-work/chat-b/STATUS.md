@@ -929,3 +929,13 @@ No changes to `PreferencesPane.kt`, resource strings, the existing tool chips, s
 **Ownership:** `CanvasWaypointsPopup.kt` Fit All zoom-lock and `PreferencesPane.kt` keyboard section reordering still require coordinator allocation or Chat A handling. No push, merge, PR, APK, protected-branch modifications or device testing.
 
 **Forty-fourth implementation commit:** `f92cc9fe33e509dc3922960a5fb6a2472ff3ee92`. **Forty-fourth STATUS-only handoff commit:** following local Git commit. **PUSH: NO / MERGE: NO / PR: NO.**
+
+## A-Z NP-052 / Batch H - eraser mode and size accessible in toolbar (2026-11-15)
+
+Session B-20261115-1129-gpt6 claimed NP-052 independently through triad after developer ab0774c permitted parallel local work. Legacy LANE-B stays in review at eb4d152 (Checkpoint 44), which remains an ancestor of the B branch. No legacy claim was modified.
+
+Source gap: paged and infinite toolbar eraser buttons spoke only the generic tool name; pinned Eraser gave the selected mode but not brush size. B-owned Toolbar.kt now supplies one shared localized eraser label using existing tool name, stroke/area mode, size resource and current tool configuration, reused from the paged toolbar, infinite toolbar and pinned quick-access. No tool behavior, popup, saved settings, ink engine, selection, canvas, resources or out-of-lane source changed. A focused JVM source test was added for both modes, size, and translated label inputs; it was not executed locally.
+
+Permitted source checks: lane guard PASS (22 owned paths), source validator PASS (388 Kotlin sources, 235 tests, 22 XML, 39 PNG, 0 issues), backup privacy PASS, whitespace PASS. GitHub Kotlin/JUnit, Compose compilation, lint, APK and physical QA were not run.
+
+Manual acceptance outstanding: On phone and tablet with TalkBack, choose eraser on paged/infinite notes; verify Area/Stroke mode and current size are announced and update after editing settings. Repeat pinned Eraser, side/floating toolbar, 240/320dp split panes, large fonts, keyboard, and stylus. Verify selection and lasso buttons still announce their original names and erasing/undo remain unchanged. Full NP-052 acceptance requires integrated exact-SHA CI and device QA. NP-032 remains code-present but needs owned-settings device restart acceptance; no unowned files were edited. Batch H remains unchecked. No push, merge, or release.

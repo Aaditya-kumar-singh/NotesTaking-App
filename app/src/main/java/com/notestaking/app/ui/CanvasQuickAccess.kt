@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
-import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.ui.icons.NotesTakingIcons
 
@@ -204,13 +203,11 @@ private fun PinnedEraser(
     selectEraser: () -> Unit,
 ) {
     var settingsOpen by remember { mutableStateOf(false) }
-    val area = host.toolConfig(Tool.ERASER).eraseMode == EraseMode.AREA
-    val name = stringResource(R.string.tool_eraser)
-    val mode = stringResource(if (area) R.string.eraser_area else R.string.eraser_stroke)
+    val description = eraserToolbarDescription(host)
     Box {
         ToolbarIcon(
             NotesTakingIcons.eraser,
-            "$name: $mode",
+            description,
             active = active,
             reportSelection = true,
             hint = stringResource(R.string.canvas_eraser_tool_hint),

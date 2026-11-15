@@ -148,7 +148,7 @@ fun InfiniteToolbar(
                                 val configurable = tool.isStroke || tool == Tool.ERASER || tool == Tool.SHAPE || tool == Tool.SELECT || tool == Tool.TAPE
                                 ToolbarIcon(
                                     icon,
-                                    stringResource(tool.labelRes),
+                                    if (tool == Tool.ERASER) eraserToolbarDescription(editor) else stringResource(tool.labelRes),
                                     active = armed,
                                     glideKey = tool,
                                     hint = if (armed && configurable) stringResource(R.string.tip_tap_for_settings) else null,
