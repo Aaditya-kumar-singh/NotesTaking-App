@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -61,12 +63,33 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.notestaking.app.R
+import com.notestaking.app.core.tools.ToolbarEntry
 import com.notestaking.app.core.tools.ToolbarItem
 import com.notestaking.app.core.tools.ToolbarLayout
 import com.notestaking.app.core.tools.ToolbarSection
 import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
+
+/** Search returns original section and entry indexes; it never changes layout order. */
+internal fun toolbarSearchResults(
+    layout: ToolbarLayout,
+    query: String,
+    label: (ToolbarItem) -> String,
+): List<Triple<Int, Int, ToolbarEntry>> {
+    val needle = query.trim()
+    if (needle.isEmpty()) return emptyList()
+    return layout.sections.flatMapIndexed { sectionIndex, section ->
+        section.entries.mapIndexedNotNull { entryIndex, entry ->
+            val item = entry.item
+            if (label(item).contains(needle, ignoreCase = true) ||
+                item.id.contains(needle, ignoreCase = true) ||
+                item.id.replace('_', ' ').contains(needle, ignoreCase = true)
+            ) Triple(sectionIndex, entryIndex, entry) else null
+        }
+    }
+}
+
 
 /**
  * The toolbar customizer, rendered inline inside Preferences. Each section is a bordered card whose
@@ -102,6 +125,52 @@ fun ToolbarCustomizerBody(
     val palette = LocalPalette.current
     val dragging = dragItem != null
     val draggingSection = dragSection != null
+    var search by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val matches = toolbarSearchResults(layout, search) { context.getString(it.labelRes) }
+    OutlinedTextField(
+        value = search,
+        onValueChange = { search = it },
+        label = { Text(stringResource(R.string.search)) },
+        singleLine = true,
+        leadingIcon = { Icon(NotesTakingIcons.search, contentDescription = null) },
+        trailingIcon = {
+            if (search.isNotEmpty()) {
+                IconButton(onClick = { search = "" }) {
+                    Icon(NotesTakingIcons.close, contentDescription = stringResource(R.string.clear_search))
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    if (search.isNotBlank() && !dragging && !draggingSection) {
+        if (matches.isEmpty()) {
+            Text(
+                stringResource(R.string.no_matches),
+                modifier = Modifier.padding(8.dp),
+                color = palette.textDim.toComposeColor(),
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                matches.forEach { (sec, idx, entry) ->
+                    ChipFace(
+                        entry.item,
+                        entry.visible,
+                        Modifier
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Checkbox
+                                toggleableState = if (entry.visible) ToggleableState.On else ToggleableState.Off
+                            }
+                            .clickable(role = Role.Checkbox) { onToggle(sec, idx) },
+                    )
+                }
+            }
+        }
+        return
+    }
     FlowRow(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
