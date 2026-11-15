@@ -113,6 +113,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/model/HighlighterBlendTest.kt` source regression for normal/inverse ink at 10%, 35%, 90% and 100% alpha, verifying one blended layer with resolved alpha plus the matching infinite canvas pass, and that an ordinary opaque pen still paints without a blend layer.
 - A–Z catalog integrity, Python source (0 problems), backup privacy, exclusive C ownership and Git whitespace checks passed. Kotlin/JUnit, exact-SHA GitHub CI, real dark/light/PDF background display, 20 highlighter strokes, transparency and reopen/export checks are **not yet executed**; physical S Pen/phone NT-027 verification required. No push, merge or Android build.
 
+## NP-041 — selection/lasso-based erasing semantics (Batch G, P1)
+
+- Session `C-20261115-1120-gpt6`; parent local commit `cbdeb6058a2f2703b602d5fb81c456d7f9db429b` (NP-031 remains in coordinator review). Confirmed same registered session, clean Agent C worktree and exclusive ownership; atomically claimed `NP-041`.
+- Inspected shared `canvas/SelectionMath.kt` lasso/band hit tests and locked-item exclusion, paged `canvas/InteractionController.kt` selection/lasso/delete/cache repair, `core/history/{Command,History}.kt` undo/redo and touched regions, `core/model/Groups.kt` group expansion; read-only `ui/InfiniteEditor.kt` plus `core/infinite/CanvasCommands.kt` exact-slot undo. NT-033 requires two-object lasso delete and single Undo restoring only those objects.
+- Found paged `deleteSelection()` used `EraseItems`, whose legacy undo appends removed items to each page, changing z-order after undo. Infinite canvas already captures original z-slots. Added `EraseItems.capture(removals)` to record only selected item references and original per-page indices before removal, restoring slots in ascending order (no full-page snapshots). Paged selection deletion now uses this path. Other historical eraser uses of `EraseItems` retain their existing behavior; no persistent data/schema edits.
+- Added `core/history/HistoryTest.kt` regression for mixed z-order, unsorted selections across pages, idempotent Undo and Redo. Added `canvas/SelectionCacheRepairTest.kt` end-to-end model test for lasso membership, a locked object inside the loop, two selected objects amid unselected layers, exactly one Undo restoring original ordering and Redo removing only the same members. Existing PDF/background cache preservation tests remain intact.
+- Permitted A–Z integrity, Python source checks, privacy validation, C-only file ownership and `git diff --check` required before commit. Kotlin/JUnit, exact-SHA GitHub CI and real NT-033 stylus lasso/delete/undo across paged/PDF/infinite surfaces remain **unverified**; no APK build, push, merge, or checklist tick by worker.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

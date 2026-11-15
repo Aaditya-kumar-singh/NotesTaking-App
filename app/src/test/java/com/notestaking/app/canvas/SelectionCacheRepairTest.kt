@@ -2,8 +2,10 @@ package com.notestaking.app.canvas
 
 import com.notestaking.app.core.FakeSurfaceFactory
 import com.notestaking.app.core.FakeTextMeasurer
+import com.notestaking.app.core.geometry.Pt
 import com.notestaking.app.core.history.History
 import com.notestaking.app.core.model.Document
+import com.notestaking.app.core.model.CanvasItem
 import com.notestaking.app.core.model.Page
 import com.notestaking.app.core.model.Stroke
 import com.notestaking.app.core.stroke.Sample
@@ -11,6 +13,8 @@ import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolDefaults
 import com.notestaking.app.ui.theme.Palette
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -57,6 +61,40 @@ class SelectionCacheRepairTest {
             "dismissing must repair in place, not drop the page's ink cache",
             1, st.cacheSnapshot().inkPages,
         )
+    }
+
+    @Test fun lassoDeleteRemovesOnlyMembersAndOneUndoRestoresExactLayerOrder() {
+        val bottom = dot(15.0, 15.0)
+        val first = dot(50.0, 50.0)
+        val between = dot(120.0, 120.0)
+        val second = dot(55.0, 55.0)
+        val locked = dot(52.0, 52.0).apply { this.locked = true }
+        val top = dot(180.0, 180.0)
+        val original = listOf<CanvasItem>(bottom, first, between, second, locked, top)
+        val page = Page(200.0, 200.0, original.toMutableList())
+        val st = CanvasState(Document(mutableListOf(page)), FakeSurfaceFactory(), Palette.DEFAULT).apply {
+            viewportW = 800
+            viewportH = 1000
+            relayout()
+        }
+        val history = History()
+        val ctrl = InteractionController(st, history, FakeTextMeasurer(), requestRender = {})
+        val polygon = listOf(Pt(40.0, 40.0), Pt(70.0, 40.0), Pt(70.0, 70.0), Pt(40.0, 70.0))
+        val members = SelectionMath.lassoMembers(page.items, polygon)
+        assertEquals(listOf(first, second), members)
+        ctrl.selectPlaced(0, members) // the same selection pathway the lasso uses on pointer-up
+        st.cacheFor(page)
+        ctrl.deleteSelection()
+        val remaining = listOf(bottom, between, locked, top)
+        assertEquals(remaining, page.items)
+        assertFalse(ctrl.hasSelection)
+        assertTrue(history.canUndo)
+        history.undo()
+        assertEquals("Undo restores the original paint order, not an appended top layer", original, page.items)
+        assertFalse("the entire lasso deletion is one command", history.canUndo)
+        assertTrue(history.canRedo)
+        history.redo()
+        assertEquals(remaining, page.items)
     }
 
     @Test fun deletingSelectionLeavesBackgroundCacheIntact() {

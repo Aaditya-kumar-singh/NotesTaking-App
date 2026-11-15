@@ -3639,8 +3639,9 @@ class InteractionController(
     fun deleteSelection() {
         if (selection.isEmpty()) return
         val removals = selection.map { state.document.pages[it.pageIndex] to it.item }
+        val command = EraseItems.capture(removals) // before removal, while original z-slots exist
         for ((page, item) in removals) page.items.remove(item)
-        history.push(EraseItems(removals))
+        history.push(command)
         state.document.dirty = true
         // clearSelection repairs the vacated regions in place; the removed items were lifted
         // (already out of the ink cache) so they simply stop being drawn. The background/PDF

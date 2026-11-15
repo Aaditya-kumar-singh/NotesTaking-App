@@ -51,6 +51,30 @@ class HistoryTest {
         assertEquals(2, page.items.size)
     }
 
+    @Test fun capturedSelectionDeletionRestoresOriginalLayerOrderAcrossPages() {
+        val a = strokeAt(1.0)
+        val b = strokeAt(2.0)
+        val c = strokeAt(3.0)
+        val d = strokeAt(4.0)
+        val e = strokeAt(5.0)
+        val f = strokeAt(6.0)
+        val left = Page(100.0, 100.0, mutableListOf(a, b, c, d))
+        val right = Page(100.0, 100.0, mutableListOf(e, f))
+        val removals = listOf(left to d, right to e, left to b)
+        val command = EraseItems.capture(removals) // must precede mutation
+        command.redo()
+        assertEquals(listOf<CanvasItem>(a, c), left.items)
+        assertEquals(listOf<CanvasItem>(f), right.items)
+        command.undo()
+        assertEquals(listOf<CanvasItem>(a, b, c, d), left.items)
+        assertEquals(listOf<CanvasItem>(e, f), right.items)
+        command.undo() // no duplicate references
+        assertEquals(listOf<CanvasItem>(a, b, c, d), left.items)
+        command.redo()
+        assertEquals(listOf<CanvasItem>(a, c), left.items)
+        assertEquals(listOf<CanvasItem>(f), right.items)
+    }
+
     @Test fun moveItemsRoundTrip() {
         val img = ImageItem(ImageData(java.io.File("test-image"),10, 10), Rect(0.0, 0.0, 10.0, 10.0))
         val cmd = MoveItems(listOf(img), 5.0, 7.0)
