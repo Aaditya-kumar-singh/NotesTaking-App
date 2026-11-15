@@ -419,6 +419,34 @@ class DocumentCodecTest {
         assertArrayEquals(payload, source.readBytes())
     }
 
+    @Test fun mixedPdfAndTemplateSheetsKeepSourcePointersAndStylesAfterReopen() {
+        val dir = Files.createTempDirectory("xnote-mixed-pdf-pages").toFile()
+        try {
+            val source = File(dir, "source.pdf").apply { writeBytes("%PDF-1.7\noriginal source".toByteArray()) }
+            val originalBytes = source.readBytes()
+            val doc = Document(dpi = 150, pdfFile = source)
+            doc.pages += Page(800.0, 1200.0, pdfPage = 0)
+            val template = Page(800.0, 1200.0, style = PageStyle(template = "grid"))
+            doc.pages += template
+            doc.pages += com.notestaking.app.platform.InsertedNotePage.after(doc, template)
+            doc.pages += Page(900.0, 1300.0, pdfPage = 1)
+            doc.pages += com.notestaking.app.platform.InsertedNotePage.after(doc, doc.pages.last())
+            doc.bookmarks += Bookmark(3, "Original second PDF page")
+
+            val saved = ByteArrayOutputStream().also { codec.write(doc, it) }.toByteArray()
+            val reopened = codec.read(ByteArrayInputStream(saved), pdfDir = dir)
+            assertEquals(listOf(0, null, null, 1, null), reopened.pages.map { it.pdfPage })
+            assertEquals(listOf(null, "grid", "grid", null, null), reopened.pages.map { it.style.template })
+            assertEquals(doc.pages.map { it.width to it.height }, reopened.pages.map { it.width to it.height })
+            assertEquals(3, reopened.bookmarks.single().page)
+            assertTrue(reopened.pages[2].items.isEmpty())
+            assertArrayEquals(originalBytes, source.readBytes())
+            assertArrayEquals(originalBytes, reopened.pdfFile!!.readBytes())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun pdfFileRoundTrip() {
         val srcDir = java.nio.file.Files.createTempDirectory("xnote-src").toFile()
         val outDir = java.nio.file.Files.createTempDirectory("xnote-out").toFile()

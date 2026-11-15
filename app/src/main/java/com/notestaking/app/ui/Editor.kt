@@ -6779,9 +6779,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     private fun insertBlankPageAt(index: Int, refIndex: Int): Int {
         val pages = state.document.pages
         val ref = pages.getOrNull(refIndex) ?: pages.getOrNull(index) ?: pages.lastOrNull()
-        val (w, h) = state.document.blankPageSize(ref)
         val at = index.coerceIn(0, pages.size)
-        val page = Page(w, h)
+        val page = com.notestaking.app.platform.InsertedNotePage.after(state.document, ref)
         controller.clearSelection() // inserting shifts later page indices; drop any stale item selection
         history.push(AddPage(state.document, page, at).also { it.redo() })
         bookmarkVersion++
