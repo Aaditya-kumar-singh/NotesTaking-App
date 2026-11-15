@@ -20,6 +20,10 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.hypot
 
+/** A delayed pad activation is valid only while the original pen is still drawing. */
+internal fun canActivateFrontInk(active: Stroke?, requested: Stroke): Boolean =
+    active === requested && !requested.finished
+
 /**
  * Wet ink on the front buffer, for a paged note.
  *
@@ -223,7 +227,13 @@ class FrontInk(
         if (settled || awaitingPublish) {
             val gen = handoffGen
             return view.publishThen {
-                if (gen == handoffGen) takePad(stroke, pageIndex, scrollX, scrollY, zoom, clip)
+                if (gen != handoffGen || !canActivateFrontInk(owner, stroke)) return@publishThen
+                takePad(stroke, pageIndex, scrollX, scrollY, zoom, clip)
+                // No new MOVE may arrive after activation; present the current nib immediately.
+                if (live) {
+                    wet(stroke, pageIndex)
+                    view.requestRender()
+                }
             }
         }
         takePad(stroke, pageIndex, scrollX, scrollY, zoom, clip)
@@ -284,6 +294,7 @@ class FrontInk(
         zoom: Double,
         clip: PixelRect,
     ) {
+        if (!canActivateFrontInk(owner, stroke)) return
         // Already down, which is every stroke that starts after any sort of pause: take it here so
         // the caller's own present is the first one, rather than re-entering it.
         if (!pad.showing) {
@@ -294,7 +305,7 @@ class FrontInk(
         pad.standDown {
             // A moved generation means another stroke has taken the pad and is answerable for it.
             if (gen != handoffGen) return@standDown
-            if (owner === stroke && start(scrollX, scrollY, zoom, clip)) {
+            if (canActivateFrontInk(owner, stroke) && start(scrollX, scrollY, zoom, clip)) {
                 // Straight into a present, so the pad has the stroke before the canvas drops it.
                 wet(stroke, pageIndex)
                 view.requestRender()

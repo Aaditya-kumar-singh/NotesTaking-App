@@ -118,6 +118,18 @@ class WetInkCacheTest {
         assertTrue("neither should have taken a surface", factory.created.isEmpty())
     }
 
+    @Test fun penUpStopsTheLiveCacheSoTheFinishedStrokePaintsOnlyOnce() {
+        val stroke = liveStroke(Tool.PEN, 300)
+        assertTrue(frame(stroke).first)
+        stroke.finished = true
+        val (paintedLive, finishedFrame) = frame(stroke)
+        assertFalse("a finished stroke must not reblit a stale wet surface", paintedLive)
+        assertTrue(finishedFrame.rasterDests.isEmpty())
+        assertTrue(finishedFrame.ribbonRuns.isEmpty())
+        stroke.paint(finishedFrame) // the committed canvas/cache is the only remaining owner
+        assertTrue(finishedFrame.ribbonRuns.isNotEmpty())
+    }
+
     @Test fun theTaperPenKeepsThePlainRedraw() {
         assertFalse(frame(liveStroke(Tool.TAPER, 300)).first)
         assertTrue(factory.created.isEmpty())
