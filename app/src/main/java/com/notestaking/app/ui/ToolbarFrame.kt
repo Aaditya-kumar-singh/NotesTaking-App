@@ -33,10 +33,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -162,6 +164,11 @@ internal fun ToolbarFrame(
     val bar = barMetrics(look.size).copy(vertical = look.position.vertical)
     val glide = remember { ToolGlide() }
     var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
+    var paneBounds by remember(look.position, look.floating) { mutableStateOf<IntRect?>(null) }
+    // The docked strip's layout parent spans its owning editor pane, even for side rails.
+    val measurePane = if (look.floating) Modifier else Modifier.onGloballyPositioned { c ->
+        c.parentCoordinates?.tooltipPaneRect()?.let { if (it != paneBounds) paneBounds = it }
+    }
     val availableAxisDp = with(LocalDensity.current) { availableAxisPx.toDp().value }
     val scrollTrailing = toolbarScrollsTrailing(look.floating, availableAxisDp, bar.button.value, pinnedButtons)
     val palette = LocalPalette.current
@@ -200,10 +207,15 @@ internal fun ToolbarFrame(
         ToolbarPosition.LEFT -> TipSide.RIGHT
         ToolbarPosition.RIGHT -> TipSide.LEFT
     }
-    CompositionLocalProvider(LocalToolGlide provides glide, LocalBar provides bar, LocalMenuOffset provides menuOffset, LocalTipSide provides tipSide) {
+    val tipBounds = if (look.floating) LocalTipPaneBounds.current else paneBounds
+    CompositionLocalProvider(
+        LocalToolGlide provides glide, LocalBar provides bar,
+        LocalMenuOffset provides menuOffset, LocalTipSide provides tipSide,
+        LocalTipPaneBounds provides tipBounds,
+    ) {
         if (bar.vertical) {
             Column(
-                stretch.width(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.height },
+                stretch.width(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.height }.then(measurePane),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
@@ -222,7 +234,7 @@ internal fun ToolbarFrame(
             }
         } else {
             Row(
-                stretch.height(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.width },
+                stretch.height(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.width }.then(measurePane),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(

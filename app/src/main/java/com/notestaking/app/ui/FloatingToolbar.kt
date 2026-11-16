@@ -37,6 +37,7 @@ import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -45,6 +46,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.absoluteOffset
@@ -95,7 +97,11 @@ internal fun MovableFloatingToolbar(
     onDrop: (Float, Float) -> Unit,
     onGripFocusChange: (Boolean) -> Unit = {},
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    var paneBounds by remember { mutableStateOf<IntRect?>(null) }
+    BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { coords ->
+        val next = coords.tooltipPaneRect()
+        if (paneBounds != next) paneBounds = next
+    }) {
         val density = LocalDensity.current
         val paneWidth = maxWidth
         val paneHeight = maxHeight
@@ -229,33 +235,35 @@ internal fun MovableFloatingToolbar(
             }
         }
 
-        Box(
-            Modifier
-                .absoluteOffset {
-                    IntOffset(
-                        edgePx + (travelX * x).roundToInt(),
-                        edgePx + (travelY * y).roundToInt(),
-                    )
-                }
-                .onSizeChanged { measured = it },
-        ) {
-            if (look.position.vertical) {
-                Column(
-                    Modifier.heightIn(max = (paneHeight - 16.dp).coerceIn(48.dp, 600.dp)),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    grip()
-                    shownBar()
-                }
-            } else {
-                Row(
-                    Modifier.widthIn(max = (paneWidth - 16.dp).coerceIn(48.dp, if (expanded) 480.dp else 600.dp)),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    grip()
-                    shownBar()
+        CompositionLocalProvider(LocalTipPaneBounds provides paneBounds) {
+            Box(
+                Modifier
+                    .absoluteOffset {
+                        IntOffset(
+                            edgePx + (travelX * x).roundToInt(),
+                            edgePx + (travelY * y).roundToInt(),
+                        )
+                    }
+                    .onSizeChanged { measured = it },
+            ) {
+                if (look.position.vertical) {
+                    Column(
+                        Modifier.heightIn(max = (paneHeight - 16.dp).coerceIn(48.dp, 600.dp)),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        grip()
+                        shownBar()
+                    }
+                } else {
+                    Row(
+                        Modifier.widthIn(max = (paneWidth - 16.dp).coerceIn(48.dp, if (expanded) 480.dp else 600.dp)),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        grip()
+                        shownBar()
+                    }
                 }
             }
         }
