@@ -69,7 +69,7 @@ class FastLaunchRecentHomeContractTest {
     }
 
     @Test
-    fun recentNotesPersistInOrderAndMalformedEntriesDoNotBlockHome() {
+    fun recentNotesPersistAndUnavailableDocumentsStayRecoverable() {
         val recent = listOf(
             RecentDoc("content://files/tree/a", "Newest.xnote", 300L),
             RecentDoc("content://files/tree/b", "Older.xnote", 100L),
@@ -91,8 +91,9 @@ class FastLaunchRecentHomeContractTest {
         val editor = source("ui/Editor.kt")
         val entries = section(editor, "fun recentEntries(treeUri: String): List<RecentEntry> {", "/** The folder the explorer last showed")
         assertTrue(entries.contains("recentDocs.filter { isUnderTree(it.uri, treeUri) }"))
-        assertTrue(entries.contains("stampOf(uri.toString()) ?: run { gone.add(r.uri); return@mapNotNull null }"))
-        assertTrue(entries.contains("setRecents(recentDocs.filterNot { it.uri in gone })"))
+        // Provider access can fail temporarily: hide unavailable entries without erasing Recent.
+        assertTrue(entries.contains("val stamp = stampOf(uri.toString()) ?: return@mapNotNull null"))
+        assertFalse(entries.contains("setRecents("))
         assertTrue(entries.contains("out.distinctBy { it.entry.documentUri }"))
     }
 
