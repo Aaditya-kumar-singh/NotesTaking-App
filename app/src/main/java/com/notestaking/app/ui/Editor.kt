@@ -2055,9 +2055,9 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         var bounds: com.notestaking.app.core.geometry.Rect? = null
         for (item in picked) {
             val page = locate(item) ?: continue
-            val pr = state.pageRects.getOrNull(state.document.pages.indexOfFirst { it === page }) ?: continue
-            val cover = state.footprint(page)
-            val box = item.paintBounds().translate(pr.left - cover.left, pr.top - cover.top)
+            val index = state.document.pages.indexOfFirst { it === page }
+            if (index !in state.pageRects.indices) continue
+            val box = state.fromPageSpaceRect(index, item.paintBounds())
             bounds = bounds?.union(box) ?: box
         }
         return bounds?.let { renderRegionBitmap(it, HashSet(picked)) }
@@ -2088,13 +2088,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             r.withSave {
                 r.clipRect(pr)
                 r.fillRect(pr, state.paperColor(page))
+                r.translate(pr.left, pr.top)
+                state.applyPageTransform(r, page)
                 val cover = state.footprint(page)
-                r.translate(pr.left - cover.left, pr.top - cover.top) // into page space (past the margins)
-                val local = com.notestaking.app.core.geometry.Rect.ltrb(
-                    (content.left - pr.left).coerceAtLeast(0.0) + cover.left,
-                    (content.top - pr.top).coerceAtLeast(0.0) + cover.top,
-                    (content.right - pr.left).coerceAtMost(cover.w) + cover.left,
-                    (content.bottom - pr.top).coerceAtMost(cover.h) + cover.top,
+                val visible = state.toPageSpaceRect(i, content)
+                val left = maxOf(cover.left, visible.left)
+                val top = maxOf(cover.top, visible.top)
+                val right = minOf(cover.right, visible.right)
+                val bottom = minOf(cover.bottom, visible.bottom)
+                val local = com.notestaking.app.core.geometry.Rect(
+                    left, top, (right - left).coerceAtLeast(0.0), (bottom - top).coerceAtLeast(0.0),
                 )
                 if (local.w > 0.0 && local.h > 0.0) {
                     // The user is waiting on this capture, so it skips ahead of other PDF renders.
