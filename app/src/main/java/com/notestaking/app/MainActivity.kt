@@ -698,8 +698,11 @@ private fun EditorScreen(
     // Grant a folder for the in-app explorer (a one-time system folder picker).
     val pickRootLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let {
-            runCatching { resolver.takePersistableUriPermission(it, rwFlags) }
-            editor.updateBrowseRoot(it.toString())
+            if (runCatching { resolver.takePersistableUriPermission(it, rwFlags) }.isSuccess) {
+                editor.updateBrowseRoot(it.toString())
+            } else {
+                editor.message = resources.getString(R.string.err_open_folder)
+            }
         }
     }
 
