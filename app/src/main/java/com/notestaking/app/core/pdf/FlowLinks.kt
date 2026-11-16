@@ -43,7 +43,7 @@ object FlowLinks {
         var at = 0
         for (run in runs) {
             val end = at + run.text.length
-            val uri = run.style.link
+            val uri = run.style.link?.let(::safeExternalUri)
             val last = out.lastOrNull()
             when {
                 uri == null -> Unit
@@ -53,6 +53,17 @@ object FlowLinks {
             at = end
         }
         return out
+    }
+
+    /** Don't embed arbitrary URI actions from imported rich text in exported PDFs. */
+    private fun safeExternalUri(raw: String): String? {
+        val value = raw.trim()
+        val uri = runCatching { java.net.URI(value) }.getOrNull() ?: return null
+        return when (uri.scheme?.lowercase()) {
+            "http", "https" -> value.takeIf { !uri.host.isNullOrBlank() }
+            "mailto" -> value.takeIf { !uri.schemeSpecificPart.isNullOrBlank() }
+            else -> null
+        }
     }
 
     fun place(flow: TextFlow, frame: FlowFrame, found: Map<Int, List<TextLink>> = find(flow)): List<PlacedLink> {

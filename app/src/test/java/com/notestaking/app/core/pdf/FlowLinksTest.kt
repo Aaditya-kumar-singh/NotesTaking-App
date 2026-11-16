@@ -55,6 +55,47 @@ class FlowLinksTest {
     }
 
     @Test
+    fun importedLinksOnlyExportSupportedExternalUrisWithoutChangingTheirText() {
+        val allowed = listOf("https://example.org/p?a=1", "HTTP://example.org/a", "mailto:hello@example.org")
+        val blocked = listOf(
+            "javascript:alert(1)", "file:///private/notes", "content://private",
+            "intent://open", "data:text/html,hello", "#page-3", "https://", "https:///missing-host",
+            "mailto:", "https://bad host.example",
+        )
+        for (url in allowed + blocked) {
+            val label = "Read article"
+            val run = Run(label, CharStyle(link = url))
+            val flow = TextFlow().apply { paragraphs.add(Paragraph(mutableListOf(run))) }
+            val found = FlowLinks.find(flow)[0].orEmpty()
+            val placed = place(flow.paragraphs.single()) // PDF export consumes these placed boxes.
+            if (url in allowed) {
+                assertEquals("valid URI exported: $url", listOf(url), found.map { it.uri })
+                assertEquals("valid URI has a tappable PDF box: $url", listOf(url), placed.map { it.uri })
+                assertTrue(placed.all { it.rect.w > 0.0 && it.rect.h > 0.0 })
+            } else {
+                assertTrue("unsafe or unsupported URI omitted from PDF actions: $url", found.isEmpty())
+                assertTrue("unsupported URI cannot become a PDF link: $url", placed.isEmpty())
+            }
+            // Filtering export actions must not mutate the original note's saved link styles.
+            assertEquals(label, flow.paragraphs[0].runs.single().text)
+            assertEquals(url, flow.paragraphs[0].runs.single().style.link)
+        }
+    }
+
+    @Test
+    fun importedExplicitUrisAreTrimmedAndAdjacentRunsMergeForExport() {
+        val target = "https://example.org/a"
+        val runs = mutableListOf(
+            Run("Tap ", CharStyle()),
+            Run("first ", CharStyle(link = " $target ")),
+            Run("part", CharStyle(link = target)),
+        )
+        val flow = TextFlow().apply { paragraphs.add(Paragraph(runs)) }
+        assertEquals(listOf(TextLink(4, 14, target)), FlowLinks.find(flow)[0])
+        assertEquals(" $target ", flow.paragraphs[0].runs[1].style.link)
+    }
+
+    @Test
     fun linkedTextLinksAcrossItsRunsAndWinsOverAnAddressInIt() {
         val uri = "https://x.org"
         val links = place(
