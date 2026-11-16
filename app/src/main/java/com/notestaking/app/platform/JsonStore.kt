@@ -17,6 +17,14 @@ class JsonStore(private val file: File) {
         JSONObject()
     }
 
+    /** Strict readers must not mistake malformed persisted JSON for an empty database. */
+    @Synchronized
+    fun readChecked(): JSONObject? = try {
+        if (file.exists()) JSONObject(file.readText(Charsets.UTF_8)) else JSONObject()
+    } catch (_: Exception) {
+        null
+    }
+
     /** Settings callers remain best-effort. */
     fun write(obj: JSONObject) { writeChecked(obj) }
 

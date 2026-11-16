@@ -489,6 +489,23 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     private val noteFavorites = com.notestaking.app.platform.NoteFavoritesStore(
         com.notestaking.app.platform.JsonStore(java.io.File(java.io.File(appContext.filesDir, "config"), "note_favorites.json")),
     )
+    private val noteTags = com.notestaking.app.platform.NoteTagsStore(
+        com.notestaking.app.platform.JsonStore(java.io.File(java.io.File(appContext.filesDir, "config"), "note_tags.json")),
+    )
+    var tagsVersion by mutableStateOf(0)
+        private set
+
+    fun noteTags(uri: String): List<String> = noteTags.tags(documentKey(uri))
+
+    fun setNoteTags(uri: String, tags: Collection<String>): Boolean {
+        val saved = noteTags.set(documentKey(uri), tags)
+        if (saved) tagsVersion++
+        return saved
+    }
+
+    /** SAF identities for local tagged notes, independent of the current folder. */
+    fun findNoteKeysByTag(tag: String): List<String> = noteTags.find(tag)
+
     var favoriteVersion by mutableStateOf(0)
         private set
 
@@ -4947,6 +4964,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             viewStates.rekeyTree(from, to)
             docMeta.rekeyTree(from, to)
             if (noteFavorites.rekeyTree(from, to)) favoriteVersion++
+            if (noteTags.rekeyTree(from, to)) tagsVersion++
             knownStamps.remove(oldUri)?.let { knownStamps[newUri] = it }
             invalidateThumb(oldUri)
         }
@@ -5036,6 +5054,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         createdStore.removeMatching { it == keyPrefix || it.startsWith("$keyPrefix/") }
         docMeta.removeMatching { com.notestaking.app.core.util.DocKeys.within(it, keyPrefix) }
         if (noteFavorites.removeTree(keyPrefix)) favoriteVersion++
+        if (noteTags.removeTree(keyPrefix)) tagsVersion++
         invalidateThumb(docUri)
         dropPinsWithin(docUri)
         dropRecentsWithin(docUri)
