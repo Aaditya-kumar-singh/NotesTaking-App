@@ -144,6 +144,62 @@ class TriadTests(unittest.TestCase):
         triad.ci_finish(self.db,"A","legacy-a","777","Transient network failure; retry required, no code change.")
         self.assertEqual(self.db.execute("SELECT status FROM triad_incidents WHERE run_id='777'").fetchone()[0],"review")
 
+    def test_review_feedback_requeues_same_slot_and_preserves_exact_handoff(self):
+        task = self.ids("A")[0]
+        sha = "a" * 40
+        triad.claim(self.db, "A", "legacy-a", task, self.data)
+        self.db.execute(
+            "UPDATE triad_tasks SET status='review',commit_sha=?,evidence=? WHERE task_id=?",
+            (sha, "Initial source-only handoff", task),
+        )
+        reason = ("Correct failing storage validation and add a regression test without "
+                  "rewriting the reviewed branch or modifying another agent's files.")
+        with patch.object(triad, "assert_coordinator"), patch.object(triad, "assert_worktree"), patch.object(triad, "git", return_value=""):
+            result = triad.request_changes(self.db, task, reason, triad.ROOT)
+        self.assertEqual((result["status"], result["slot"], result["previous_review_sha"]), ("pending", "A", sha))
+        row = self.db.execute("SELECT * FROM triad_tasks WHERE task_id=?", (task,)).fetchone()
+        self.assertEqual((row["status"], row["slot"], row["session"], row["commit_sha"]), ("pending", "A", "legacy-a", sha))
+        self.assertTrue(row["evidence"].startswith("Coordinator corrections required: "))
+        self.assertIn("Initial source-only handoff", row["evidence"])
+        self.assertEqual(triad.next_tasks(self.db, "A", "legacy-a", self.data)[0]["task"], task)
+        with patch.object(triad, "git", return_value=""):
+            claimed = triad.claim(self.db, "A", "legacy-a", task, self.data,
+                                  triad.ROOT / ".agent-worktrees/chat-a")
+        self.assertEqual(claimed["status"], "active")
+        self.assertEqual(self.db.execute("SELECT commit_sha FROM triad_tasks WHERE task_id=?", (task,)).fetchone()[0], sha)
+
+    def test_review_feedback_rejects_wrong_slot_rewritten_history_and_dirty_worktree(self):
+        task = "NP-107"
+        scope = ("Read-only audit of storefront behavior; add tests only under "
+                 "app/src/test/java/com/notestaking/app/ui/ while preserving shared "
+                 "MainActivity, A/C files, and all previous reviewed commits.")
+        with patch.object(triad, "assert_coordinator"):
+            triad.allocate(self.db, task, "B", scope, self.data, triad.ROOT)
+        triad.claim(self.db, "B", "legacy-b", task, self.data)
+        sha = "b" * 40
+        self.db.execute("UPDATE triad_tasks SET status='review',commit_sha=? WHERE task_id=?", (sha, task))
+        reason = ("Fix the app-module dependency check so billing cannot escape the test; "
+                  "keep existing guest creation and export behavior unchanged.")
+        with patch.object(triad, "assert_coordinator"), patch.object(triad, "assert_worktree"), patch.object(triad, "git", return_value=" M local.kt"):
+            with self.assertRaises(triad.Blocked):
+                triad.request_changes(self.db, task, reason, triad.ROOT)
+        self.assertEqual(self.db.execute("SELECT status FROM triad_tasks WHERE task_id=?", (task,)).fetchone()[0], "review")
+        with patch.object(triad, "assert_coordinator"), patch.object(triad, "assert_worktree"), patch.object(triad, "git", return_value=""):
+            triad.request_changes(self.db, task, reason, triad.ROOT)
+            with self.assertRaises(triad.Blocked):
+                triad.request_changes(self.db, task, reason, triad.ROOT)
+        with self.assertRaises(triad.Blocked):
+            triad.claim(self.db, "A", "legacy-a", task, self.data)
+        def rejected_git(_repo, *args):
+            if args[:2] == ("merge-base", "--is-ancestor"):
+                raise triad.Blocked("Reviewed SHA is no longer an ancestor")
+            raise AssertionError(args)
+        with patch.object(triad, "git", side_effect=rejected_git):
+            with self.assertRaises(triad.Blocked):
+                triad.claim(self.db, "B", "legacy-b", task, self.data,
+                            triad.ROOT / ".agent-worktrees/chat-b")
+        self.assertEqual(self.db.execute("SELECT status FROM triad_tasks WHERE task_id=?", (task,)).fetchone()[0], "pending")
+
     def test_defer_only_nonrequired_with_reason(self):
         optional = next(t["id"] for t in self.data["tasks"] if t["release_scope"]!="required")
         required = next(t["id"] for t in self.data["tasks"] if t["release_scope"]=="required")
