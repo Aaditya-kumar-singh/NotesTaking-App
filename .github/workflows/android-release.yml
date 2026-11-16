@@ -32,6 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # Build the requested release tag, not the branch that dispatched this workflow.
+          ref: refs/tags/${{ inputs.tag }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -41,6 +43,10 @@ jobs:
           python3 tools/ci/check_project.py
           python3 tools/ci/check_release_tag.py "$RELEASE_TAG"
           git rev-parse --verify "refs/tags/$RELEASE_TAG" >/dev/null
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" ]]; then
+            echo "::error::Release checkout does not match the requested tag."
+            exit 1
+          fi
 
       - uses: actions/setup-java@v6
         with:
