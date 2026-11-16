@@ -76,6 +76,16 @@ class AudioPillTest {
         assertFalse(AudioPill.onDisc(item, Pt(item.rect.centerX, y)))
     }
 
+    @Test fun waveformSeekRejectsPointsOutsideTheAudioPill() {
+        val item = pill(durationMs = 40_000)
+        val x = AudioPill.layout(item).bars.first().minOf { it.x }
+        assertEquals(0, AudioPill.seekAt(item, Pt(x, item.rect.centerY)))
+        assertNull(AudioPill.seekAt(item, Pt(x, item.rect.top - 1.0)))
+        assertNull(AudioPill.seekAt(item, Pt(x, item.rect.bottom + 1.0)))
+        assertNull(AudioPill.seekAt(item, Pt(item.rect.left - 1.0, item.rect.centerY)))
+        assertNull(AudioPill.seekAt(pill(durationMs = 0), Pt(x, item.rect.centerY)))
+    }
+
     @Test fun playingSwapsThePlayTriangleForTwoPauseBars() {
         val item = pill()
         assertEquals(1, AudioPill.layout(item).glyph.size)

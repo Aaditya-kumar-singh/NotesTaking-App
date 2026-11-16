@@ -76,6 +76,31 @@ class PageCargoTest {
         assertNull(items[2].sync)
     }
 
+    @Test fun importedAudioPagesKeepTheirInkLinksWithoutRebindingOtherNotesInk() {
+        val sourcePill = pill(4)
+        val sourceInk = stroke(Pt(0.0, 0.0), Pt(1.0, 1.0)).also {
+            it.sync = SyncMark(4, 9_000)
+        }
+        val source = note(Page(100.0, 100.0, items = mutableListOf(sourcePill, sourceInk)))
+        val unrelatedInk = stroke(Pt(3.0, 3.0), Pt(4.0, 4.0)).also {
+            it.sync = SyncMark(4, 700)
+        }
+        val target = note(Page(100.0, 100.0, items = mutableListOf(unrelatedInk)))
+        val copied = PageCargo.pack(source, listOf(0), measurer).unpack(target, null, measurer).single()
+        val importedPill = copied.items.filterIsInstance<AudioItem>().single()
+        val importedInk = copied.items.filterIsInstance<Stroke>().single()
+        assertEquals(5, importedPill.rid)
+        assertEquals(SyncMark(5, 9_000), importedInk.sync)
+        assertEquals(SyncMark(4, 700), unrelatedInk.sync)
+        assertTrue(com.notestaking.app.core.audio.InkFade(5, 0).fades(importedInk))
+        assertFalse(com.notestaking.app.core.audio.InkFade(5, 0).fades(unrelatedInk))
+        assertTrue("the imported pill must still point at the same audio asset",
+            importedPill.audio === sourcePill.audio)
+        assertEquals(4, sourcePill.rid)
+        assertEquals(SyncMark(4, 9_000), sourceInk.sync)
+        assertEquals(listOf(unrelatedInk), target.pages.single().items)
+    }
+
     @Test fun goingBackHomeThePagesAreAsTheyWere() {
         val ink = stroke(Pt(0.0, 0.0), Pt(1.0, 1.0)).also { it.sync = SyncMark(9, 10) }
         val src = note(Page(100.0, 100.0, items = mutableListOf(ink)), Page(100.0, 100.0, items = mutableListOf(pill(9))))

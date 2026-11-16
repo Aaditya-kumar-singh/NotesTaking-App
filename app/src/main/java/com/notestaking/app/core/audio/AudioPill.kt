@@ -130,7 +130,7 @@ object AudioPill {
         val h = item.rect.h
         val x0 = item.rect.left + (PAD_LEFT + DISC + DISC_GAP) * h
         val x1 = item.rect.right - PAD_RIGHT * h
-        if (p.x < x0 || p.x > x1 || item.audio.durationMs <= 0) return null
+        if (!item.rect.contains(p) || p.x < x0 || p.x > x1 || x1 <= x0 || item.audio.durationMs <= 0) return null
         return ((p.x - x0) / (x1 - x0) * item.audio.durationMs).toInt().coerceIn(0, item.audio.durationMs)
     }
 
