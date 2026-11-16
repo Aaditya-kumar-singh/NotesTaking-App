@@ -21,6 +21,20 @@ class FreeGuestStorefrontBoundaryContractTest {
 
     private fun app(path: String) = file("src/main/$path", "app/src/main/$path")
 
+    /** The root Gradle script exists too, so only an app-directory build file is safe to scan. */
+    private fun appBuildFile(): File =
+        listOf(File("app/build.gradle.kts"), File("build.gradle.kts"))
+            .firstOrNull { it.isFile && it.canonicalFile.parentFile.name == "app" }
+            ?: error("Missing app module Gradle file")
+
+    private val billingTokens = listOf(
+        "billingclient", "com.android.billingclient", "purchasesupdatedlistener",
+        "stripe", "revenuecat", "paddle",
+    )
+
+    private fun hasBillingDependency(content: String): Boolean =
+        billingTokens.any { content.lowercase().contains(it) }
+
     private fun section(text: String, start: String, end: String): String {
         val i = text.indexOf(start)
         assertTrue("Missing anchor: $start", i >= 0)
@@ -31,13 +45,14 @@ class FreeGuestStorefrontBoundaryContractTest {
 
     @Test
     fun packagingHasNoBillingDependencyOrNetworkPermission() {
-        val build = file("build.gradle.kts", "app/build.gradle.kts")
-        val catalog = file("../gradle/libs.versions.toml", "gradle/libs.versions.toml")
-        val billingTokens = listOf("billingclient", "com.android.billingclient", "purchasesupdatedlistener", "stripe", "revenuecat", "paddle")
-        for (token in billingTokens) {
-            assertFalse("Unexpected billing dependency $token", build.lowercase().contains(token))
-            assertFalse("Unexpected billing version alias $token", catalog.lowercase().contains(token))
-        }
+        val module = appBuildFile()
+        val build = module.readText(Charsets.UTF_8)
+        val catalog = File(module.canonicalFile.parentFile.parentFile, "gradle/libs.versions.toml")
+            .readText(Charsets.UTF_8)
+        assertTrue("Billing scan must read the app module", build.contains("namespace = \"com.notestaking.app\""))
+        assertTrue("Billing scan must read the app applicationId", build.contains("applicationId = \"com.notestaking.app\""))
+        assertFalse("Unexpected billing dependency in app module", hasBillingDependency(build))
+        assertFalse("Unexpected billing alias in version catalog", hasBillingDependency(catalog))
         val manifest = app("AndroidManifest.xml")
         assertFalse(manifest.contains("android.permission.INTERNET"))
         assertTrue(manifest.contains("android:allowBackup=\"false\""))
@@ -46,6 +61,18 @@ class FreeGuestStorefrontBoundaryContractTest {
         assertFalse(labels.contains("name=\"subscribe\""))
         assertFalse(labels.contains("name=\"unlock_premium\""))
         assertFalse(labels.contains("name=\"buy_now\""))
+    }
+
+    @Test
+    fun billingGuardDetectsModuleOnlyDependencyEvenWhenRootBuildIsClean() {
+        val module = appBuildFile().canonicalFile
+        val root = File(module.parentFile.parentFile, "build.gradle.kts")
+        assertTrue(root.isFile)
+        assertFalse("Root script must not be scanned as app module", module == root.canonicalFile)
+        assertFalse(hasBillingDependency(root.readText(Charsets.UTF_8)))
+        val injected = module.readText(Charsets.UTF_8) +
+            "\nimplementation(\"com.android.billingclient:billing:7.0\")"
+        assertTrue("A dependency added only to the app module must be detected", hasBillingDependency(injected))
     }
 
     @Test
