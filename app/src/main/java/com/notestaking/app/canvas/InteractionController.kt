@@ -3905,7 +3905,16 @@ class InteractionController(
     /** Put copies of the selection on the shared item clipboard; a [cut]'s are spent by the paste that lands them. */
     private fun copyToClipboard(cut: Boolean) {
         if (selection.isEmpty()) return
-        ItemClipboard.clip = ItemClipboard.Clip(selection.map { it.item }.deepCopyAll(textMeasurer), state.document.dpi, state.document, cut)
+        val clones = selection.map { it.item }.deepCopyAll(textMeasurer)
+        val basePage = selection.first().pageIndex
+        // Selection can span pages; normalize copies into one page-space frame before pasting.
+        for (i in selection.indices) {
+            val sourcePage = selection[i].pageIndex
+            if (sourcePage == basePage) continue
+            val offset = state.toPageSpace(basePage, state.fromPageSpace(sourcePage, Pt.ZERO))
+            clones[i].translate(offset.x, offset.y)
+        }
+        ItemClipboard.clip = ItemClipboard.Clip(clones, state.document.dpi, state.document, cut)
     }
 
     fun copySelection() {

@@ -146,6 +146,71 @@ class HistoryTest {
         assertEquals(Rect(0.0, 90.0, 10.0, 10.0), img.rect)
     }
 
+    @Test fun multiItemTransferUndoRestoresInterleavedLayerOrderAndOriginalPageIdentity() {
+        val a = strokeAt(1.0)
+        val b = strokeAt(2.0)
+        val c = strokeAt(3.0).also { it.locked = true }
+        val d = strokeAt(4.0)
+        val e = strokeAt(5.0)
+        val x = strokeAt(10.0)
+        val y = strokeAt(11.0)
+        val source = Page(100.0, 100.0, mutableListOf(a, b, c, d, e), pdfPage = 0)
+        val dest = Page(100.0, 100.0, mutableListOf(x, y), pdfPage = 1)
+        val original = source.items.toList()
+        // Deliberately not source order: a group expansion may enumerate an arbitrary order.
+        val moved = listOf(e, b, d)
+        val transfer = TransferItems(moved.map { TransferItems.Transfer(source, dest, it, 50.0, -100.0) })
+        val history = History()
+        transfer.redo()
+        history.push(transfer)
+
+        assertEquals(listOf<CanvasItem>(a, c), source.items)
+        assertEquals(listOf<CanvasItem>(x, y, e, b, d), dest.items)
+        assertSame(c, source.items.last())
+        history.undo()
+        assertEquals(original, source.items)
+        assertEquals(listOf<CanvasItem>(x, y), dest.items)
+        assertEquals(listOf(5.0, 2.0, 4.0), moved.map { it.xAt(0) })
+        assertFalse("all three transfers are one undo step", history.canUndo)
+        transfer.undo() // idempotent: no duplicated objects on the source page
+        assertEquals(original, source.items)
+        history.redo()
+        assertEquals(listOf<CanvasItem>(a, c), source.items)
+        assertEquals(listOf<CanvasItem>(x, y, e, b, d), dest.items)
+        transfer.redo() // idempotent: no accidental second translation
+        assertEquals(listOf<CanvasItem>(x, y, e, b, d), dest.items)
+        history.undo()
+        assertEquals(original, source.items)
+        assertEquals(0, source.pdfPage)
+        assertEquals(1, dest.pdfPage)
+    }
+
+    @Test fun movedThenTransferredItemUndoRestoresPositionAndExactSourceSlot() {
+        val bottom = strokeAt(1.0)
+        val image = ImageItem(ImageData(java.io.File("test-image"), 10, 10), Rect(20.0, 25.0, 20.0, 20.0))
+        val top = strokeAt(2.0)
+        val from = Page(100.0, 100.0, mutableListOf(bottom, image, top))
+        val fixed = strokeAt(7.0).also { it.locked = true }
+        val to = Page(100.0, 100.0, mutableListOf(fixed), pdfPage = 3)
+        image.translate(12.0, 30.0)
+        val transfer = TransferItems(listOf(TransferItems.Transfer(from, to, image, 0.0, -110.0)))
+        transfer.redo()
+        val history = History()
+        history.push(CompositeCommand(listOf(MoveItems(listOf(image), 12.0, 30.0), transfer)))
+
+        assertEquals(listOf<CanvasItem>(bottom, top), from.items)
+        assertEquals(listOf<CanvasItem>(fixed, image), to.items)
+        assertEquals(Rect(32.0, -55.0, 20.0, 20.0), image.rect)
+        history.undo()
+        assertEquals(listOf<CanvasItem>(bottom, image, top), from.items)
+        assertEquals(Rect(20.0, 25.0, 20.0, 20.0), image.rect)
+        assertEquals(listOf<CanvasItem>(fixed), to.items)
+        history.redo()
+        assertEquals(listOf<CanvasItem>(fixed, image), to.items)
+        assertEquals(Rect(32.0, -55.0, 20.0, 20.0), image.rect)
+        assertEquals(3, to.pdfPage)
+    }
+
     @Test fun resizeItemRoundTrip() {
         val img = ImageItem(ImageData(java.io.File("test-image"),10, 10), Rect(20.0, 20.0, 40.0, 40.0))
         val cmd = ResizeItem(img, RectHandle(Rect(0.0, 0.0, 10.0, 10.0)), RectHandle(Rect(20.0, 20.0, 40.0, 40.0)))

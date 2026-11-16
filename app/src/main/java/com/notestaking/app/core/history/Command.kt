@@ -200,19 +200,28 @@ class TransferItems(private val transfers: List<Transfer>) : Command {
         val dy: Double,
     )
 
+    // Capture each removal's current slot: reversing those removals reconstructs interleaved layers.
+    private val sourceSlots = IntArray(transfers.size) { -1 }
+
     override fun redo() {
-        for (t in transfers) {
-            if (!t.from.items.removeRef(t.item)) continue
+        for ((i, t) in transfers.withIndex()) {
+            val slot = t.from.items.indexOfFirst { it === t.item }
+            if (slot < 0) continue
+            sourceSlots[i] = slot
+            t.from.items.removeAt(slot)
             t.item.translate(t.dx, t.dy)
             if (!t.to.items.containsRef(t.item)) t.to.items.add(t.item)
         }
     }
 
     override fun undo() {
-        for (t in transfers.asReversed()) {
+        for (i in transfers.indices.reversed()) {
+            val t = transfers[i]
             if (!t.to.items.removeRef(t.item)) continue
             t.item.translate(-t.dx, -t.dy)
-            if (!t.from.items.containsRef(t.item)) t.from.items.add(t.item)
+            if (!t.from.items.containsRef(t.item)) {
+                t.from.items.add(sourceSlots[i].coerceIn(0, t.from.items.size), t.item)
+            }
         }
     }
 
