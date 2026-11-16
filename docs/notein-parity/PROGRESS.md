@@ -107,3 +107,28 @@ Known limitations, dependencies and next highest-priority unblocked item
 ```
 
 Do not record a future CI, test, merge, or automatic follow-up as completed. The Windows host remains build-free under repository policy; `.kotlin/` is untouched.
+
+## 2026-11-16 coordinator preflight: remaining 12 release and feature cards
+
+**Evidence state:** preparation and blocker capture only; **no device verification, release signing, waiver or release approval**. Do not close these cards from this entry.
+
+- Last GitHub CI with successful debug QA jobs (not device/release approval): B95, `bedd7031762f6a62e6f2d76114e7ab7e592d150e`, run #43843504459 (source and Android/JUnit/lint/debug APK succeeded). B96 `21aa7550813a20d8ba73987ef1b201b5d963b777`, run #43849606904 failed one stale Recent test. B97 `69e2eb39a67c334b6f522c531db5f90beaf5efbf`, run #43853208944, was **in progress at this preflight**; its one-line test-contract fix is not a green CI assertion.
+- Subsequent reviewed B tooltip and C rotation-geometry changes are combined locally on `qa/b98-pane-geometry-prep-20261116` at `933c16b36e71c745824a637ab174bf85b0d5d3f4`, with source/privacy/catalog checks passing. This candidate is NOT published, Android-tested, promoted or signed. Chat A issue #23 has independent uncommitted Editor changes and must not be overwritten. GitHub issue #24 still needs shared keyboard and actual TalkBack verification.
+- Physical test preflight: `adb devices -l` from the authorized Windows LocalMCP root returned **zero connected devices/emulators**. No phone/tablet install, S Pen trace, disposable note fixture, Perfetto capture, touch transcript, TalkBack recording or test APK execution happened. Both device and physical tablet prerequisites are blocked. No waivers granted.
+
+| Pending card | Required evidence / blocker | Actual status |
+|---|---|---|
+| NP-004 Gemini Quick Scratch | Gemini-owned writable note action, back/save safety and phone acceptance; no Gemini handoff reviewed | PENDING, owner reserved |
+| NP-102 handwriting recognition | C-owned model/stroke planning; ML Kit `en` and `hi` model download/privacy/integration and actual English/Hindi recognition tests | RESERVED for C; not claimed or implemented in this checkpoint |
+| REL-08 200-page PDF performance | Physical device, scanned/vector 200-page fixture hashes, Perfetto FrameTimeline p50/p95/p99/jank, PSS, device thermal/memory and three comparable trials | BLOCKED: no ADB device |
+| REL-09 palm/stylus pressure | Real pressure-capable S Pen tablet, palm/pen/finger/hover interaction and recordings | BLOCKED: no S Pen hardware connected |
+| REL-10 eraser/undo | Disposable dense-ink note, stroke/AREA eraser output, Undo/Redo transaction, save/reopen and recorded result | BLOCKED: no device |
+| REL-11 PDF transforms/split | Phone/tablet page anchors at 0/90/180/270 and 25/100/200/400% zoom, split-pane and real screenshot export | BLOCKED: no device; issue #23 implementation underway |
+| REL-12 keyboard/TalkBack | Actual grip keys, 180/240/320dp panes, TalkBack descriptions, 1.3x/2x font, tooltip bounds and no false page turn | BLOCKED: no hardware; issue #24 pending shared focus QA |
+| REL-13 offline/permission | Actual airplane mode/restart, storage-root picker decline/revoke, localization, no data loss on SAF failure | BLOCKED: no device |
+| REL-14 exact release candidate CI | Approve final combined SHA only after #23/#24 and NP-004 decisions, run exact GitHub full-ABI/JUnit/lint/APK integrity and preserve results | BLOCKED: no approved final release candidate, B97 in progress |
+| REL-16 device QA evidence | Signed-off REL-08--REL-13 evidence matrix with exact SHA/APK/fixture/device, defects and explicitly approved waivers | PREFLIGHT recorded; no device evidence, no waiver, signoff BLOCKED |
+| REL-19 signed production release | Approved protected tag `v0.1.0`, four signing secrets, approved `ANDROID_RELEASE_CERT_SHA256`, released APK signature and SHA-256 verification across ABIs | BLOCKED: authorized production certificate and signing evidence unavailable |
+| REL-20 final release signoff | Resolve required P0/P1 acceptance, native compatibility, package/version/rollback/distribution and signed release notes | BLOCKED: gates above remain open |
+
+**Next legal transition:** let Chat C exclusively claim NP-102, review Gemini NP-004 separately, source-review Chat A issue #23 before the next combined QA push, require green GitHub CI on that exact head, and obtain real phone and S Pen tablet evidence before any `triad.py verify`, `device-verified`, protected branch promotion or release. No personal notes, credentials or key material were collected.
