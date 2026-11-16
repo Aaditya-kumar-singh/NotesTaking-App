@@ -298,11 +298,15 @@ def claim(db, slot, session, task_id, data, repo: Path | None = None):
         raise Blocked("Unknown task ID")
     with transaction(db):
         assert_session(db, slot, session)
-        route = db.execute("SELECT status,slot FROM triad_tasks WHERE task_id=?",
+        route = db.execute("SELECT status,slot,commit_sha FROM triad_tasks WHERE task_id=?",
                            (task_id,)).fetchone()
         if not route or route["status"] != "pending" or (route["slot"] or t["owner"]) != slot:
             raise Blocked("Task is not pending or allocated to this session's slot")
         preserved = legacy_review_lineage(db, slot, repo) if repo is not None else None
+        if route["commit_sha"]:
+            if repo is None:
+                raise Blocked("Rework must be claimed from its exact worker worktree")
+            git(repo, "merge-base", "--is-ancestor", route["commit_sha"], "HEAD")
         if db.execute("SELECT 1 FROM triad_tasks WHERE slot=? AND status='active'", (slot,)).fetchone():
             raise Blocked("This slot already has an active task; hand it off first")
         r = db.execute("UPDATE triad_tasks SET status='active',slot=?,session=?,updated_at=? "
@@ -348,6 +352,40 @@ def approve(db, task_id, evidence, repo):
             raise Blocked("Only handed-off tasks may be marked local_ready")
         emit(db, "coordinator", "task-reviewed", f"{task_id}: {evidence}")
     return {"task": task_id, "status": "local_ready", "ci_passed": False}
+
+
+def request_changes(db, task_id: str, reason: str, repo: Path) -> dict:
+    """Return a reviewed handoff to its original slot without discarding its reviewed SHA."""
+    assert_coordinator(repo)
+    if len(reason.strip()) < 50:
+        raise Blocked("Review feedback must name the concrete fix and tests required")
+    with transaction(db):
+        row = db.execute(
+            "SELECT status,slot,commit_sha,evidence FROM triad_tasks WHERE task_id=?",
+            (task_id,),
+        ).fetchone()
+        if not row or row["status"] != "review" or row["slot"] not in BRANCHES:
+            raise Blocked("Only an A/B/C reviewed task may be returned for corrections")
+        slot, previous = row["slot"], row["commit_sha"]
+        if not previous or not re.fullmatch(r"[0-9a-f]{40}", previous):
+            raise Blocked("Cannot return a handoff with no exact reviewed commit")
+        worktree = ROOT / ".agent-worktrees" / BRANCHES[slot][0]
+        assert_worktree(slot, worktree)
+        if git(worktree, "status", "--porcelain"):
+            raise Blocked("Worker has uncommitted changes; preserve them first")
+        git(worktree, "merge-base", "--is-ancestor", previous, "HEAD")
+        feedback = ("Coordinator corrections required: " + reason.strip()
+                    + "\nOriginal reviewed SHA: " + previous
+                    + "\nPrior handoff: " + (row["evidence"] or ""))
+        db.execute(
+            "UPDATE triad_tasks SET status='pending',evidence=?,updated_at=? "
+            "WHERE task_id=? AND status='review'",
+            (feedback, now(), task_id),
+        )
+        emit(db, "COORD", "request-changes", f"{task_id} -> {slot}, preserve {previous}: {reason}")
+    return {"task": task_id, "slot": slot, "status": "pending",
+            "previous_review_sha": previous,
+            "note": "Reserved for the same worker; claim, fix, commit and hand off a new SHA."}
 
 
 def defer(db, task_id, reason, data, repo):
@@ -661,6 +699,9 @@ def main() -> int:
     a = sub.add_parser("approve")
     a.add_argument("task")
     a.add_argument("--evidence", required=True)
+    c = sub.add_parser("request-changes")
+    c.add_argument("task")
+    c.add_argument("--reason", required=True)
     v = sub.add_parser("verify")
     v.add_argument("task")
     v.add_argument("--ci-sha",required=True,help="Exact SHA of successful GitHub Actions run")
@@ -709,6 +750,8 @@ def main() -> int:
             out = handoff(db,args.slot,args.session,args.task,args.commit,args.evidence,repo)
         elif args.command == "approve":
             out = approve(db,args.task,args.evidence,repo)
+        elif args.command == "request-changes":
+            out = request_changes(db,args.task,args.reason,repo)
         elif args.command == "verify":
             out = verify_task(db,args.task,args.ci_sha,args.ci_run,args.evidence,repo)
         elif args.command == "defer":
