@@ -1013,6 +1013,36 @@ class DocumentCodecTest {
         assertFalse(manifest.contains("\"template\""))
     }
 
+    @Test fun newNotePaperChoicesSurvivePortraitLandscapeAndCoverRoundTrip() {
+        val patterns = listOf(PagePattern.LINES.id, PagePattern.DOTS.id, PagePattern.GRID.id, "none")
+        for (landscape in listOf(false, true)) for (pattern in patterns) {
+            val dpi = 150
+            val w = if (landscape) 148.0 else 105.0
+            val h = if (landscape) 105.0 else 148.0
+            val pxW = PageSize.mmToPx(w, dpi)
+            val pxH = PageSize.mmToPx(h, dpi)
+            val style = PageStyle(template = pattern, spacing = 32.0, patternColor = Rgba(15, 30, 45, 180))
+            val doc = Document.blankPixels(2, pxW, pxH, dpi)
+            doc.style = style
+            doc.newPageSize = PageSizeChoice(PageSize.CUSTOM,
+                if (landscape) Orientation.LANDSCAPE else Orientation.PORTRAIT, w, h)
+            val cover = Page(pxW, pxH, style = PageStyle(template = PagePattern.GRID.id))
+            cover.cover = true
+            doc.pages.add(0, cover)
+            val back = roundTrip(doc)
+            assertEquals(style, back.style)
+            assertEquals(doc.newPageSize, back.newPageSize)
+            assertEquals(3, back.pages.size)
+            assertTrue(back.pages[0].cover)
+            assertEquals(PagePattern.GRID.id, back.pages[0].style.template)
+            for (page in back.pages) {
+                assertEquals(pxW, page.width, 1e-6)
+                assertEquals(pxH, page.height, 1e-6)
+            }
+            assertTrue(back.pages.drop(1).all { it.style.isEmpty })
+        }
+    }
+
     @Test fun emptyStyleReadsBackEmpty() {
         val doc = Document(dpi = 150)
         doc.pages.add(Page(100.0, 100.0)) // default (empty) styles on page + document
