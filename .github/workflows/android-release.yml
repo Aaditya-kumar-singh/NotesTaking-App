@@ -28,6 +28,8 @@ jobs:
     environment: release
     env:
       RELEASE_TAG: ${{ inputs.tag }}
+      # Public SHA-256 of the approved production signing certificate, set in the release environment.
+      APPROVED_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
     steps:
       - uses: actions/checkout@v7
@@ -81,6 +83,11 @@ jobs:
             echo "::error::Configure all four Android signing secrets before releasing."
             exit 1
           fi
+          approved="${APPROVED_CERT_SHA256//:/}"
+          if [[ ! "${approved,,}" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Configure release variable ANDROID_RELEASE_CERT_SHA256 with the approved signing certificate fingerprint."
+            exit 1
+          fi
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/release-upload.jks
           printf 'storeFile=release-upload.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
             "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" \
@@ -101,8 +108,15 @@ jobs:
             --apk "$APK" \
             --package com.notestaking.app \
             --aapt "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
-          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify \
-            --verbose --print-certs "$APK"
+          cert_report="$("$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK")"
+          printf '%s\n' "$cert_report"
+          # Exactly one signing certificate must match the separately approved production key.
+          actual="$(printf '%s\n' "$cert_report" | sed -n 's/^Signer #[0-9][0-9]* certificate SHA-256 digest: //p')"
+          expected="${APPROVED_CERT_SHA256//:/}"
+          if [[ ! "${actual,,}" =~ ^[0-9a-f]{64}$ || "${actual,,}" != "${expected,,}" ]]; then
+            echo "::error::APK signature does not match the approved release certificate, or has multiple signers."
+            exit 1
+          fi
           (cd app/build/outputs/apk/release && sha256sum app-release.apk > app-release.apk.sha256)
 
       - name: Upload signed release for review
