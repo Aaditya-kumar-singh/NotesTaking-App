@@ -13,6 +13,7 @@ import com.notestaking.app.core.model.Stroke
 import com.notestaking.app.core.util.DocumentKind
 import com.notestaking.app.format.CanvasCodec
 import com.notestaking.app.format.DocumentCodec
+import com.notestaking.app.platform.DocumentNames
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -116,8 +117,9 @@ class StandardAndCanvasCreationContractTest {
         val names = between(editor, "private fun uniqueDocumentName(", "/** Creates a new `.xnote`")
         assertTrue(names.contains("browseChildren(treeUri, parentDocId)"))
         assertTrue(names.contains("DocumentKind.stripSuffix(raw.trim())"))
-        assertTrue(names.contains("var n = 1"))
-        assertTrue(names.contains("in taken) n++"))
+        assertTrue(names.contains("DocumentNames.unique(stem, kind, taken)"))
+        assertEquals("Note_1.xnote", DocumentNames.unique("Note", DocumentKind.NOTE, listOf("Note.xnote")))
+        assertEquals("Board_1.xcanvas", DocumentNames.unique("Board", DocumentKind.CANVAS, listOf("board.XCANVAS")))
         val builders = between(editor, "fun createBlankCanvasFile(", "/** Imports the PDF")
         assertTrue(builders.contains("uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.CANVAS)"))
         assertTrue(builders.contains("canvasCodec.write(com.notestaking.app.core.infinite.InfiniteDocument("))
