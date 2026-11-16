@@ -34,6 +34,19 @@ class EraserToolbarDescriptionTest {
         assertFalse(infinite.contains("session.erase(content.x, content.y, eraserRadius(), areaErase())"))
     }
 
+    @Test fun stylusPressureIsExplicitlyEnabledInEraserPopup() {
+        val popup = listOf(
+            java.io.File("src/main/java/com/notestaking/app/ui/Popups.kt"),
+            java.io.File("app/src/main/java/com/notestaking/app/ui/Popups.kt"),
+        ).first { it.isFile }.readText()
+        val eraser = popup.substringAfter("fun EraserConfigPopup(").substringBefore("fun SelectConfigPopup(")
+        assertTrue(eraser.contains("mutableStateOf(base.pressureEnabled)"))
+        assertTrue(eraser.contains("pressureEnabled = pressure"))
+        assertTrue(eraser.contains("pressureMinFactor = ToolConversions.sensitivityToMinFactor(sensitivity.toDouble())"))
+        assertTrue(eraser.contains("ToggleRow(stringResource(R.string.caption_pressure), pressure)"))
+        assertTrue(eraser.contains("SliderRow(stringResource(R.string.caption_sensitivity), sensitivity, 0f..100f, enabled = pressure)"))
+    }
+
     @Test fun modeAndSizeAreIncludedInSpokenLabel() {
         assertEquals(
             "Eraser: Area, Size: 24.0",

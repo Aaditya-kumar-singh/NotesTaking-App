@@ -988,6 +988,8 @@ fun EraserConfigPopup(editor: ToolPopupHost, onDismiss: () -> Unit) {
     var scale by remember { mutableStateOf(base.scale) }
     var markups by remember { mutableStateOf(base.eraseMarkups) }
     var scribble by remember { mutableStateOf(base.scribbleErase) }
+    var pressure by remember { mutableStateOf(base.pressureEnabled) }
+    var sensitivity by remember { mutableStateOf(ToolConversions.minFactorToSensitivity(base.pressureMinFactor).toFloat()) }
 
     fun emit() = editor.updateToolConfig(
         Tool.ERASER,
@@ -998,6 +1000,8 @@ fun EraserConfigPopup(editor: ToolPopupHost, onDismiss: () -> Unit) {
             scale = scale,
             eraseMarkups = markups,
             scribbleErase = scribble,
+            pressureEnabled = pressure,
+            pressureMinFactor = ToolConversions.sensitivityToMinFactor(sensitivity.toDouble()),
         ),
     )
 
@@ -1014,6 +1018,8 @@ fun EraserConfigPopup(editor: ToolPopupHost, onDismiss: () -> Unit) {
             }
             val r = ToolConversions.widthRange(Tool.ERASER)
             SliderRow(stringResource(R.string.caption_size), size, r.start.toFloat()..r.endInclusive.toFloat()) { size = it; emit() }
+            ToggleRow(stringResource(R.string.caption_pressure), pressure) { pressure = it; emit() }
+            SliderRow(stringResource(R.string.caption_sensitivity), sensitivity, 0f..100f, enabled = pressure) { sensitivity = it; emit() }
             // SCALE off: the eraser holds a constant on-screen size whatever zoom you are at.
             ToggleRow(stringResource(R.string.caption_scale), scale) { scale = it; emit() }
             // Re-arm the previous pen/highlighter once an erase lifts, so a quick fix doesn't strand
