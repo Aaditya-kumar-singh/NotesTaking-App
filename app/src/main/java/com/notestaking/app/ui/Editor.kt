@@ -4682,6 +4682,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         return createNoteFile(treeUri, parentDocId, name) { codec.write(blank, it) }
     }
 
+    /** Quick Scratch: persist a blank note in the selected folder before the caller opens it. IO, call off-thread. */
+    fun createQuickScratchFile(treeUri: String?, parentDocId: String?): String? =
+        com.notestaking.app.platform.QuickScratchCreation.create(treeUri, parentDocId) { root, folder ->
+            createBlankNoteFile(root, folder, "Untitled")
+        }
+
     /** What the New note screen chose: the page size in mm, every page's style, and the cover's when there is one. */
     class NewNoteSetup(val widthMm: Double, val heightMm: Double, val style: PageStyle, val cover: PageStyle?)
 
