@@ -3939,6 +3939,7 @@ class InteractionController(
         val items = selection.map { it.item }
         for (item in items) item.locked = true
         history.push(LockItems(items, true))
+        state.document.dirty = true
         clearSelection()
         maybeSwitchBackAfterSelect()
         onContentChanged()
@@ -3950,6 +3951,7 @@ class InteractionController(
         if (!item.locked) return
         item.locked = false
         history.push(LockItems(listOf(item), false))
+        state.document.dirty = true
         onContentChanged()
     }
 
