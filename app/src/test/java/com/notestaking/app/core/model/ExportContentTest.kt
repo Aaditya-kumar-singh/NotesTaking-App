@@ -101,6 +101,22 @@ class ExportContentTest {
         }
     }
 
+    @Test fun turningOffPaperAloneNeverChangesPrintableItemsOrTheirOrder() {
+        val contents = contents()
+        for (mask in 0 until 8) {
+            val content = ExportContent(
+                strokes = mask and 1 != 0,
+                images = mask and 2 != 0,
+                text = mask and 4 != 0,
+            )
+            val withPaper = contents.forExport(content)
+            val withoutPaper = contents.forExport(content.copy(paper = false))
+            assertEquals("mask=$mask", withPaper, withoutPaper)
+            assertTrue(withoutPaper.indices.all { i -> withoutPaper[i] === withPaper[i] })
+        }
+        assertEquals(contents.forExport(), contents.forExport(ExportContent(paper = false)))
+    }
+
     @Test fun filteringNeitherMarksTheNoteDirtyNorMutatesAudioImageOrInkMetadata() {
         val contents = contents()
         val doc = Document(mutableListOf(Page(600.0, 900.0, contents.toMutableList())))
