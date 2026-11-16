@@ -52,11 +52,12 @@ object PageTurn {
         val q = normalize(turns)
         if (q == 0) return
         val t = affine(page.width, page.height, q)
-        if (page.pdfPage != null) {
+        // Orphaned text markups still paint on pages whose source PDF link has been removed.
+        if (page.markups.isNotEmpty()) {
             val toPts = 72.0 / doc.dpi
             page.markups = page.markups.map { markup(it, page.width * toPts, page.height * toPts, q) }
-            page.pdfTurn = normalize(page.pdfTurn + q)
         }
+        if (page.pdfPage != null) page.pdfTurn = normalize(page.pdfTurn + q)
         for (item in page.items) {
             if (item is TextItem || item is AudioItem) {
                 val c = item.bounds().center

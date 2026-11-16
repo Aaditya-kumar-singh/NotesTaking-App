@@ -43,6 +43,33 @@ class PageLinksTest {
     }
 
     @Test
+    fun pdfTextLinksHitTheirDisplayedBoxesAtEveryQuarterTurn() {
+        val address = "https://a.io/x"
+        for (turn in listOf(0, 90, 180, 270)) {
+            val page = FakePageText().line("see $address.", 200f, 200f, angle = turn).build()
+            val links = PageLinks.find(page)
+            assertEquals("PDF text rotation $turn", listOf(address), links.map { it.uri })
+            assertEquals(4, links.single().start)
+            // Character 5 of the displayed line, including a 3-point offset into its 6x12 cell.
+            val x = when (turn) {
+                90 -> 194f
+                180 -> 167f
+                270 -> 206f
+                else -> 233f
+            }
+            val y = when (turn) {
+                90 -> 233f
+                180 -> 194f
+                270 -> 167f
+                else -> 206f
+            }
+            assertEquals("hit-test uses displayed PDF points, rotation=$turn",
+                address, PageLinks.at(page, x, y)?.uri)
+            assertNull("far off-page tap, rotation=$turn", PageLinks.at(page, 10f, 10f, slop = 4f))
+        }
+    }
+
+    @Test
     fun aTapOffTheTextFindsNothing() {
         val page = FakePageText().line("https://f.io", 0f, 0f).line("https://g.io", 0f, 100f).build()
         assertNull(PageLinks.at(page, 30f, 50f, slop = 4f))
