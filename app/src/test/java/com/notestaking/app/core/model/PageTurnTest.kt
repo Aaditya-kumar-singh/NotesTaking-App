@@ -107,6 +107,60 @@ class PageTurnTest {
         assertEquals(quad, page.markups.single().quads.single())
     }
 
+    @Test fun markupOverlayRotatesWithItsPageEvenWithoutALinkedSourcePdf() {
+        for (source in listOf<Int?>(null, 6)) {
+            for (q in 1..3) {
+                val doc = Document(dpi = 144, margins = PageMargins(left = 0.12, bottom = 0.08))
+                val page = Page(
+                    240.0, 120.0, pdfPage = source,
+                    style = PageStyle(template = PagePattern.GRID.id),
+                    margins = PageMargins(top = 0.25),
+                )
+                doc.pages.add(page)
+                val ink = stroke(Pt(22.0, 36.0), Pt(58.0, 46.0))
+                page.items.add(ink)
+                val original = TextMarkup(
+                    "overlay", MarkupType.HIGHLIGHT, Rgba(255, 100, 0, 255), 0.6,
+                    listOf(com.notestaking.app.core.pdf.TextQuad(11f, 18f, 29f, 24f, 0)),
+                    "selected", "note", 10L, 20L,
+                )
+                page.markups = listOf(original)
+                val before = PageShape.of(page)
+                val marginsBefore = page.insets(doc)
+                val itemBefore = Pt(ink.sampleAt(0).x, ink.sampleAt(0).y)
+
+                PageTurn.turn(page, doc, q)
+
+                val expected = PageTurn.markup(original, 120.0, 60.0, q)
+                assertEquals(expected.quads, page.markups.single().quads)
+                assertEquals(original.id, page.markups.single().id)
+                assertEquals(original.type, page.markups.single().type)
+                assertEquals(original.note, page.markups.single().note)
+                assertEquals(original.intensity, page.markups.single().intensity, eps)
+                assertPt(PageTurn.affine(240.0, 120.0, q).apply(itemBefore),
+                    Pt(ink.sampleAt(0).x, ink.sampleAt(0).y))
+                val marginsAfter = page.insets(doc)
+                val expectedLeft = when (q) {
+                    1 -> marginsBefore.bottom
+                    2 -> marginsBefore.right
+                    else -> marginsBefore.top
+                }
+                assertEquals("physical margin follows its page edge", expectedLeft, marginsAfter.left, eps)
+                assertEquals(PagePattern.GRID.id, page.style.template)
+                assertEquals(source, page.pdfPage)
+                assertEquals(if (source == null) 0 else q, page.pdfTurn)
+
+                before.restore(page)
+                assertEquals(240.0, page.width, eps)
+                assertEquals(120.0, page.height, eps)
+                assertTrue("undo restores original annotation by identity", page.markups.single() === original)
+                assertPt(itemBefore, Pt(ink.sampleAt(0).x, ink.sampleAt(0).y))
+                assertEquals(source, page.pdfPage)
+                assertEquals(0, page.pdfTurn)
+            }
+        }
+    }
+
     @Test fun aKeyCarriesTheIndexAndTheTurn() {
         val key = PdfKey.of(123_456, 3)
         assertEquals(123_456, PdfKey.index(key))
