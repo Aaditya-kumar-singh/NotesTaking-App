@@ -70,10 +70,16 @@ object PageTurn {
         val resolved = page.resolvedMargins(doc)
         val turned = margins(resolved, q)
         if (turned != resolved) {
-            // A rotated empty edge must not inherit a margin from the unrotated document.
+            val explicit = margins(page.margins, q)
+            val inherited = doc.margins
+            // Preserve inheritance where it still paints the same physical edge; block it elsewhere.
+            fun edge(value: Double?, override: Double?, default: Double?): Double? =
+                if (override == null && value == default) null else value ?: 0.0
             page.margins = PageMargins(
-                left = turned.left ?: 0.0, top = turned.top ?: 0.0,
-                right = turned.right ?: 0.0, bottom = turned.bottom ?: 0.0,
+                left = edge(turned.left, explicit.left, inherited.left),
+                top = edge(turned.top, explicit.top, inherited.top),
+                right = edge(turned.right, explicit.right, inherited.right),
+                bottom = edge(turned.bottom, explicit.bottom, inherited.bottom),
             )
         }
         if (q % 2 == 1) {

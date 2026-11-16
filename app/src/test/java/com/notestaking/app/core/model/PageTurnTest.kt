@@ -89,7 +89,12 @@ class PageTurnTest {
         assertTrue(page.margins.isEmpty)
         doc.margins = PageMargins(left = 0.2)
         PageTurn.turn(page, doc, 1)
-        assertEquals(PageMargins(top = 0.2), page.margins)
+        // The old left margin moved to the top; explicit zero blocks it from reappearing on the left.
+        assertEquals(PageMargins(left = 0.0, top = 0.2), page.margins)
+        assertEquals(0.0, page.insets(doc).left, eps)
+        // Unaffected empty edges still inherit later document-level changes.
+        doc.margins = PageMargins(left = 0.2, right = 0.25)
+        assertEquals(50.0, page.insets(doc).right, eps)
     }
 
     @Test fun aPdfPageTurnsItsPdfAndItsMarkups() {
