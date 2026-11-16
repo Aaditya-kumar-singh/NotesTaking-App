@@ -8,6 +8,7 @@ data class ExportContent(
     val paper: Boolean = true,
     val bookmarks: Boolean = true,
     val markups: Boolean = true,
+    val margins: Boolean = true,
 )
 
 /**
