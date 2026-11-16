@@ -41,6 +41,21 @@ class RecordingIdsTest {
         assertNull(copiedInk.sync)
     }
 
+    @Test fun importingARecordingIntoAnotherNoteDoesNotClaimItsOrphanedInk() {
+        val unrelatedInk = ink(6, ms = 500)
+        val importedPill = pill(6)
+        val importedInk = ink(6, ms = 4_500)
+        RecordingIds.adopt(
+            listOf(importedPill, importedInk), listOf(unrelatedInk),
+            moves = true, protectExistingSync = true,
+        )
+        assertEquals(7, importedPill.rid)
+        assertEquals(SyncMark(7, 4_500), importedInk.sync)
+        assertEquals(SyncMark(6, 500), unrelatedInk.sync)
+        assertTrue(InkFade(7, 0).fades(importedInk))
+        assertFalse(InkFade(7, 0).fades(unrelatedInk))
+    }
+
     @Test fun aPillWhoseIdIsFreeKeepsIt() {
         val copied = pill(9)
         RecordingIds.adopt(listOf(copied), listOf(pill(1)), moves = false)

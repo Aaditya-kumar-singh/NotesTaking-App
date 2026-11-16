@@ -16,14 +16,15 @@ object RecordingIds {
      * Ready pasted [items] to join a document already holding [existing]. A pill whose id is taken
      * gets a fresh one. A copy is new ink, so it drops its moments, unless it [moves]: a cut put
      * down again, or whole pages pasted, which bring their recordings along and keep what is tied
-     * to them tied to the copy.
+     * to them tied to the copy. Cross-document page imports also reserve ids referenced only
+     * by existing ink, while same-note cuts may intentionally rejoin that ink.
      */
-    fun adopt(items: List<CanvasItem>, existing: Iterable<CanvasItem>, moves: Boolean) {
+    fun adopt(items: List<CanvasItem>, existing: Iterable<CanvasItem>, moves: Boolean, protectExistingSync: Boolean = false) {
         // A copied pill must not take over ink already tied to its number; a moved one comes back to its own.
         val taken = HashSet<Int>()
         for (item in existing) {
             if (item is AudioItem) taken.add(item.rid)
-            if (!moves) item.sync?.let { taken.add(it.rid) }
+            if (!moves || protectExistingSync) item.sync?.let { taken.add(it.rid) }
         }
         var fresh = maxOf(taken.maxOrNull() ?: 0, items.maxOfOrNull { (it as? AudioItem)?.rid ?: 0 } ?: 0) + 1
         val remap = HashMap<Int, Int>()

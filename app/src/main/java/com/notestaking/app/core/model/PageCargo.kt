@@ -53,7 +53,7 @@ class PageCargo private constructor(
         val items = copies.flatMap { it.items }
         val rids = items.filterIsInstance<AudioItem>().mapTo(HashSet()) { it.rid }
         for (item in items) if (item.sync?.rid?.let { it !in rids } == true) item.sync = null
-        RecordingIds.adopt(items, target.pages.flatMap { it.items }, moves = true)
+        RecordingIds.adopt(items, target.pages.flatMap { it.items }, moves = true, protectExistingSync = true)
         target.templates = templates.filterKeys { it !in target.templates } + target.templates
         target.templatePackages = templatePackages.filterKeys { it !in target.templatePackages } + target.templatePackages
         return copies
