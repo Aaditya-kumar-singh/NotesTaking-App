@@ -8,13 +8,13 @@
 |---|---|---|
 | B97 all-ABI debug reference | `69e2eb39a67c334b6f522c531db5f90beaf5efbf`; [run #43853208944](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43853208944) | **PASSED** with `NotesTakingApp-debug-all-abis-198` artifact; lacks latest A/B/C UI fixes |
 | B98 combined UI candidate | `b10a6930b7740955cc36b8bf33efc1b00dd9ad1e`; [run #43856500526](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43856500526) | **FAILED** Kotlin compilation (missing Compose `mutableStateOf` import); do not test as installed APK |
-| **B99 universal APK target** | `b299cbb8972267eebe103493fa093f7e5cfa6f70`; [run #43857426156](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43857426156) | **PENDING GitHub Android CI at preparation**; use this exact APK only if JUnit, lint, all three ABIs, integrity and artifact upload pass |
+| **B99 universal APK target** | `b299cbb8972267eebe103493fa093f7e5cfa6f70`; [run #43857426156](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43857426156) | **PASSED** source, JUnit, lint, all three ABIs, APK-integrity checks; download `NotesTakingApp-debug-all-abis-200` from Actions Artifacts for manual installation |
 
 The `qa/**` CI workflow sets `CI_ARM64_ONLY=false`, assembles **one** `app-debug.apk` containing `arm64-v8a`, `armeabi-v7a`, and `x86_64`, checks the debug package `com.notestaking.app.debug`, and uploads `NotesTakingApp-debug-all-abis-<run_number>` as a zipped artifact. This is a **debug/test APK**, **not** a production-signed APK.
 
 Do not install a failing or still-running checkpoint. Once the B99 run is green, open its **Artifacts** section, obtain `NotesTakingApp-debug-all-abis-...`, extract `app-debug.apk`, record the SHA-256 of that exact APK, and manually install on a designated test phone. Use a test phone or disposable notes; never overwrite or delete valuable private notes. One APK can support different CPU ABIs, but this alone does not prove behavioral compatibility with every Android version.
 
-**Local Windows safety rule:** ChatGPT/LocalMCP source agents may inspect `adb devices -l` and read test evidence, but do **not** run Gradle, Kotlin tests, lint, native builds, or device installs on the Windows host. GitHub Actions builds the APK; the phone owner performs installation and authorizes interactive testing. Current ADB result: **zero devices connected**, so no real-phone outcomes are claimed here.
+**Local Windows safety rule:** ChatGPT/LocalMCP source agents may inspect `adb devices -l` and read test evidence, but do **not** run Gradle, Kotlin tests, lint, native builds, or device installs on the Windows host. GitHub Actions builds the APK; the phone owner performs installation and authorizes interactive testing. Updated coordinator ADB check on 2026-11-16: an authorized **Samsung SM-M135F, Android 14, API 34, 32-bit ARM (`armeabi-v7a`)** is connected. No app was installed or tested; no real-phone result is claimed.
 
 ## Assign all 79 existing NT acceptance cases without overlap
 
@@ -72,7 +72,7 @@ The tester must explicitly mark a case **BLOCKED** when a hardware feature is un
 
 ## Current blockers
 
-- No connected Android phone in `adb devices -l`; no physical S Pen tablet, Perfetto trace, screenshots, or TalkBack session.
-- B99 must pass exact-SHA GitHub JUnit/lint/APK-integrity checks before it is the selected universal APK.
+- One authorized Samsung SM-M135F phone is now connected through `adb devices -l`, but no approved APK is installed and no app UI/Perfetto/screenshots/TalkBack tests have been run. No compatible S Pen tablet has been verified.
+- B99 has passed exact-SHA GitHub JUnit/lint/APK-integrity checks; the artifact must be downloaded, its extracted APK SHA-256 recorded, and **manually installed on the authorized phone** before actual tests can start.
 - NP-004 Quick Scratch and NP-102 on-device recognition are not in B99 and require later implementation, another universal build, and acceptance.
 - No production signing-certificate trust chain or signed release approval. Keep REL-08–REL-13, REL-14, REL-16, REL-19 and REL-20 open until verified.
