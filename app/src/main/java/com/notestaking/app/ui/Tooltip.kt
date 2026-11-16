@@ -38,6 +38,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInputModeManager
@@ -58,12 +60,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Which side of its anchor a tooltip opens on; it flips to the opposite side when there is no room. */
 internal enum class TipSide { BELOW, ABOVE, LEFT, RIGHT }
 
 /** Where tips open by default; a bar sets it so its tips open into the page, away from the screen edge. */
 internal val LocalTipSide = compositionLocalOf { TipSide.BELOW }
+
+/** Bounds of the toolbar's owning pane in window pixels; null for tooltips outside a pane. */
+internal val LocalTipPaneBounds = compositionLocalOf<IntRect?> { null }
+
+internal fun LayoutCoordinates.tooltipPaneRect(): IntRect {
+    val origin = positionInWindow()
+    val x = origin.x.roundToInt()
+    val y = origin.y.roundToInt()
+    return IntRect(x, y, x + size.width, y + size.height)
+}
 
 /**
  * Names [content] on pen/mouse hover or hardware-keyboard focus: an inverse chip that fades in after a short
@@ -84,6 +97,7 @@ internal fun Tooltip(
     val scope = rememberCoroutineScope()
     val tip = remember { TipState(scope) }
     val inputMode = LocalInputModeManager.current
+    val paneBounds = LocalTipPaneBounds.current
     DisposableEffect(tip) { onDispose { tip.dispose() } }
     Box(
         modifier
@@ -94,7 +108,7 @@ internal fun Tooltip(
         propagateMinConstraints = true,
     ) {
         content()
-        if (tip.mounted) TipPopup(tip, text, hint, shortcut?.takeIf { keyboardAttached() }, side)
+        if (tip.mounted) TipPopup(tip, text, hint, shortcut?.takeIf { keyboardAttached() }, side, paneBounds)
     }
 }
 
@@ -219,10 +233,10 @@ private val TIP_WINDOW = PopupProperties(
 )
 
 @Composable
-private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: String?, side: TipSide) {
+private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: String?, side: TipSide, paneBounds: IntRect?) {
     val density = LocalDensity.current
-    val placement = remember(side, density) {
-        with(density) { TipPlacement(side, (TIP_GAP - TIP_SHADOW_ROOM).roundToPx()) }
+    val placement = remember(side, density, paneBounds) {
+        with(density) { TipPlacement(side, (TIP_GAP - TIP_SHADOW_ROOM).roundToPx(), paneBounds) }
     }
     val rise = with(density) { TIP_RISE.toPx() }
     Popup(popupPositionProvider = placement, properties = TIP_WINDOW) {
@@ -252,27 +266,27 @@ private fun TipPopup(tip: TipState, text: String, hint: String?, shortcut: Strin
                         TipSide.LEFT -> TransformOrigin(1f, 0.5f)
                     }
                 },
-        ) { TipChip(text, hint, shortcut) }
+        ) { TipChip(text, hint, shortcut, paneBounds?.width?.let { with(density) { it.toDp() } }) }
     }
 }
 
-/** Leave room for the popup shadow and screen edges before positioning the tooltip. */
-internal fun tooltipMaxWidth(screenWidth: Dp): Dp =
-    minOf(TIP_MAX_WIDTH, (screenWidth - (TIP_SHADOW_ROOM + 8.dp) * 2).coerceAtLeast(1.dp))
+/** Leave room for the popup shadow and pane edges before positioning the tooltip. */
+internal fun tooltipMaxWidth(screenWidth: Dp, paneWidth: Dp? = null): Dp =
+    minOf(TIP_MAX_WIDTH, (minOf(screenWidth, paneWidth ?: screenWidth) - (TIP_SHADOW_ROOM + 8.dp) * 2).coerceAtLeast(1.dp))
 
-/** Stack shortcuts when large text or a narrow window would squeeze the label. */
-internal fun tooltipStackShortcut(fontScale: Float, screenWidthDp: Int): Boolean =
-    fontScale >= 1.3f || tooltipMaxWidth(screenWidthDp.dp) < TIP_MAX_WIDTH
+/** Stack shortcuts when large text or the available pane width would squeeze the label. */
+internal fun tooltipStackShortcut(fontScale: Float, screenWidthDp: Int, paneWidth: Dp? = null): Boolean =
+    fontScale >= 1.3f || tooltipMaxWidth(screenWidthDp.dp, paneWidth) < TIP_MAX_WIDTH
 
 @Composable
-private fun TipChip(text: String, hint: String?, shortcut: String?) {
+private fun TipChip(text: String, hint: String?, shortcut: String?, paneWidth: Dp?) {
     val m = LocalPalette.current.materialColors
     val bg = m.inverseSurface.toComposeColor()
     val fg = m.inverseOnSurface.toComposeColor()
     val shape = MaterialTheme.shapes.small
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale, screenWidthDp)
-    val maxWidth = tooltipMaxWidth(screenWidthDp.dp)
+    val stackShortcut = shortcut != null && tooltipStackShortcut(LocalDensity.current.fontScale, screenWidthDp, paneWidth)
+    val maxWidth = tooltipMaxWidth(screenWidthDp.dp, paneWidth)
     Column(
         Modifier
             .shadow(TIP_ELEVATION, shape)
@@ -312,9 +326,9 @@ private fun TipChip(text: String, hint: String?, shortcut: String?) {
 
 /**
  * Puts a tip on its [side] of the anchor, centred along it, or on the opposite side when that one
- * runs off the window; then slides it along to stay on screen. [placed] is the side it chose.
+ * runs off its pane (or the window for standalone tips), then clamps to those bounds. [placed] is the side it chose.
  */
-private class TipPlacement(private val side: TipSide, private val gap: Int) : PopupPositionProvider {
+internal class TipPlacement(private val side: TipSide, private val gap: Int, private val pane: IntRect? = null) : PopupPositionProvider {
     var placed by mutableStateOf(side)
         private set
 
@@ -322,10 +336,20 @@ private class TipPlacement(private val side: TipSide, private val gap: Int) : Po
         val w = popupContentSize.width
         val h = popupContentSize.height
         val a = anchorBounds
-        val fitsBelow = a.bottom + gap + h <= windowSize.height
-        val fitsAbove = a.top - gap - h >= 0
-        val fitsRight = a.right + gap + w <= windowSize.width
-        val fitsLeft = a.left - gap - w >= 0
+        val window = IntRect(0, 0, windowSize.width, windowSize.height)
+        val clipped = pane?.let {
+            IntRect(
+                it.left.coerceIn(0, window.right), it.top.coerceIn(0, window.bottom),
+                it.right.coerceIn(0, window.right), it.bottom.coerceIn(0, window.bottom),
+            ).takeIf { area -> area.width > 0 && area.height > 0 }
+        } ?: window
+        // shortcut: If a popup exceeds a tiny pane on one axis, keep it on-screen; verify at extreme font scales on device.
+        val horizontal = if (clipped.width >= w) clipped else window
+        val vertical = if (clipped.height >= h) clipped else window
+        val fitsBelow = a.bottom + gap + h <= vertical.bottom
+        val fitsAbove = a.top - gap - h >= vertical.top
+        val fitsRight = a.right + gap + w <= horizontal.right
+        val fitsLeft = a.left - gap - w >= horizontal.left
         val s = when (side) {
             TipSide.BELOW -> if (!fitsBelow && fitsAbove) TipSide.ABOVE else TipSide.BELOW
             TipSide.ABOVE -> if (!fitsAbove && fitsBelow) TipSide.BELOW else TipSide.ABOVE
@@ -343,7 +367,10 @@ private class TipPlacement(private val side: TipSide, private val gap: Int) : Po
             TipSide.ABOVE -> a.top - gap - h
             TipSide.RIGHT, TipSide.LEFT -> a.center.y - h / 2
         }
-        return IntOffset(x.coerceIn(0, maxOf(0, windowSize.width - w)), y.coerceIn(0, maxOf(0, windowSize.height - h)))
+        return IntOffset(
+            x.coerceIn(horizontal.left, maxOf(horizontal.left, horizontal.right - w)),
+            y.coerceIn(vertical.top, maxOf(vertical.top, vertical.bottom - h)),
+        )
     }
 }
 
