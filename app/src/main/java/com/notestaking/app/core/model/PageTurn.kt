@@ -69,7 +69,13 @@ object PageTurn {
         }
         val resolved = page.resolvedMargins(doc)
         val turned = margins(resolved, q)
-        if (turned != resolved) page.margins = turned
+        if (turned != resolved) {
+            // A rotated empty edge must not inherit a margin from the unrotated document.
+            page.margins = PageMargins(
+                left = turned.left ?: 0.0, top = turned.top ?: 0.0,
+                right = turned.right ?: 0.0, bottom = turned.bottom ?: 0.0,
+            )
+        }
         if (q % 2 == 1) {
             val w = page.width
             page.width = page.height

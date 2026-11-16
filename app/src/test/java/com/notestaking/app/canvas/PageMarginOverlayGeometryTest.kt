@@ -15,6 +15,7 @@ import com.notestaking.app.core.model.PagePattern
 import com.notestaking.app.core.model.PageStyle
 import com.notestaking.app.core.model.Stroke
 import com.notestaking.app.core.stroke.Sample
+import com.notestaking.app.core.tools.EraseMode
 import com.notestaking.app.core.tools.Tool
 import com.notestaking.app.core.tools.ToolDefaults
 import com.notestaking.app.ui.theme.Palette
@@ -130,7 +131,9 @@ class PageMarginOverlayGeometryTest {
                 val ink = page.items.single()
                 val other = st.document.pages[0].items.single()
                 val history = History()
-                val ctrl = InteractionController(st, history, FakeTextMeasurer(), requestRender = {})
+                val ctrl = InteractionController(st, history, FakeTextMeasurer(), requestRender = {}).apply {
+                    setToolConfig(Tool.ERASER, ToolDefaults.configFor(Tool.ERASER).copy(eraseMode = EraseMode.STROKE))
+                }
                 val lasso = listOf(
                     Pt(80.0, 90.0), Pt(190.0, 90.0), Pt(190.0, 150.0), Pt(80.0, 150.0),
                 ).map { st.fromPageSpace(1, it) }
