@@ -117,6 +117,18 @@ class ExportContentTest {
         assertEquals(contents.forExport(), contents.forExport(ExportContent(paper = false)))
     }
 
+    @Test fun metadataFlagsCannotChangePrintableItemsOrTheirIdentity() {
+        val contents = contents()
+        val unchanged = contents.forExport()
+        for (bookmarks in listOf(false, true)) {
+            for (markups in listOf(false, true)) {
+                val selected = contents.forExport(ExportContent(bookmarks = bookmarks, markups = markups))
+                assertEquals(unchanged, selected)
+                assertTrue(selected.indices.all { i -> selected[i] === unchanged[i] })
+            }
+        }
+    }
+
     @Test fun filteringNeitherMarksTheNoteDirtyNorMutatesAudioImageOrInkMetadata() {
         val contents = contents()
         val doc = Document(mutableListOf(Page(600.0, 900.0, contents.toMutableList())))
