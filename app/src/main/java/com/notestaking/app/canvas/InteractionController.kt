@@ -77,6 +77,7 @@ import com.notestaking.app.core.pdf.MarkupPainter
 import com.notestaking.app.core.stroke.RecognizedShape
 import com.notestaking.app.core.stroke.Scribble
 import com.notestaking.app.core.stroke.Sample
+import com.notestaking.app.core.stroke.StylusTilt
 import com.notestaking.app.core.stroke.ShapeRecognizer
 import com.notestaking.app.core.stroke.StrokeSimplify
 import com.notestaking.app.core.tools.EraseMode
@@ -641,6 +642,19 @@ class InteractionController(
 
     private val penRouter = PenContactRouter()
 
+    /** Explicitly opt in; the shared UI must persist and pass this setting before exposing it. */
+    private var calligraphyTiltEnabled = false
+
+    fun setCalligraphyTiltEnabled(enabled: Boolean) { calligraphyTiltEnabled = enabled }
+
+    /** Missing digitizer axis is not a meaningful zero: it is unsupported. */
+    private fun stylusAxisOrNull(e: MotionEvent, idx: Int, axis: Int): Double? {
+        if (e.getToolType(idx) != MotionEvent.TOOL_TYPE_STYLUS) return null
+        val range = e.device?.getMotionRange(axis) ?: return null
+        if (!range.min.isFinite() || !range.max.isFinite() || range.max <= range.min) return null
+        return e.getAxisValue(axis, idx).toDouble().takeIf { it.isFinite() }
+    }
+
     fun onTouch(original: MotionEvent): Boolean {
         val e = penRouter.route(original) {
             if (!touchTakenBack) takeBackTouch()
@@ -916,7 +930,17 @@ class InteractionController(
         }
         when {
             effectiveTool == Tool.PAN -> beginPan(vx, vy, fromPenButton = buttonHeld && penButtonTool == Tool.PAN)
-            effectiveTool.isStroke -> beginDraw(content, resolvePressure(e, 0, toolType), effectiveTool, e.eventTime, Pt(vx, vy))
+            effectiveTool.isStroke -> {
+                val tilt = if (effectiveTool == Tool.CALLIGRAPHY && calligraphyTiltEnabled) {
+                    stylusAxisOrNull(e, 0, MotionEvent.AXIS_TILT)
+                } else null
+                val orientation = if (tilt != null) {
+                    stylusAxisOrNull(e, 0, MotionEvent.AXIS_ORIENTATION)
+                        ?.minus(Math.toRadians(state.rotationDeg.toDouble()))
+                } else null
+                beginDraw(content, resolvePressure(e, 0, toolType), effectiveTool, e.eventTime,
+                    Pt(vx, vy), tilt, orientation)
+            }
             effectiveTool == Tool.ERASER -> {
                 clearSelection()
                 erasingWithFinger = toolType == MotionEvent.TOOL_TYPE_FINGER
@@ -1152,7 +1176,8 @@ class InteractionController(
 
     // --- DRAW ---
 
-    private fun beginDraw(content: Pt, pressure: Double, drawTool: Tool, timeMs: Long, downViewport: Pt) {
+    private fun beginDraw(content: Pt, pressure: Double, drawTool: Tool, timeMs: Long, downViewport: Pt,
+        tiltRadians: Double?, orientationRadians: Double?) {
         val pageIndex = state.pageIndexAtContent(content) ?: return
         // Reaching here with a live selection means the press landed off it (on it the stylus would
         // have grabbed it): dismiss it. A bare tap that only dismissed is dropped in endDraw.
@@ -1161,7 +1186,10 @@ class InteractionController(
         // Capture content-px → dp scale now, so the speed pen judges gesture speed in
         // zoom- and density-independent dp regardless of how the stroke is later viewed.
         val speedScale = state.zoom / state.devicePxPerDp
-        val cfg0 = configFor(drawTool)
+        val baseConfig = configFor(drawTool)
+        val cfg0 = if (drawTool == Tool.CALLIGRAPHY) {
+            StylusTilt.snapshot(baseConfig, tiltRadians, orientationRadians)
+        } else baseConfig
         // SCALE off: normalise the stroke to its 100%-zoom size by dividing the spatial
         // dimensions by the draw-time zoom, so it draws at a constant on-screen thickness
         // whatever zoom you are at. Baked into the snapshot, so it is ordinary ink afterwards.
