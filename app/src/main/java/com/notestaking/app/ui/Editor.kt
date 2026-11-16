@@ -486,6 +486,37 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     /** App-tracked creation times for explorer ordering (SAF exposes only last-modified). */
     private val createdStore = com.notestaking.app.platform.CreationTimeStore(com.notestaking.app.platform.JsonStore.createdTimes(appContext))
     private val docMeta = com.notestaking.app.platform.DocMetaStore(com.notestaking.app.platform.JsonStore.docMeta(appContext))
+    private val noteFavorites = com.notestaking.app.platform.NoteFavoritesStore(
+        com.notestaking.app.platform.JsonStore(java.io.File(java.io.File(appContext.filesDir, "config"), "note_favorites.json")),
+    )
+    private val noteTags = com.notestaking.app.platform.NoteTagsStore(
+        com.notestaking.app.platform.JsonStore(java.io.File(java.io.File(appContext.filesDir, "config"), "note_tags.json")),
+    )
+    var tagsVersion by mutableStateOf(0)
+        private set
+
+    fun noteTags(uri: String): List<String> = noteTags.tags(documentKey(uri))
+
+    fun setNoteTags(uri: String, tags: Collection<String>): Boolean {
+        val saved = noteTags.set(documentKey(uri), tags)
+        if (saved) tagsVersion++
+        return saved
+    }
+
+    /** SAF identities for local tagged notes, independent of the current folder. */
+    fun findNoteKeysByTag(tag: String): List<String> = noteTags.find(tag)
+
+    var favoriteVersion by mutableStateOf(0)
+        private set
+
+    /** Saved note stars are independent of sidebar pins and toolbar pen favorites. */
+    fun isNoteFavorite(uri: String): Boolean = noteFavorites.contains(documentKey(uri))
+
+    fun setNoteFavorite(uri: String, favorite: Boolean): Boolean {
+        val saved = noteFavorites.set(documentKey(uri), favorite)
+        if (saved) favoriteVersion++
+        return saved
+    }
     /** A single lowest-priority background thread renders explorer thumbnails one at a time, so a
      *  folder of many notes fills in gradually without ever competing with the UI/render threads. */
     private val thumbDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
@@ -4932,6 +4963,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             createdStore.rekeyTree(from, to)
             viewStates.rekeyTree(from, to)
             docMeta.rekeyTree(from, to)
+            if (noteFavorites.rekeyTree(from, to)) favoriteVersion++
+            if (noteTags.rekeyTree(from, to)) tagsVersion++
             knownStamps.remove(oldUri)?.let { knownStamps[newUri] = it }
             invalidateThumb(oldUri)
         }
@@ -5020,6 +5053,8 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         // matched the same way as the view state, and drop its cached tile.
         createdStore.removeMatching { it == keyPrefix || it.startsWith("$keyPrefix/") }
         docMeta.removeMatching { com.notestaking.app.core.util.DocKeys.within(it, keyPrefix) }
+        if (noteFavorites.removeTree(keyPrefix)) favoriteVersion++
+        if (noteTags.removeTree(keyPrefix)) tagsVersion++
         invalidateThumb(docUri)
         dropPinsWithin(docUri)
         dropRecentsWithin(docUri)
@@ -8829,8 +8864,12 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             message = appContext.getString(R.string.err_import_settings)
             return
         }
+        // A failed persistent write must not be presented as a successful restore.
+        if (!com.notestaking.app.platform.JsonStore.settings(appContext).writeChecked(next.toJson())) {
+            message = appContext.getString(R.string.err_import_settings)
+            return
+        }
         settings = next
-        settingsRepo.save(next)
         for (editor in listOfNotNull(this, sibling)) {
             editor.applySettings()
             editor.explorerView = next.explorerView
