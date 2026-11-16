@@ -18,11 +18,12 @@ OUT = ROOT / "docs/github"
 PRIORITY = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
 
 # An owner is a routing suggestion, never permission to modify an unowned path.
-A = set(range(53, 89)) | {6, 7, 8, 10, 12, 17, 18, 71, 72, 73, 74, 100, 101, 106}
+A = set(range(53, 89)) | {4, 6, 7, 8, 10, 12, 17, 18, 71, 72, 73, 74, 100, 101, 106}
 B = {32, 33, 34, 35, 37, 52, 66, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100}
 C = set(range(20, 32)) | set(range(36, 52)) | {56, 67, 68, 69, 70, 75, 76, 77, 78, 79, 80, 96, 98, 102}
 # Specific UI ownership wins over generic PDF/core suggestions.
-GEMINI = {4}
+# NP-004 transferred from parked Gemini worktree to A by user request on 2026-11-16.
+GEMINI = set()
 
 RELEASE = [
     ("Audit exact developer SHA and required CI jobs", "COORD", "P0"),

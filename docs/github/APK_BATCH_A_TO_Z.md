@@ -51,7 +51,7 @@ Owner is **preferred routing**, not file ownership; COORD/DEVICE/GEMINI tasks ar
 | # | Task ID | Priority | Routed to | Snapshot | Task / acceptance target | Tests |
 |---|---|---|---|---|---|---|
 | 1 | NP-003 | P1 | COORD | SOURCE | Fast launch into recent/home library - Reopen last note or create one in fewer than three actions | NT-011 |
-| 2 | NP-004 | P1 | GEMINI | GAP | Quick Scratch new blank note affordance - Tap opens writable note; back saves/asks safely | - |
+| 2 | NP-004 | P1 | A | GAP | Quick Scratch new blank note affordance - Tap opens writable note; back saves/asks safely | - |
 | 3 | NP-005 | P1 | COORD | SOURCE | Standard Note and Infinite Canvas creation - Both create valid documents in portrait and landscape | NT-012 |
 | 4 | NP-006 | P1 | A | SOURCE | Create folders and rename/move notes - Move/rename no duplicate/lost content | - |
 | 5 | NP-009 | P1 | COORD | SOURCE | Paper/cover template preview - Preview equals created cover/paper appearance | NT-013 |

@@ -273,7 +273,7 @@
       "source_state": "GAP",
       "next_evidence": "Add one-tap quick-note creation using existing new-note flow",
       "acceptance": "Tap opens writable note; back saves/asks safely",
-      "owner": "GEMINI",
+      "owner": "A",
       "release_scope": "required",
       "nt_ids": [],
       "batch": "D",
