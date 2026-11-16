@@ -15,12 +15,13 @@ internal class NoteFavoritesStore(private val store: JsonStore) {
     private fun valid(key: String): Boolean {
         val delimiter = key.indexOf('|')
         return key.length in 3..MAX_KEY_LENGTH && delimiter in 1 until key.lastIndex &&
-            key.indexOf('|', delimiter + 1) < 0 && key.none { it.isWhitespace() || it.code < 32 || it.code == 127 }
+            key.substring(0, delimiter).none { it.isWhitespace() } &&
+            key.none { it.code < 32 || it.code == 127 }
     }
 
     private fun read(): LinkedHashSet<String>? {
         val out = LinkedHashSet<String>()
-        val json = store.read()
+        val json = store.readChecked() ?: return null
         if (json.length() == 0) return out
         if (json.optInt("version", -1) != 1) return null
         val entries = json.optJSONArray("favorites") ?: return null

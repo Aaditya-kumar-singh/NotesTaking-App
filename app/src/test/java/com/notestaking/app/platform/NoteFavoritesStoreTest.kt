@@ -48,6 +48,39 @@ class NoteFavoritesStoreTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test fun documentIdsMayContainSpacesAndAdditionalPipes() {
+        val root = Files.createTempDirectory("favorites-ids-").toFile()
+        try {
+            val file = root.resolve("favorites.json")
+            val store = NoteFavoritesStore(JsonStore(file))
+            val id = "com.example.provider|folder with spaces/note|part two.xnote"
+            assertTrue(store.set(id, true))
+            assertTrue(NoteFavoritesStore(JsonStore(file)).contains(id))
+            assertTrue(store.rekeyTree("com.example.provider|folder with spaces", "com.example.provider|moved folder"))
+            assertFalse(store.contains(id))
+            assertTrue(store.contains("com.example.provider|moved folder/note|part two.xnote"))
+            assertTrue(store.removeTree("com.example.provider|moved folder"))
+            assertFalse(store.contains("com.example.provider|moved folder/note|part two.xnote"))
+            assertFalse(store.set("bad authority|valid", true))
+            assertFalse(store.set("provider|bad\u0001id", true))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun malformedStoredJsonCannotBeOverwrittenByStarMutation() {
+        val root = Files.createTempDirectory("favorites-corrupt-").toFile()
+        try {
+            val file = root.resolve("favorites.json")
+            val store = NoteFavoritesStore(JsonStore(file))
+            assertTrue(store.set("provider|existing", true))
+            val malformed = "{not valid json".toByteArray(Charsets.UTF_8)
+            file.writeBytes(malformed)
+            assertFalse(store.set("provider|new", true))
+            assertFalse(store.rekeyTree("provider|existing", "provider|moved"))
+            assertFalse(store.removeTree("provider|existing"))
+            assertTrue(malformed.contentEquals(file.readBytes()))
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun blockedStorageCannotClaimSuccessfulStar() {
         val root = Files.createTempDirectory("favorites-fail-").toFile()
         try {
