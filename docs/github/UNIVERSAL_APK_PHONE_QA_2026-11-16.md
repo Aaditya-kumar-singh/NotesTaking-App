@@ -76,3 +76,9 @@ The tester must explicitly mark a case **BLOCKED** when a hardware feature is un
 - B99 has passed exact-SHA GitHub JUnit/lint/APK-integrity checks; the artifact must be downloaded, its extracted APK SHA-256 recorded, and **manually installed on the authorized phone** before actual tests can start.
 - NP-004 Quick Scratch and NP-102 on-device recognition are not in B99 and require later implementation, another universal build, and acceptance.
 - No production signing-certificate trust chain or signed release approval. Keep REL-08–REL-13, REL-14, REL-16, REL-19 and REL-20 open until verified.
+
+## 2026-11-16 follow-up: B99 real-device QA and B100 requested redesign
+
+- **B99 was installed and exercised on the authorized Galaxy M13**, contrary to the older preflight-only blocker above. Evidence: `docs/notein-parity/device-evidence/B99-GalaxyM13-smoke-2026-11-16.md` and `B99-GalaxyM13-followup-2026-11-16.md`. QA note/canvas, search, PDF export/import, annotations and save/reopen passed bounded smoke cases; this does not pass all 79 NT tests or REL-16.
+- The user supplied two new screenshots and requested moving the visible **New Note** control away from the library header, placing the **document filename at the editor top**, and adding an **arrow-expandable tool palette**. This is a separately tracked **new UI requirement**, not a defect already fixed by B99.
+- [GitHub issue #28](https://github.com/Aaditya-kumar-singh/NotesTaking-App/issues/28) and `docs/engineering/B100_LIBRARY_EDITOR_CHROME_REDESIGN_2026-11-16.md` specify layout, tool lists, ownership, 14 acceptance scenarios, data safety, and after-build phone QA. Existing A/B/C task claims and the fixed 130-card A-Z catalog remain unchanged. B99 should remain the comparison reference until B100 is source-reviewed, combined and passes fresh universal-APK CI.
