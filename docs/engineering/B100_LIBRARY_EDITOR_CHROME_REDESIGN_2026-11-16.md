@@ -16,7 +16,7 @@ The screenshots show the purple **New Note** pill overlapping the top-left libra
 
 The layout should stay familiar to Android users: a clear library top app bar + one primary FAB; a persistent editor title bar; a compact tool rail when drawing tools are hidden; and a page-/pane-aware expandable tool drawer. Avoid re-theming the app or changing how notes are saved.
 
-**Source-backed finding:** `Backstage.kt:1877-1887` already anchors `CreateButton` at `Alignment.BottomEnd` while `CreateButton` uses an `ExtendedFloatingActionButton` and `Tooltip` (`Backstage.kt:850-873`). Therefore the top-left `New Note` element may be a hover/tooltip misplacement, not the actual FAB. Verify the Android runtime anchor before changing layout. Do **not** create a duplicate button.
+**Source-backed finding (2026-11-17):** `Backstage.kt` passes `Modifier.align(Alignment.BottomEnd).padding(20.dp)` to `CreateButton`, but the implementation originally attached that parent-alignment modifier to its inner `ExtendedFloatingActionButton`, not the outer `Tooltip` box. The parent explorer `Box` therefore could position the outer wrapper at its default top-start, explaining the misplaced purple pill without requiring a second FAB. On coordinator branch `integrate/b100-library-fab-anchor-20261117`, the smallest local source fix moves the existing modifier to `Tooltip` itself while preserving the same one-tap New Note / selection Export PDF action. **Source checks passed; Android build, actual FAB position, selection-bar hit testing and device QA remain unverified.** Do **not** add a duplicate button.
 
 ## 2. Proposed screens
 

@@ -857,7 +857,7 @@ private fun CreateButton(
 ) {
     val createLabel = stringResource(R.string.new_note_menu)
     val exportLabel = stringResource(R.string.export_pdf_action)
-    Tooltip(if (exporting) exportLabel else createLabel) {
+    Tooltip(if (exporting) exportLabel else createLabel, modifier = modifier) {
         ExtendedFloatingActionButton(
             text = { Text(if (exporting) exportLabel else createLabel) },
             icon = {
@@ -867,7 +867,6 @@ private fun CreateButton(
             },
             onClick = { if (exporting) onExport() else onCreateMode(CreateMode.FILE) },
             expanded = true,
-            modifier = modifier,
             shape = MaterialTheme.shapes.large,
         )
     }
