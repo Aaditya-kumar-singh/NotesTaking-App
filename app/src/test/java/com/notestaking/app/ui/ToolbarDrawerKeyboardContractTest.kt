@@ -10,9 +10,8 @@ import org.junit.Test
  * hardware Back, focus traversal, accessibility speech, or screenshot tests.
  */
 class ToolbarDrawerKeyboardContractTest {
-    private fun source(name: String, shared: Boolean = false): String {
-        val path = if (shared) "src/main/java/com/notestaking/app/$name"
-            else "src/main/java/com/notestaking/app/ui/$name"
+    private fun source(name: String): String {
+        val path = "src/main/java/com/notestaking/app/ui/$name"
         val file = listOf(File(path), File("app/$path")).firstOrNull { it.isFile }
         requireNotNull(file) { "Missing source: $path" }
         return file.readText(Charsets.UTF_8)
@@ -69,14 +68,6 @@ class ToolbarDrawerKeyboardContractTest {
         assertTrue(icon.contains(".size(bar.button)"))
     }
 
-    @Test fun sourceRecordsParentKeyboardPreviewInterceptionAsCoordinatorDependency() {
-        val main = source("MainActivity.kt", shared = true)
-        val parent = between(main, ".onPreviewKeyEvent { ke ->", "val onClose =")
-        assertTrue(parent.contains("editor.handleKeyDown(ke.nativeKeyEvent)"))
-        val floating = source("FloatingToolbar.kt")
-        val grip = between(floating, ".onKeyEvent { event ->", ".focusable()")
-        assertTrue(grip.contains("floatingGripKeyStep(event.key)"))
-        assertTrue(grip.contains("event.type == KeyEventType.KeyDown"))
-        // This documents the exact ancestor/descendant conflict; no B-only fix is claimed.
-    }
+    // MainActivity keyboard routing belongs to the coordinator. No test may require
+    // its current preview interception to remain in place after a legitimate fix.
 }
