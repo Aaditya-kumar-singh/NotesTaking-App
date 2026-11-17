@@ -352,6 +352,8 @@
     <string name="rename">重命名</string>
     <string name="cancel">取消</string>
     <string name="close_pane">关闭此窗格</string>
+    <string name="editor_header_note">笔记</string>
+    <string name="editor_header_canvas">画布</string>
     <string name="paste_image">粘贴图片</string>
     <string name="insert_image_ellipsis">插入图片…</string>
     <string name="take_photo">拍照</string>

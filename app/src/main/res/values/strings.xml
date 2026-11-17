@@ -362,6 +362,8 @@
     <string name="rename">Rename</string>
     <string name="cancel">Cancel</string>
     <string name="close_pane">Close this pane</string>
+    <string name="editor_header_note">Note</string>
+    <string name="editor_header_canvas">Canvas</string>
     <string name="paste_image">Paste image</string>
     <string name="insert_image_ellipsis">Insert image…</string>
     <string name="stickers">Stickers</string>

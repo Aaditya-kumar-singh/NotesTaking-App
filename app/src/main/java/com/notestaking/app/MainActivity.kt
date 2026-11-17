@@ -22,6 +22,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -49,11 +51,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +80,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -109,6 +116,11 @@ import kotlinx.coroutines.launch
 /** Minimum time the launch loader stays up, so its animation is briefly seen even
  *  when the session restores instantly. */
 private const val MIN_LOADER_MS = 600L
+
+/** A second pane must be a distinct, supported native document, not an import or the same note. */
+internal fun canOpenBeside(isPrimary: Boolean, openCount: Int, selectedName: String?, sameDocument: Boolean): Boolean =
+    isPrimary && openCount == 1 && !sameDocument &&
+        com.notestaking.app.core.util.DocumentKind.ofName(selectedName.orEmpty()) != null
 
 /** How long the maths waits for the font bytes it measures with before going without. */
 private const val MATH_FONT_WAIT_MS = 1500L
@@ -339,6 +351,8 @@ private fun EditorScreen(
     var pendingCanvasInsert by remember { mutableStateOf<PendingInsert?>(null) }
     // The pane and page a side-panel "Insert PDF" picked a file for.
     var pendingPdfInsert by remember { mutableStateOf<PendingPdfInsert?>(null) }
+    var pendingSplitRequester by remember { mutableStateOf<Editor?>(null) }
+    var pendingSplitSourceUri by remember { mutableStateOf<String?>(null) }
     var pendingShareUri by remember { mutableStateOf<String?>(null) }
     var pendingSaveCopyUri by remember { mutableStateOf<String?>(null) }
     // A finished PDF render awaiting a SAF "Save as" destination (open-note / file / pages export).
@@ -829,6 +843,38 @@ private fun EditorScreen(
         }
     }
 
+    // An existing note remains open while a second, distinct native note is chosen.
+    val openSecondDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { picked ->
+        val first = pendingSplitRequester
+        val original = pendingSplitSourceUri
+        pendingSplitRequester = null
+        pendingSplitSourceUri = null
+        if (picked == null || first == null || !first.noteOpen || first.visibleDocumentUri != original) return@rememberLauncherForActivityResult
+        val current = first.visibleDocumentUri
+        if (!canOpenBeside(
+                first === editor, editor.openPanes.size, displayNameOf(resolver, picked),
+                current != null && editor.isSameDocument(current, picked.toString()),
+            )) {
+            first.message = resources.getString(R.string.err_open_second)
+            return@rememberLauncherForActivityResult
+        }
+        if (runCatching { resolver.takePersistableUriPermission(picked, rwFlags) }.isFailure) {
+            first.message = resources.getString(R.string.err_open_second)
+            return@rememberLauncherForActivityResult
+        }
+        editor.splitRatio = 0.5f
+        val second = editor.secondaryPane()
+        scope.launch {
+            openInto(second, picked.toString())
+            if (!second.noteOpen) {
+                editor.abandonSecondary()
+                first.message = resources.getString(R.string.err_open_second)
+            }
+        }
+    }
+
     fun openTreeFile(uriStr: String) {
         scope.launch { openInto(editor, uriStr) }
     }
@@ -1145,6 +1191,21 @@ private fun EditorScreen(
                     guardedAll { editor.goHomeAll() }
                 },
                 onClosePane = { pane -> guarded(pane) { pane.goHome() } },
+                onOpenBeside = { pane ->
+                    guarded(pane) {
+                        if (pane === editor && editor.openPanes.size == 1) {
+                            pendingSplitRequester = pane
+                            pendingSplitSourceUri = pane.visibleDocumentUri
+                            try {
+                                openSecondDocumentLauncher.launch(arrayOf("*/*"))
+                            } catch (_: android.content.ActivityNotFoundException) {
+                                pendingSplitRequester = null
+                                pendingSplitSourceUri = null
+                                pane.message = resources.getString(R.string.err_open_second)
+                            }
+                        }
+                    }
+                },
                 onInsertImage = { pane, at ->
                     pendingInsert = PendingInsert(pane, at)
                     insertImageLauncher.launch(arrayOf("image/*"))
@@ -1406,6 +1467,8 @@ private class PaneActions(
     val onOpenBackstage: () -> Unit,
     /** Close just this pane, leaving the other one to fill the window. */
     val onClosePane: (Editor) -> Unit,
+    /** Choose a second native note without replacing or reloading the current document. */
+    val onOpenBeside: (Editor) -> Unit,
     val onInsertImage: (Editor, com.notestaking.app.core.geometry.Pt?) -> Unit,
     val onInsertCanvasImage: (Editor, com.notestaking.app.core.geometry.Pt?) -> Unit,
     /** Take a photo with the camera app and place it like an inserted picture, on the canvas when [Editor.canvasOpen]. */
@@ -1456,6 +1519,112 @@ private val DIVIDER = 48.dp
 
 /** The accent line drawn down the middle of the divider, the same weight as a pane's focus line. */
 private val DIVIDER_LINE = 2.dp
+
+/** Document identity stays in a pane header, outside the customizable drawing-tool strip. */
+@Composable
+private fun EditorPaneHeader(
+    editor: Editor,
+    onBack: () -> Unit,
+    onSplit: (() -> Unit)?,
+    inSplit: Boolean,
+) {
+    val palette = LocalPalette.current
+    val title = editor.visibleDocumentTitle.ifBlank { stringResource(R.string.untitled) }
+    val kind = when {
+        editor.canvasOpen -> stringResource(R.string.editor_header_canvas)
+        editor.hasPdf -> "PDF"
+        else -> stringResource(R.string.editor_header_note)
+    }
+    var renaming by remember(editor) { mutableStateOf(false) }
+    var showingFullTitle by remember(editor) { mutableStateOf(false) }
+    BoxWithConstraints(Modifier.fillMaxWidth().background(palette.bg.toComposeColor())) {
+        val showDetails = maxWidth >= 320.dp
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(NotesTakingIcons.prev, stringResource(R.string.back_to_home),
+                    tint = palette.text.toComposeColor(), modifier = Modifier.size(22.dp))
+            }
+            Column(
+                Modifier.weight(1f).height(48.dp)
+                    .clickable(onClickLabel = if (editor.canvasOpen) null else stringResource(R.string.rename_note)) {
+                        if (editor.canvasOpen) showingFullTitle = true else renaming = true
+                    }
+                    .padding(horizontal = 8.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            ) {
+                Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall, color = palette.text.toComposeColor())
+                if (showDetails) {
+                    val detail = if (editor.canvasOpen) kind else kind + " · " +
+                        editor.state.document.pages.size + " " + stringResource(R.string.pages)
+                    Text(detail, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall, color = palette.textDim.toComposeColor())
+                }
+            }
+            onSplit?.let { split ->
+                IconButton(onClick = split, modifier = Modifier.size(48.dp)) {
+                    Icon(NotesTakingIcons.split,
+                        if (inSplit) stringResource(R.string.close_pane) else stringResource(R.string.open_side_by_side),
+                        tint = palette.text.toComposeColor(), modifier = Modifier.size(22.dp))
+                }
+            }
+        }
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(palette.border.toComposeColor()))
+
+    if (renaming && !editor.canvasOpen) {
+        var name by remember(editor) { mutableStateOf(editor.title) }
+        val failure = stringResource(R.string.err_rename_note)
+        val confirm = {
+            if (name.isNotBlank()) {
+                renaming = false
+                if (!editor.renameCurrentDocument(name)) editor.message = failure
+            }
+        }
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+        com.notestaking.app.ui.AlertDialog(
+            onDismissRequest = { renaming = false },
+            title = { Text(stringResource(R.string.rename_note)) },
+            text = {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it }, singleLine = true,
+                    label = { Text(stringResource(R.string.toolbar_title)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { confirm() }),
+                    modifier = Modifier.focusRequester(focus),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = confirm, enabled = name.isNotBlank()) {
+                    Text(stringResource(R.string.rename))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renaming = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+    if (showingFullTitle) {
+        // Canvas rename still belongs to the underlying editor API; never rename its hidden paged buffer.
+        com.notestaking.app.ui.AlertDialog(
+            onDismissRequest = { showingFullTitle = false },
+            title = { Text(stringResource(R.string.toolbar_title)) },
+            text = { Text(title) },
+            confirmButton = {
+                TextButton(onClick = { showingFullTitle = false }) {
+                    Text(stringResource(R.string.done))
+                }
+            },
+        )
+    }
+}
+
 
 /**
  * Makes the open panes opaque to touch. Compose stops hit-testing lower siblings once a higher one
@@ -1597,6 +1766,8 @@ private fun EditorPane(
                 },
         ) {
             val onClose = if (closable) ({ actions.onClosePane(editor) }) else null
+            val splitAction: (() -> Unit)? = if (closable) ({ actions.onClosePane(editor) })
+                else if (editor === app) ({ actions.onOpenBeside(editor) }) else null
             // In a split, a hairline over the toolbar marks the pane the pen and the keyboard are in.
             if (closable) {
                 Box(
@@ -1606,6 +1777,12 @@ private fun EditorPane(
                         .background((if (focused) palette.accent else palette.border).toComposeColor()),
                 )
             }
+            EditorPaneHeader(
+                editor = editor,
+                onBack = actions.onOpenBackstage,
+                onSplit = splitAction,
+                inSplit = closable,
+            )
             if (editor.canvasOpen) {
                 val canvas = editor.infinite
                 val bar: @Composable () -> Unit = {

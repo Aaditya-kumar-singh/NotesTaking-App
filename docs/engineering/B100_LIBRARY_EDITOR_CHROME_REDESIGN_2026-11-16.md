@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16
 
-**Status:** Planned UX specification only - not implemented, tested or merged
+**Status:** Partial coordinator-only local source implementation (FAB + editor header); not built, tested on device, published or merged. Chat B tool drawer and final toolbar integration remain pending.
 
 **User screenshots:** `image(20261116-130027).png` (library), `image(20261116-130147).png` (PDF editor)
 
@@ -17,6 +17,8 @@ The screenshots show the purple **New Note** pill overlapping the top-left libra
 The layout should stay familiar to Android users: a clear library top app bar + one primary FAB; a persistent editor title bar; a compact tool rail when drawing tools are hidden; and a page-/pane-aware expandable tool drawer. Avoid re-theming the app or changing how notes are saved.
 
 **Source-backed finding (2026-11-17):** `Backstage.kt` passes `Modifier.align(Alignment.BottomEnd).padding(20.dp)` to `CreateButton`, but the implementation originally attached that parent-alignment modifier to its inner `ExtendedFloatingActionButton`, not the outer `Tooltip` box. The parent explorer `Box` therefore could position the outer wrapper at its default top-start, explaining the misplaced purple pill without requiring a second FAB. On coordinator branch `integrate/b100-library-fab-anchor-20261117`, the smallest local source fix moves the existing modifier to `Tooltip` itself while preserving the same one-tap New Note / selection Export PDF action. **Source checks passed; Android build, actual FAB position, selection-bar hit testing and device QA remain unverified.** Do **not** add a duplicate button.
+
+**Coordinator header source checkpoint (2026-11-17):** On a separate `integrate/b100-editor-header-20261117` branch, `MainActivity.kt` now renders a 56dp per-pane top row with Back to library, the live document title (one-line ellipsis/full name on tap), type and page count on wide panes, and a separate Split action. Split opens a system document picker for a distinct `.xnote` or `.xcanvas`, keeps the original editor instance in place, validates the returned note and requires persistable read/write permission; a split pane can be closed through its separate button. Paged-note title tap reuses `Editor.renameCurrentDocument` and its existing error reporting. Infinite-canvas title tap is **read-only**, because the current paged rename API does not rename the canvas model and no A-owned editor source may be altered here. The existing B-owned bottom toolbar TITLE/HOME/Close Pane controls remain in place until Chat B/coordinator integration removes duplicates. The header, picker and tests are **source-only; Kotlin/Compose compilation, CI and phone/split-pane acceptance have not run.**
 
 ## 2. Proposed screens
 
