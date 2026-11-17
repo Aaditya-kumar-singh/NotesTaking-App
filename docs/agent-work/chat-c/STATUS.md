@@ -342,6 +342,12 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Extended only C-owned `canvas/RotatedCaptureGeometryTest.kt`: 0/90/180/270 rotations with 25/100/400% zoom and nonzero x/y scrolling; off-centre selection and PDF-background capture viewport/content/page inverse-mapping; capture bounds remain on the selected page; PDF source page/turn and original document dirty state remain unchanged. Existing rotation and margins cases preserved.
 - Source checks and C ownership required before local handoff. These tests do not paint a bitmap or establish real PDF screenshot correctness. Kotlin/JUnit execution, exact-SHA cloud CI and physical-device QA remain unrun. Chat A still owns `Editor.kt` production fix.
 
+## NT054-CORE-FLOW-VISIBILITY-REGRESSION — issue #30, test-only
+
+- Session `C-20261117-2335-gpt6-geometry`; prior accepted Issue #23 source-only commit `3767d94a8482a32ca99876326c9411499381cc23` preserved. Coordinator allocated an independent C-owned issue-only regression under #30; no A-Z claim.
+- Added `core/text/FlowVisibilityRegressionTest.kt` with disposable synthetic text markers: (1) two empty paragraphs followed by text in an A4 1240x1754 page; (2) 48 empty paragraphs followed by text on the same A4 page; (3) a deliberately short 1240x350 page showing stored text in the flow but absent from real pages until two more physical pages are supplied. Assertions distinguish `FlowFrame` page/paragraph/segment placement, `extraPagesNeeded`, original paragraph text and actual `FlowPainter.paintPage` fake-renderer `drawTextRun` output.
+- This is test source and source-derived expectation, not Kotlin/JUnit runtime evidence. No `Editor.kt`, PDF exporter, actual data, or production core code edited. A retains P0 rendering/export ownership. Source/privacy/lane/whitespace checks and exact SHA follow below; CI, JVM tests and device QA remain pending.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
