@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.focus.focusRequester
@@ -121,6 +122,10 @@ private const val MIN_LOADER_MS = 600L
 internal fun canOpenBeside(isPrimary: Boolean, openCount: Int, selectedName: String?, sameDocument: Boolean): Boolean =
     isPrimary && openCount == 1 && !sameDocument &&
         com.notestaking.app.core.util.DocumentKind.ofName(selectedName.orEmpty()) != null
+
+/** Unmodified editor keys belong to the canvas, not a focused toolbar or form control. */
+internal fun shouldDispatchPaneShortcut(paneFocused: Boolean, ctrlPressed: Boolean, gripOwnsArrow: Boolean): Boolean =
+    !gripOwnsArrow && (paneFocused || ctrlPressed)
 
 /** How long the maths waits for the font bytes it measures with before going without. */
 private const val MATH_FONT_WAIT_MS = 1500L
@@ -1733,6 +1738,7 @@ private fun EditorPane(
     val palette = LocalPalette.current
     val focusRequester = remember { FocusRequester() }
     var gripFocused by remember(editor) { mutableStateOf(false) }
+    var paneOwnsKeyboard by remember(editor) { mutableStateOf(false) }
     val focused = app.active === editor
     SideEffect { editor.openInPane = { uri -> actions.onOpenFile(editor, uri) } }
     // This pane owns the keyboard while it is the focused one; (re)grab it as that changes.
@@ -1756,13 +1762,16 @@ private fun EditorPane(
                 .background(palette.bg.toComposeColor())
                 .then(takeFocus)
                 .focusRequester(focusRequester)
+                .onFocusChanged { paneOwnsKeyboard = it.isFocused }
                 .focusable()
                 .onPreviewKeyEvent { ke ->
                     val native = ke.nativeKeyEvent
                     val gripOwnsArrow = floatingGripOwnsArrow(
                         gripFocused, ke.key, native.isAltPressed, native.isCtrlPressed, native.isMetaPressed,
                     )
-                    !gripOwnsArrow && ke.type == KeyEventType.KeyDown && editor.handleKeyDown(native)
+                    ke.type == KeyEventType.KeyDown &&
+                        shouldDispatchPaneShortcut(paneOwnsKeyboard, native.isCtrlPressed, gripOwnsArrow) &&
+                        editor.handleKeyDown(native)
                 },
         ) {
             val onClose = if (closable) ({ actions.onClosePane(editor) }) else null
@@ -1794,6 +1803,7 @@ private fun EditorPane(
                         onInsertAudio = { actions.onInsertAudio(editor) },
                         onRecordAudio = { actions.onRecordAudio(editor) },
                         onTakePhoto = { actions.onTakePhoto(editor) },
+                        headerChromeVisible = true,
                     )
                 }
                 ToolbarAround(bar, onCover = canvas::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar, onGripFocusChange = { gripFocused = it },
@@ -1834,6 +1844,7 @@ private fun EditorPane(
                         onInsertAudio = { actions.onInsertAudio(editor) },
                         onRecordAudio = { actions.onRecordAudio(editor) },
                         onTakePhoto = { actions.onTakePhoto(editor) },
+                        headerChromeVisible = true,
                     ) }
                 }
                 ToolbarAround(bar, onCover = editor::setToolbarCover, onFloatingDrop = app::placeFloatingToolbar, onGripFocusChange = { gripFocused = it },

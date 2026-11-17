@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16
 
-**Status:** Partial coordinator-only local source implementation (FAB + editor header); not built, tested on device, published or merged. Chat B tool drawer and final toolbar integration remain pending.
+**Status:** B100 FAB, per-pane header, expandable tools and duplicate-control suppression integrated on a local coordinator branch; source-only keyboard routing added. Not cloud-built, device-tested, published or merged.
 
 **User screenshots:** `image(20261116-130027).png` (library), `image(20261116-130147).png` (PDF editor)
 
@@ -19,6 +19,12 @@ The layout should stay familiar to Android users: a clear library top app bar + 
 **Source-backed finding (2026-11-17):** `Backstage.kt` passes `Modifier.align(Alignment.BottomEnd).padding(20.dp)` to `CreateButton`, but the implementation originally attached that parent-alignment modifier to its inner `ExtendedFloatingActionButton`, not the outer `Tooltip` box. The parent explorer `Box` therefore could position the outer wrapper at its default top-start, explaining the misplaced purple pill without requiring a second FAB. On coordinator branch `integrate/b100-library-fab-anchor-20261117`, the smallest local source fix moves the existing modifier to `Tooltip` itself while preserving the same one-tap New Note / selection Export PDF action. **Source checks passed; Android build, actual FAB position, selection-bar hit testing and device QA remain unverified.** Do **not** add a duplicate button.
 
 **Coordinator header source checkpoint (2026-11-17):** On a separate `integrate/b100-editor-header-20261117` branch, `MainActivity.kt` now renders a 56dp per-pane top row with Back to library, the live document title (one-line ellipsis/full name on tap), type and page count on wide panes, and a separate Split action. Split opens a system document picker for a distinct `.xnote` or `.xcanvas`, keeps the original editor instance in place, validates the returned note and requires persistable read/write permission; a split pane can be closed through its separate button. Paged-note title tap reuses `Editor.renameCurrentDocument` and its existing error reporting. Infinite-canvas title tap is **read-only**, because the current paged rename API does not rename the canvas model and no A-owned editor source may be altered here. The existing B-owned bottom toolbar TITLE/HOME/Close Pane controls remain in place until Chat B/coordinator integration removes duplicates. The header, picker and tests are **source-only; Kotlin/Compose compilation, CI and phone/split-pane acceptance have not run.**
+
+### B100 integrated source checkpoint (2026-11-18)
+
+Local coordinator branch `integrate/b100-toolbar-pdfcache-20261118` incorporates the reviewed Chat B B100 drawing-tools, header-deduplication and keyboard-contract commits, and the approved Chat C handwriting-input planner, rotation, text-flow and 241-page PDF-cache test sources. The existing 56dp `EditorPaneHeader` is always present, so the paged and infinite toolbar invocations pass `headerChromeVisible = true`: HOME, TITLE and duplicate Close Pane buttons are removed only from their displayed derived sections; customized persisted layouts remain unchanged. Toolbar labels now announce **Expand drawing tools** and **Collapse drawing tools** in the existing English and Simplified Chinese resources.
+
+The editor-pane keyboard preview now checks whether the pane's own focus target is directly focused before handling unmodified editor shortcuts. A focused child toolbar, header or text control receives its own arrows and Space; Ctrl document shortcuts still route through the existing handler, and the focused floating grip retains its arrow-key exemption. A coordinator-owned pure routing test covers these cases. This is **not evidence of actual Compose focus propagation or Back precedence**: exact integrated-SHA GitHub Kotlin/JUnit/Compose CI and hardware keyboard, TalkBack, split-pane, IME, PDF and ink tests remain mandatory. The distinct Pencil brush, working handwriting-to-text model, canvas renaming and P0 persisted-but-invisible text repair are **not implemented or verified** by this integration.
 
 ## 2. Proposed screens
 

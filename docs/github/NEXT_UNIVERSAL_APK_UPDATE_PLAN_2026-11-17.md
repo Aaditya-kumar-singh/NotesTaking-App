@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-17
 
-**Status:** Partial local source integration for B100 header/FAB and NP-004 Quick Scratch; **not yet cloud-built, merged, or device verified**
+**Status:** Local source integration for B100 header/FAB, toolbar drawer, keyboard guard, NP-004 Quick Scratch and reviewed C regression sources; **not yet cloud-built, merged, or device verified**
 
 **Previous test baseline:** B99 `b299cbb8972267eebe103493fa093f7e5cfa6f70`, [GitHub Actions #43857426156](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43857426156). Keep the verified B99 artifact and its real-device smoke results intact.
 
@@ -28,6 +28,12 @@
 On local coordinator branch `integrate/np004-quick-scratch-ui-20261117`, the reviewed Chat A Quick Scratch helper (`4895eb2`, cherry-picked with provenance) is integrated with a single **Quick Scratch** row in the existing library More menu. The primary New Note/selection-mode Export PDF FAB is unchanged. The action captures the currently selected SAF root and folder, rejects concurrent taps, creates the native blank note on `Dispatchers.IO`, opens only a non-null created URI, and shows the existing localized create failure otherwise. English and Simplified Chinese labels are present. Existing A-owned helper regression sources are preserved; focused coordinator source assertions cover the UI dispatch contract. **This is not Kotlin/JUnit execution, cloud CI, APK/device verification, a completed NP-004 release gate, or proof that cloud SAF writes always succeed.**
 
 The next accepted APK must exercise both internal storage and selected SAF folders, duplicate `Untitled` names, denied/revoked permissions, rapid duplicate taps, Back, edit/save/cold reopen, and no unintended files. Keep the source-reviewed `NP-004 = local_ready` status until exact integrated-SHA CI and real-device evidence are available.
+
+### B100 toolbar and core QA integration checkpoint (2026-11-18)
+
+Coordinator branch `integrate/b100-toolbar-pdfcache-20261118` preserves the reviewed Chat B toolbar implementation and test-correction sequence, plus Chat C's approved NP-102 handwriting *input-planning only* and source-only rotated-capture, flow-visibility and 241-page cache-churn tests. The top editor header now opts both toolbars into `headerChromeVisible = true`, removing only redundant bottom filename/Home/Close Pane controls. Shared editor keyboard routing sends unmodified keys to the directly focused pane, not to a focused child toolbar or form; Ctrl document shortcuts remain available. A new coordinator-owned pure routing test records the intended decision, and accessible arrow labels are updated in English and Simplified Chinese.
+
+**Evidence level:** local source integration and Python checks only. Kotlin/JUnit tests, Compose focus and Back/IME behavior, actual PDF cache performance, signed APK, CI and Galaxy M13/tablet QA have not run. The older B99 installed APK contains none of these additions. Chat A's separate P0 issue #30 root-cause repair is still excluded from this integration candidate until source review and exact-SHA CI; no release gate, NP-102 recognition feature or REL-08 hardware task is verified by this checkpoint.
 
 ## Required UI acceptance for next APK
 
