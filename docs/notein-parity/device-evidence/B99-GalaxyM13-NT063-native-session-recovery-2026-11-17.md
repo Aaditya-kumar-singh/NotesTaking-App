@@ -38,4 +38,4 @@
 ## Protected data / final state
 
 - Prior original QA exported `.xnote` SHA-256 remained `6f441b89771fb96cc5761786ff6c5ab760086133a997d23768d7a1518369040c`; original QA `.xcanvas` export SHA-256 remained `e20603dcfe90742523f32a60efb74be324b5fc4200ecf1c8143cf7a4ee78b606`; original synthetic two-page PDF remained `633905d39cd8bf82267430b865ddb63d8851ac3c8653fac9e680f6c46faca083`.
-- No application source code, original QA documents, private data, protected branches or build/release artifacts were changed. This report is a **QA observation**, not a fix or release sign-off.
+- No source-code changes, protected-branch updates, builds or release actions were performed, and original QA file hashes were preserved. The foreground unexpectedly showed `untitled_1` during navigation; that non-QA note was **not intentionally edited or inspected**, but incidental input before recognizing the screen change cannot be independently excluded. Automation stopped at that point. This report is a **QA observation**, not a fix or release sign-off.
