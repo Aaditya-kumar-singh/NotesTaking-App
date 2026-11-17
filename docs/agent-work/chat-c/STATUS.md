@@ -336,6 +336,12 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Remaining coordinator/A integration: choose provider/vendor under app privacy policy, approve user-consented model downloads with storage/network UI, implement `HandwritingRecognitionProvider` against actual SDK and enforce readiness/offline unavailable state, encode each planned trace in drawing order to `Ink.Stroke` points, supply suitable writing-area/pre-context, show candidate text with editable confirmation, and only then insert new text through existing history transaction; retain original strokes unless user chooses an explicit reversible replacement. Handle close/cancel/retry, app lifecycle, deletion of optional model data. Validate real English/Devanagari words, mixed script, short scribbles, low-end phone latency and downloaded/not-downloaded/offline failure with device QA and exact-SHA CI.
 - Validation: A-Z integrity PASS, `check_project.py` PASS (397 Kotlin, 261 test sources, 0 problems), privacy PASS, Chat C lane PASS, Git staged/unstaged whitespace checks. No local Gradle, Kotlin/JUnit, APK, actual recognition, cloud CI, phone testing, push or merge.
 
+## Issue #23 follow-up — zoom, scroll and PDF selection geometry (test-only)
+
+- 2026-11-17: User confirmed prior Chat C stopped; `triad.py replace` superseded `C-20261116-1526-gpt6-successor` with exclusive `C-20261117-2335-gpt6-geometry`. Existing clean parent `2fa35f97ae7593c3dae25fad4986a897ee7e63e6` and all prior handoffs preserved. Coordinator's exclusive issue-only test authorization applies; no A-Z task claimed.
+- Extended only C-owned `canvas/RotatedCaptureGeometryTest.kt`: 0/90/180/270 rotations with 25/100/400% zoom and nonzero x/y scrolling; off-centre selection and PDF-background capture viewport/content/page inverse-mapping; capture bounds remain on the selected page; PDF source page/turn and original document dirty state remain unchanged. Existing rotation and margins cases preserved.
+- Source checks and C ownership required before local handoff. These tests do not paint a bitmap or establish real PDF screenshot correctness. Kotlin/JUnit execution, exact-SHA cloud CI and physical-device QA remain unrun. Chat A still owns `Editor.kt` production fix.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

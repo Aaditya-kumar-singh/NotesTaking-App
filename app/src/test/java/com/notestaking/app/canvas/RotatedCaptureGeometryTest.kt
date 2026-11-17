@@ -91,4 +91,53 @@ class RotatedCaptureGeometryTest {
             assertFalse(st.document.dirty)
         }
     }
+
+    @Test fun zoomedScrolledSelectionAndPdfCaptureUseIdenticalPageCoordinates() {
+        val selected = Rect(15.0, 20.0, 60.0, 35.0)
+        val pdfSlice = Rect(-5.0, 8.0, 75.0, 50.0)
+        for (turn in listOf(0, 90, 180, 270)) {
+            val st = state(turn)
+            val displaySelection = st.fromPageSpaceRect(0, selected)
+            val displayPdfSlice = st.fromPageSpaceRect(0, pdfSlice)
+            val pageRect = st.pageRects.single()
+            val sourcePage = st.document.pages.single()
+            for (factor in listOf(0.25, 1.0, 4.0)) {
+                st.zoom = factor
+                st.scrollX = 37.0
+                st.scrollY = 53.0
+
+                val viewportCorners = listOf(
+                    Pt(displaySelection.left, displaySelection.top),
+                    Pt(displaySelection.right, displaySelection.bottom),
+                ).map(st::contentToViewport)
+                val restoredContent = Rect.fromPoints(
+                    st.viewportToContent(viewportCorners[0]),
+                    st.viewportToContent(viewportCorners[1]),
+                )
+                assertRect(displaySelection, restoredContent)
+                assertRect(selected, st.toPageSpaceRect(0, restoredContent))
+
+                val pdfViewportCorners = listOf(
+                    Pt(displayPdfSlice.left, displayPdfSlice.top),
+                    Pt(displayPdfSlice.right, displayPdfSlice.bottom),
+                ).map(st::contentToViewport)
+                val captureContent = Rect.fromPoints(
+                    st.viewportToContent(pdfViewportCorners[0]),
+                    st.viewportToContent(pdfViewportCorners[1]),
+                )
+                assertRect(displayPdfSlice, captureContent)
+                assertRect(pdfSlice, st.toPageSpaceRect(0, captureContent))
+                assertEquals(true, captureContent.left >= pageRect.left - 1e-7)
+                assertEquals(true, captureContent.top >= pageRect.top - 1e-7)
+                assertEquals(true, captureContent.right <= pageRect.right + 1e-7)
+                assertEquals(true, captureContent.bottom <= pageRect.bottom + 1e-7)
+                assertEquals(2, sourcePage.pdfPage)
+                assertEquals(1, sourcePage.pdfTurn)
+                assertFalse(st.document.dirty)
+            }
+            // A screenshot takes a content-space rectangle; viewport zoom must not alter it.
+            assertRect(displaySelection, st.fromPageSpaceRect(0, selected))
+            assertRect(displayPdfSlice, st.fromPageSpaceRect(0, pdfSlice))
+        }
+    }
 }
