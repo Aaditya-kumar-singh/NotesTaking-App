@@ -1,8 +1,8 @@
 # NotesTaking — consolidated bug, feature and delivery backlog
 
-**Snapshot:** 2026-11-17 (Asia/Kolkata)  
-**Repository:** [Aaditya-kumar-singh/NotesTaking-App](https://github.com/Aaditya-kumar-singh/NotesTaking-App)  
-**Basis:** existing GitHub open issues #18, #20, #23–#30; `docs/engineering/B100_LIBRARY_EDITOR_CHROME_REDESIGN_2026-11-16.md`; `docs/notein-parity/TEST_PLAN.md`; existing Galaxy M13 QA reports; live local `triad.py status`.  
+**Snapshot:** 2026-11-17 (Asia/Kolkata)
+**Repository:** [Aaditya-kumar-singh/NotesTaking-App](https://github.com/Aaditya-kumar-singh/NotesTaking-App)
+**Basis:** existing GitHub open issues #18, #20, #23–#30; `docs/engineering/B100_LIBRARY_EDITOR_CHROME_REDESIGN_2026-11-16.md`; `docs/notein-parity/TEST_PLAN.md`; existing Galaxy M13 QA reports; live local `triad.py status`.
 **Purpose:** one *planning view*, **not** new NP/REL cards, issue duplicates, permission to modify source, release sign-off, or an assertion that unverified features are done.
 
 ## 1. What is really outstanding?
