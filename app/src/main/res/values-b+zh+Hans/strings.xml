@@ -461,6 +461,7 @@
     <string name="new_canvas">新画布</string>
     <string name="about">关于</string>
     <string name="new_note_menu">新建笔记</string>
+    <string name="quick_scratch">快速随记</string>
     <string name="new_canvas_menu">新建画布</string>
     <string name="import_pdf">导入 PDF</string>
     <string name="create_new">新建</string>

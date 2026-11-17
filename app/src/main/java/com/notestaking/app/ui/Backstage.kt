@@ -790,6 +790,8 @@ private fun NewItemMenuItems(
     onClose: () -> Unit,
     onCreateMode: (CreateMode) -> Unit,
     onImportPdf: () -> Unit,
+    onQuickScratch: () -> Unit,
+    quickScratchEnabled: Boolean,
 ) {
     val tint = LocalPalette.current.text.toComposeColor()
     // Taller than a default menu row (the explorer's primary create affordance), but only as wide
@@ -798,14 +800,16 @@ private fun NewItemMenuItems(
     val row = Modifier.height(52.dp)
     val pad = PaddingValues(start = 14.dp, end = 18.dp)
     @Composable
-    fun item(icon: ImageVector, label: String, onPick: () -> Unit) = DropdownMenuItem(
+    fun item(icon: ImageVector, label: String, enabled: Boolean = true, onPick: () -> Unit) = DropdownMenuItem(
         text = { Text(label, fontSize = 16.sp) },
         leadingIcon = { Icon(icon, null, tint = tint, modifier = Modifier.size(21.dp)) },
         onClick = { onClose(); onPick() },
+        enabled = enabled,
         modifier = row,
         contentPadding = pad,
     )
     item(NotesTakingIcons.edit, stringResource(R.string.new_note_menu)) { onCreateMode(CreateMode.FILE) }
+    item(NotesTakingIcons.note, stringResource(R.string.quick_scratch), enabled = quickScratchEnabled) { onQuickScratch() }
     item(NotesTakingIcons.canvas, stringResource(R.string.new_canvas_menu)) { onCreateMode(CreateMode.CANVAS) }
     item(NotesTakingIcons.importDoc, stringResource(R.string.import_pdf)) { onImportPdf() }
     item(NotesTakingIcons.newFolder, stringResource(R.string.new_folder_menu)) { onCreateMode(CreateMode.FOLDER) }
@@ -932,6 +936,7 @@ private fun ExplorerSection(
     val currentDocId = if (stack.isEmpty()) rootDocId else stack.last().first
     var refreshKey by remember(root) { mutableIntStateOf(0) }
     var fieldError by remember(root) { mutableStateOf<String?>(null) }
+    var creatingQuickScratch by remember(root) { mutableStateOf(false) }
     var renaming by remember(root) { mutableStateOf<BrowseEntry?>(null) }
     val selection = remember(root) { mutableStateListOf<BrowseEntry>() }
     // Notes picked for Merge, in pick order, while its review dialog is up.
@@ -1190,6 +1195,29 @@ private fun ExplorerSection(
     }
 
     val callsNow = rememberUpdatedState(calls)
+    val quickScratch: () -> Unit = {
+        if (!creatingQuickScratch && selection.isEmpty()) {
+            creatingQuickScratch = true
+            val folder = currentDocId
+            scope.launch {
+                try {
+                    val uri = withContext(Dispatchers.IO) { editor.createQuickScratchFile(root, folder) }
+                    if (uri != null) {
+                        refreshKey++
+                        callsNow.value.openFile(uri)
+                    } else {
+                        opError = resources.getString(R.string.err_create_note)
+                    }
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    opError = resources.getString(R.string.err_create_note)
+                } finally {
+                    creatingQuickScratch = false
+                }
+            }
+        }
+    }
     val prefsNow = rememberUpdatedState(prefs)
     val rootName by produceState(editor.cachedRootName(root), root) { value = withContext(Dispatchers.IO) { editor.browseRootName(root) } }
     fun openChain(folderUri: String) {
@@ -1786,7 +1814,11 @@ private fun ExplorerSection(
                     Box(Modifier.floatingBacking(liftNow, CircleShape, floatFill, floatEdge)) {
                         ExplorerIcon(NotesTakingIcons.more, stringResource(R.string.more)) { moreOpen = true }
                         DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
-                            NewItemMenuItems({ moreOpen = false }, onCreateMode, calls.importPdf)
+                            NewItemMenuItems(
+                                { moreOpen = false }, onCreateMode, calls.importPdf,
+                                onQuickScratch = quickScratch,
+                                quickScratchEnabled = !creatingQuickScratch && selection.isEmpty(),
+                            )
                             HorizontalDivider(color = palette.border.toComposeColor())
                             clipboard?.let { clip ->
                                 DropdownMenuItem(text = { Text(pluralStringResource(R.plurals.paste_items_here, clip.entries.size, clip.entries.size)) }, onClick = { moreOpen = false; paste(clip) })

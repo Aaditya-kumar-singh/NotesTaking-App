@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-17
 
-**Status:** Scheduled in next update plan; **not yet implemented, merged or verified**
+**Status:** Partial local source integration for B100 header/FAB and NP-004 Quick Scratch; **not yet cloud-built, merged, or device verified**
 
 **Previous test baseline:** B99 `b299cbb8972267eebe103493fa093f7e5cfa6f70`, [GitHub Actions #43857426156](https://github.com/Aaditya-kumar-singh/NotesTaking-App/actions/runs/43857426156). Keep the verified B99 artifact and its real-device smoke results intact.
 
@@ -22,6 +22,12 @@
 | 6 | P1 | Review exact worker SHAs, perform source/privacy/ownership/regression checks, push only a new QA branch under coordinator publish lock | Coordinator | Exact-SHA CI JUnit/lint/universal all-ABI debug APK |
 | 7 | P1 | Install the **new** test APK on an authorized phone; compare B99 versus B100 screens and rerun affected NT tests | A/B/C owners + operator/coordinator | Evidence with source SHA, APK SHA-256 and screenshots |
 | 8 | Release gate | Final `developer` integration, production signing and distribution only after REL-14/16/19/20 evidence and approval | Coordinator | No unverified protection bypass |
+
+### NP-004 Quick Scratch source checkpoint (2026-11-17)
+
+On local coordinator branch `integrate/np004-quick-scratch-ui-20261117`, the reviewed Chat A Quick Scratch helper (`4895eb2`, cherry-picked with provenance) is integrated with a single **Quick Scratch** row in the existing library More menu. The primary New Note/selection-mode Export PDF FAB is unchanged. The action captures the currently selected SAF root and folder, rejects concurrent taps, creates the native blank note on `Dispatchers.IO`, opens only a non-null created URI, and shows the existing localized create failure otherwise. English and Simplified Chinese labels are present. Existing A-owned helper regression sources are preserved; focused coordinator source assertions cover the UI dispatch contract. **This is not Kotlin/JUnit execution, cloud CI, APK/device verification, a completed NP-004 release gate, or proof that cloud SAF writes always succeed.**
+
+The next accepted APK must exercise both internal storage and selected SAF folders, duplicate `Untitled` names, denied/revoked permissions, rapid duplicate taps, Back, edit/save/cold reopen, and no unintended files. Keep the source-reviewed `NP-004 = local_ready` status until exact integrated-SHA CI and real-device evidence are available.
 
 ## Required UI acceptance for next APK
 
