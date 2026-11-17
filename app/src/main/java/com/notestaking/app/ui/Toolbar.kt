@@ -140,11 +140,25 @@ internal fun strokeToolAnnouncement(host: ToolPopupHost, tool: Tool, name: Strin
 internal fun pdfReadingToolbarActive(hasPdf: Boolean, tool: Tool): Boolean = hasPdf && tool == Tool.PAN
 
 /** Reading PDF uses a short navigation-first strip; the saved annotation layout stays untouched. */
-internal fun pagedToolbarSections(layout: ToolbarLayout, readingPdf: Boolean): List<List<ToolbarItem>> =
+internal fun toolbarSectionsWithoutHeader(
+    sections: List<List<ToolbarItem>>,
+    headerChromeVisible: Boolean,
+): List<List<ToolbarItem>> =
+    if (!headerChromeVisible) sections else sections
+        .map { section -> section.filterNot { it == ToolbarItem.HOME || it == ToolbarItem.TITLE } }
+        .filter { it.isNotEmpty() }
+
+internal fun pagedToolbarSections(
+    layout: ToolbarLayout,
+    readingPdf: Boolean,
+    headerChromeVisible: Boolean = false,
+): List<List<ToolbarItem>> = toolbarSectionsWithoutHeader(
     if (readingPdf) listOf(listOf(
         ToolbarItem.PAGE_NAV, ToolbarItem.SIDEBAR, ToolbarItem.FIT,
         ToolbarItem.FULLSCREEN, ToolbarItem.HOME,
-    )) else layout.visibleSections.map { section -> section.visibleEntries.map { it.item } }
+    )) else layout.visibleSections.map { section -> section.visibleEntries.map { it.item } },
+    headerChromeVisible,
+)
 
 @Composable
 fun Toolbar(
@@ -158,6 +172,7 @@ fun Toolbar(
     onInsertAudio: () -> Unit = {},
     onRecordAudio: () -> Unit = {},
     onTakePhoto: () -> Unit = {},
+    headerChromeVisible: Boolean = false,
 ) {
     // The five stroke tools use the designed vector drawables (res/drawable/ic_stroke_*),
     // tinted at the call site like every other icon; the rest use the built-in line set.
@@ -213,16 +228,16 @@ fun Toolbar(
             }
         },
 
-        pinnedButtons = (if (editor.hasPdf) 1 else 0) + (if (onClosePane != null) 1 else 0),
+        pinnedButtons = (if (editor.hasPdf) 1 else 0) + (if (!headerChromeVisible && onClosePane != null) 1 else 0),
         trailing = { PagedCanvasQuickAccess(editor, onInsertImage, onImportTemplate, null) },
         pinned = {
             if (editor.hasPdf) PdfModeButton(editor)
-            onClosePane?.let { ClosePaneButton(it) }
+            if (!headerChromeVisible) onClosePane?.let { ClosePaneButton(it) }
         },
     ) {
         // Annotate follows the saved layout; Read uses essential navigation. Separators sit between non-empty
         // sections, and each item dispatches to its renderer (see ToolbarItemView).
-        pagedToolbarSections(editor.toolbarLayout, readingPdf).forEachIndexed { si, section ->
+        pagedToolbarSections(editor.toolbarLayout, readingPdf, headerChromeVisible).forEachIndexed { si, section ->
             if (si > 0) Separator()
             section.forEach { item ->
                 ToolbarItemView(

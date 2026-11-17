@@ -64,6 +64,7 @@ fun InfiniteToolbar(
     onInsertAudio: () -> Unit = {},
     onRecordAudio: () -> Unit = {},
     onTakePhoto: () -> Unit = {},
+    headerChromeVisible: Boolean = false,
 ) {
     // The stroke tools use the same designed drawables the paged toolbar does, so a pen looks like
     // a pen on either canvas rather than like a generic glyph.
@@ -113,18 +114,21 @@ fun InfiniteToolbar(
             if (selectedInk != null) Swatch(selectedInk.toComposeColor(), active = true, ink = selectedInk, onClick = expand)
         },
 
-        pinnedButtons = (if (failureMessage != null) 1 else 0) + (if (onClosePane != null) 1 else 0),
+        pinnedButtons = (if (failureMessage != null) 1 else 0) + (if (!headerChromeVisible && onClosePane != null) 1 else 0),
         trailing = { InfiniteCanvasQuickAccess(editor, onInsertImage, null) },
         pinned = {
             failureMessage?.let { InfiniteCanvasWarning(it) }
-            onClosePane?.let { ClosePaneButton(it) }
+            if (!headerChromeVisible) onClosePane?.let { ClosePaneButton(it) }
         },
     ) {
-        val sections = editor.toolbarLayout.visibleSections
+        val sections = toolbarSectionsWithoutHeader(
+            editor.toolbarLayout.visibleSections.map { it.visibleEntries.map { entry -> entry.item } },
+            headerChromeVisible,
+        )
         sections.forEachIndexed { index, section ->
             if (index > 0) Separator()
-            for (entry in section.visibleEntries) {
-                when (val item = entry.item) {
+            for (item in section) {
+                when (item) {
                     ToolbarItem.HOME -> ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.toolbar_home)) { onOpenBackstage() }
                     // Show a compact title indicator where a text label cannot fit.
                     ToolbarItem.TITLE -> {
