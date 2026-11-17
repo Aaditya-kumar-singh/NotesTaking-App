@@ -16,6 +16,7 @@
 | 2 | P1 | Persistent editor **filename at top**, Back/Home and rename; put split-pane toggle separate from drawing tools; remove bottom filename duplication | Coordinator, `MainActivity.kt`; Chat A supports existing title/rename helpers only after exclusive scope | Narrow-pane and long-name UI tests |
 | 3 | P1 | **Chevron up** to show existing Pen/brush variants, Highlighter, Eraser, Lasso, Shapes, Text etc; **chevron down** to hide; active tool remains visible | Chat B on B-owned toolbar components, after exclusive claim and no concurrent Chat B writer | Tool switching, Back/focus, scroll and accessibility checks |
 | 3a | P1 / triage | Investigate **selection-bar hit targets**: B99 ADB taps on Open side by side and Clear Selection did not respond; confirm manual touch and fix any overlay/hit-test regression ([issue #29](https://github.com/Aaditya-kumar-singh/NotesTaking-App/issues/29)) | Coordinator on shared library chrome after reproduction | Two selected QA notes open in panes; Clear Selection responds; keyboard/TalkBack equivalent works |
+| 3b | P0 / NT-054 | Triage saved-but-invisible **flow text** when placed low on an A4 note; the native text survives but reopens invisibly and one-page PDF export omits it ([issue #30](https://github.com/Aaditya-kumar-singh/NotesTaking-App/issues/30)). Confirm a near-top input control with active caret/IME first | Coordinator allocates exclusive A/C/shared flow-render scope after reproduction | Lower-page and top-page text visible, editable after cold restart, and present in PDF export; no invisible overflow |
 | 4 | P1 | Integrate Chat A's source-reviewed **NP-004 Quick Scratch storage helper** into the actual UI, with no unsafe duplicate-note writes | Coordinator shared UI + Chat A-owned reviewed helper | Create/open/back/save on disposable notes |
 | 5 | P2 / decision | Chat C **NP-102 handwriting recognition**: complete and source-review, or explicitly defer from initial testing build; do not claim recognition without a working model/phone evidence | Chat C, independent existing claim | Explicit inclusion/deferral decision |
 | 6 | P1 | Review exact worker SHAs, perform source/privacy/ownership/regression checks, push only a new QA branch under coordinator publish lock | Coordinator | Exact-SHA CI JUnit/lint/universal all-ABI debug APK |
@@ -33,6 +34,7 @@
 - [ ] Chevron state changes, native Back dismisses drawer, TalkBack label and 48dp targets are correct.
 - [ ] Split panes (180/240/320dp), large fonts (1.3x/2x), phone/landscape/tablet, light/dark and PDF/Canvas layouts have no overlap.
 - [ ] Existing ink, undo, autosave, note restart recovery, PDF export/import/annotation and search still pass.
+- [ ] NT-054 flow-text recovery and PDF text rendering pass a device retest against issue #30, including an active-IME near-top control and a bottom-page text placement case.
 - [ ] GitHub Android all-ABI CI succeeds for exact candidate SHA and new artifact is independently identified on-device.
 
 ## Baseline testing before B100 builds
