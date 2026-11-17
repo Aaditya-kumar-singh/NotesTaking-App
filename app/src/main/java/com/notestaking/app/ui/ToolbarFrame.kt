@@ -1,5 +1,6 @@
 package com.notestaking.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +28,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -43,6 +46,9 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.notestaking.app.R
+import com.notestaking.app.ui.icons.NotesTakingIcons
+import androidx.compose.ui.res.stringResource
 import com.notestaking.app.settings.ToolbarLook
 import com.notestaking.app.settings.ToolbarPosition
 import com.notestaking.app.settings.ToolbarSize
@@ -91,8 +97,14 @@ internal fun toolbarScrollsTrailing(
     return floating || availableAxisDp < reserved + (if (pinnedButtons > 0) 1f else 0f)
 }
 
+/** Selecting a different tool dismisses the palette; reselecting the same one opens its settings. */
+internal fun drawingDrawerDismissOnSelection(previous: Any?, selected: Any?): Boolean = previous != selected
+
 /** What a floating bar covers of the canvas, for overlays that must stay out from under it. */
 internal val LocalToolbarCover = compositionLocalOf { PaddingValues(0.dp) }
+
+/** Floating toolbar asks the existing bar to dismiss when its armed tool changes. */
+internal val LocalDrawingToolSelected = compositionLocalOf<(() -> Unit)?> { null }
 
 /**
  * Lays a pane out with its [bar] along the edge Preferences chose and [content] in the rest. A
@@ -159,11 +171,34 @@ internal fun ToolbarFrame(
     trailing: (@Composable () -> Unit)? = null,
     pinned: (@Composable () -> Unit)? = null,
     pinnedButtons: Int = 1,
+    collapsed: (@Composable (expand: () -> Unit) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val look = LocalToolbarLook.current
     val bar = barMetrics(look.size).copy(vertical = look.position.vertical)
     val glide = remember { ToolGlide() }
+    var drawerOpen by rememberSaveable { mutableStateOf(false) }
+    var previousArmed by remember { mutableStateOf(armed) }
+    val dismissFloatingDrawer = LocalDrawingToolSelected.current
+    LaunchedEffect(armed) {
+        if (drawingDrawerDismissOnSelection(previousArmed, armed)) {
+            drawerOpen = false
+            dismissFloatingDrawer?.invoke()
+            previousArmed = armed
+        }
+    }
+    BackHandler(enabled = !look.floating && collapsed != null && drawerOpen) { drawerOpen = false }
+    val drawingStrip: @Composable () -> Unit = {
+        if (collapsed == null || look.floating) {
+            content()
+        } else if (drawerOpen) {
+            ToolbarIcon(NotesTakingIcons.chevronDown, stringResource(R.string.toolbar_collapse_to_favorites)) { drawerOpen = false }
+            content()
+        } else {
+            ToolbarIcon(NotesTakingIcons.chevronUp, stringResource(R.string.toolbar_expand_all_tools)) { drawerOpen = true }
+            collapsed { drawerOpen = true }
+        }
+    }
     var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
     var paneBounds by remember(look.position, look.floating) { mutableStateOf<IntRect?>(null) }
     // The docked strip's layout parent spans its owning editor pane, even for side rails.
@@ -227,10 +262,10 @@ internal fun ToolbarFrame(
                         .toolGlide(glide, armed),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    content()
-                    if (scrollTrailing) trailing?.invoke()
+                    drawingStrip()
+                    if (scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
                 }
-                if (!scrollTrailing) trailing?.invoke()
+                if (!scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
                 pinned?.invoke()
             }
         } else {
@@ -246,10 +281,10 @@ internal fun ToolbarFrame(
                         .toolGlide(glide, armed),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    content()
-                    if (scrollTrailing) trailing?.invoke()
+                    drawingStrip()
+                    if (scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
                 }
-                if (!scrollTrailing) trailing?.invoke()
+                if (!scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
                 pinned?.invoke()
             }
         }

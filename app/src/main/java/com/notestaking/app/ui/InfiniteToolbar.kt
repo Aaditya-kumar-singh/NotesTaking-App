@@ -101,6 +101,18 @@ fun InfiniteToolbar(
     // Keep critical failures visible alongside Close Pane, even when toolbar items scroll.
     ToolbarFrame(
         armed = editor.tool,
+        collapsed = { expand ->
+            ToolbarIcon(
+                toolIcons[editor.tool] ?: NotesTakingIcons.edit,
+                stringResource(editor.tool.labelRes),
+                active = true,
+                reportSelection = true,
+                onClick = expand,
+            )
+            val selectedInk = editor.toolbarColors.getOrNull(editor.activeColorIndex)
+            if (selectedInk != null) Swatch(selectedInk.toComposeColor(), active = true, ink = selectedInk, onClick = expand)
+        },
+
         pinnedButtons = (if (failureMessage != null) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { InfiniteCanvasQuickAccess(editor, onInsertImage, null) },
         pinned = {

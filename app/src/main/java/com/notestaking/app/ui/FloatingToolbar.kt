@@ -1,5 +1,6 @@
 package com.notestaking.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -116,6 +117,7 @@ internal fun MovableFloatingToolbar(
         var dragStartY by remember { mutableFloatStateOf(y) }
         val commit by rememberUpdatedState(onDrop)
         var expanded by remember { mutableStateOf(false) }
+        BackHandler(enabled = expanded) { expanded = false }
         val length = if (look.position.vertical) maxHeight else maxWidth
         val buttonDp = barMetrics(look.size).button.value.toInt()
         val count = ToolbarLook.visibleFavoriteCount(
@@ -211,8 +213,10 @@ internal fun MovableFloatingToolbar(
                             expanded = false
                         }
                     }
-                    if (look.position.vertical) Column { collapse(); bar() }
-                    else Row(verticalAlignment = Alignment.CenterVertically) { collapse(); bar() }
+                    CompositionLocalProvider(LocalDrawingToolSelected provides { expanded = false }) {
+                        if (look.position.vertical) Column { collapse(); bar() }
+                        else Row(verticalAlignment = Alignment.CenterVertically) { collapse(); bar() }
+                    }
                 }
             } else {
                 val palette = LocalPalette.current
@@ -225,7 +229,7 @@ internal fun MovableFloatingToolbar(
                 CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
                     val content: @Composable () -> Unit = {
                         if (showFavorites) favorites(count)
-                        ToolbarIcon(NotesTakingIcons.more, stringResource(R.string.toolbar_expand_all_tools)) {
+                        ToolbarIcon(NotesTakingIcons.chevronUp, stringResource(R.string.toolbar_expand_all_tools)) {
                             expanded = true
                         }
                     }

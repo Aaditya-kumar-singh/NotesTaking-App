@@ -192,6 +192,27 @@ fun Toolbar(
     // PDF Read/Annotate and split-pane Close remain visible while the tool strip scrolls.
     ToolbarFrame(
         armed = editor.tool,
+        collapsed = { expand ->
+            ToolbarIcon(
+                toolIcons[editor.tool] ?: NotesTakingIcons.edit,
+                stringResource(editor.tool.labelRes),
+                active = true,
+                reportSelection = true,
+                onClick = expand,
+            )
+            val selectedInk = editor.toolbarColors.getOrNull(editor.activeColorIndex)
+            if (selectedInk != null) Swatch(selectedInk.toComposeColor(), active = true, ink = selectedInk, onClick = expand)
+            ToolbarIcon(NotesTakingIcons.sidebar, stringResource(R.string.side_panel),
+                active = editor.sidebarVisible, reportSelection = true) { editor.toggleSidebar() }
+            if (editor.hasPdf) {
+                val row = if (editor.pageCount > 0) editor.state.rowOf(editor.pageIndex) else 0..0
+                ToolbarIcon(NotesTakingIcons.prev, stringResource(R.string.previous_page),
+                    enabled = pageNavigationEnabled(row, editor.pageCount, forward = false)) { editor.prevPage() }
+                ToolbarIcon(NotesTakingIcons.next, stringResource(R.string.next_page),
+                    enabled = pageNavigationEnabled(row, editor.pageCount, forward = true)) { editor.nextPage() }
+            }
+        },
+
         pinnedButtons = (if (editor.hasPdf) 1 else 0) + (if (onClosePane != null) 1 else 0),
         trailing = { PagedCanvasQuickAccess(editor, onInsertImage, onImportTemplate, null) },
         pinned = {
