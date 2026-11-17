@@ -9,7 +9,7 @@ import com.notestaking.app.core.pdf.PdfPageGeometry
 import com.notestaking.app.core.pdf.TextQuad
 import org.w3c.dom.Element
 import org.w3c.dom.Node
-import java.io.ByteArrayInputStream
+
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -160,7 +160,7 @@ object MarkupsXfdf {
     }
 
     private fun parse(bytes: ByteArray): Element? = try {
-        SecureXml.builder().parse(ByteArrayInputStream(bytes)).documentElement
+        SecureXml.parse(bytes).documentElement
     } catch (_: Exception) {
         null
     }

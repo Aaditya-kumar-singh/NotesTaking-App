@@ -16,7 +16,7 @@ import com.notestaking.app.core.vector.VectorPaint
 import com.notestaking.app.core.vector.VectorPath
 import com.notestaking.app.core.vector.VectorScene
 import com.notestaking.app.core.vector.VectorSeg
-import java.io.ByteArrayInputStream
+
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -44,9 +44,7 @@ object SvgReader {
      */
     fun parse(bytes: ByteArray, glyphs: GlyphOutliner? = null): VectorScene {
         val root = runCatching {
-            SecureXml.builder()
-                .parse(ByteArrayInputStream(bytes))
-                .documentElement
+            SecureXml.parse(bytes).documentElement
         }.getOrNull() ?: return VectorScene.EMPTY
         if (localName(root) != "svg") return VectorScene.EMPTY
         return Reader(root, glyphs).read()
