@@ -348,6 +348,12 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - Added `core/text/FlowVisibilityRegressionTest.kt` with disposable synthetic text markers: (1) two empty paragraphs followed by text in an A4 1240x1754 page; (2) 48 empty paragraphs followed by text on the same A4 page; (3) a deliberately short 1240x350 page showing stored text in the flow but absent from real pages until two more physical pages are supplied. Assertions distinguish `FlowFrame` page/paragraph/segment placement, `extraPagesNeeded`, original paragraph text and actual `FlowPainter.paintPage` fake-renderer `drawTextRun` output.
 - This is test source and source-derived expectation, not Kotlin/JUnit runtime evidence. No `Editor.kt`, PDF exporter, actual data, or production core code edited. A retains P0 rendering/export ownership. Source/privacy/lane/whitespace checks and exact SHA follow below; CI, JVM tests and device QA remain pending.
 
+## REL08-LARGE-PDF-CACHE-CHURN-SOURCE — 241-page PDF cache/navigation (issue #27)
+
+- Exclusive C session `C-20261117-2335-gpt6-geometry`, preserved prior source-only handoff `18ee270c5b75d579772a8d803c5e7dc7dc2c0fb1`; coordinator issue-only C test authorization #6957690821/#6957862218, **not** a formal REL-08 device claim.
+- Extended only `canvas/LongPdfViewportTest.kt`: synthetic 241 unique PDF source-page references, repeated 0→199→1→198 navigation (twice), 25%/100%/400% zoom, narrow pane widths 180/240/320, relayout and cache lifecycle. Assert the selected page is retained and cached, PDF identity/order intact, ink/background page counts bounded to current keep band and far less than the document count, surface bytes bounded by the configured 600px cap, stable zoom/scroll through cache maintenance, distant stroke geometry evicted while the visited page's geometry rebuilds, and `Document.dirty` unchanged. No new raster/geometry production logic or personal notes touched.
+- Kotlin/JUnit and hardware/Perfetto have **not** run; assertions are authored source-only regression expectations, not measured 200-page performance evidence. Required real-device REL-08/REL-11 follow-up: navigate 200+ pages across small/large viewport, 25/100/400% zoom, split-width changes and return jumps; record screen-frame p50/p95/p99, process heap/native memory, cache snapshot/bitmap bytes, eviction correctness, visual blank frames, PDF page identity, and S Pen ink/pressure/palm behavior on supported tablet. No invented performance threshold or release approval.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:

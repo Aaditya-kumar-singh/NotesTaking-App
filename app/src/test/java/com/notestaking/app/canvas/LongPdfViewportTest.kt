@@ -126,6 +126,60 @@ class LongPdfViewportTest {
         }
     }
 
+    @Test fun widelySeparatedPdfNavigationKeepsOnlyNearbyCachesAcrossZoomAndPaneWidths() {
+        val st = state()
+        val pages = st.document.pages
+        val original = pages.toList()
+        val visit = listOf(0, 199, 1, 198, 0, 199, 1, 198)
+        val tracked = visit.distinct()
+        val marks = tracked.associateWith { i ->
+            Stroke(Tool.PEN, ToolDefaults.configFor(Tool.PEN), listOf(
+                Sample(20.0, 30.0, 1.0), Sample(40.0, 50.0, 1.0),
+            )).also { pages[i].items.add(it) }
+        }
+        st.maxCachePx = 600.0
+        st.paintPageBackground = { _, _, _, _ -> }
+
+        for (width in listOf(180, 240, 320)) {
+            st.viewportW = width
+            st.viewportH = 640
+            st.relayout()
+            for (zoom in listOf(0.25, 1.0, 4.0)) {
+                st.setView(zoom, 0.0, 0.0)
+                for ((step, index) in visit.withIndex()) {
+                    st.goToPage(index)
+                    val target = pages[index]
+                    val before = st.snapshotView()
+                    st.prefetchAndPrune()
+                    val band = st.cacheBand()
+                    val cache = st.cacheSnapshot()
+                    val label = "width=$width zoom=$zoom step=$step page=$index"
+
+                    assertTrue("$label: selected page left retention band", target in band.keep)
+                    assertTrue("$label: no source page can disappear", original.indices.all {
+                        pages[it] === original[it] && pages[it].pdfPage == it
+                    })
+                    assertTrue("$label: ink caches exceeded nearby pages", cache.inkPages <= band.keep.size)
+                    assertTrue("$label: PDF caches exceeded nearby pages", cache.bgPages <= band.keep.size)
+                    assertTrue("$label: caches grew with all 241 PDF pages", band.keep.size < pages.size / 2)
+                    assertTrue("$label: cached bitmap surfaces exceeded configured resolution cap",
+                        cache.bytes <= 2L * band.keep.size * 601L * 601L * 4L)
+                    assertTrue("$label: visited page raster not ready", st.cacheForOrSchedule(target) != null)
+                    assertTrue("$label: visited PDF raster not ready", st.backgroundForOrSchedule(target) != null)
+                    assertEquals("$label: zoom changed during cache maintenance", before.zoom, st.zoom, 1e-9)
+                    assertEquals("$label: x scroll changed during cache maintenance", before.scrollX, st.scrollX, 1e-9)
+                    assertEquals("$label: y scroll changed during cache maintenance", before.scrollY, st.scrollY, 1e-9)
+                    assertTrue("$label: selected page ink geometry missing", marks.getValue(index).hasGeometry)
+                    for (other in tracked.filter { pages[it] !in band.keep }) {
+                        assertTrue("$label: distant stroke geometry retained",
+                            !marks.getValue(other).hasGeometry)
+                    }
+                    assertTrue("$label: navigation dirtied original note", !st.document.dirty)
+                }
+            }
+        }
+    }
+
     @Test fun repeatedViewportFramesKeepCommittedInkWithoutRerasterizingThePdf() {
         val st = state()
         val page = st.document.pages[150]
