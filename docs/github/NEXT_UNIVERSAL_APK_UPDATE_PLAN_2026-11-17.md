@@ -15,6 +15,7 @@
 | 1 | P1 | Diagnose misplaced **New Note** pill/tooltip, keep exactly one accessible bottom-right library FAB and selection-mode Export PDF | Coordinator, shared `Backstage.kt` and resources | Runtime reproduction and no duplicate action |
 | 2 | P1 | Persistent editor **filename at top**, Back/Home and rename; put split-pane toggle separate from drawing tools; remove bottom filename duplication | Coordinator, `MainActivity.kt`; Chat A supports existing title/rename helpers only after exclusive scope | Narrow-pane and long-name UI tests |
 | 3 | P1 | **Chevron up** to show existing Pen/brush variants, Highlighter, Eraser, Lasso, Shapes, Text etc; **chevron down** to hide; active tool remains visible | Chat B on B-owned toolbar components, after exclusive claim and no concurrent Chat B writer | Tool switching, Back/focus, scroll and accessibility checks |
+| 3a | P1 / triage | Investigate **selection-bar hit targets**: B99 ADB taps on Open side by side and Clear Selection did not respond; confirm manual touch and fix any overlay/hit-test regression ([issue #29](https://github.com/Aaditya-kumar-singh/NotesTaking-App/issues/29)) | Coordinator on shared library chrome after reproduction | Two selected QA notes open in panes; Clear Selection responds; keyboard/TalkBack equivalent works |
 | 4 | P1 | Integrate Chat A's source-reviewed **NP-004 Quick Scratch storage helper** into the actual UI, with no unsafe duplicate-note writes | Coordinator shared UI + Chat A-owned reviewed helper | Create/open/back/save on disposable notes |
 | 5 | P2 / decision | Chat C **NP-102 handwriting recognition**: complete and source-review, or explicitly defer from initial testing build; do not claim recognition without a working model/phone evidence | Chat C, independent existing claim | Explicit inclusion/deferral decision |
 | 6 | P1 | Review exact worker SHAs, perform source/privacy/ownership/regression checks, push only a new QA branch under coordinator publish lock | Coordinator | Exact-SHA CI JUnit/lint/universal all-ABI debug APK |
@@ -27,6 +28,7 @@
 - [ ] One bottom-right New Note action remains reachable, and selected-file Export PDF still works.
 - [ ] Filename in top bar shows selected document/pane, truncates safely, and offers full-name/Rename access.
 - [ ] Split icon stays visible with drawing palette collapsed and follows focused pane.
+- [ ] Library multi-select Split and Clear actions respond to touch in both normal and selection states; issue #29 has a documented manual-touch result and an exact-SHA regression pass.
 - [ ] Expanded palette contains all **currently implemented** tools; requested **Pencil** remains a separate feature unless a real pencil preset is present.
 - [ ] Chevron state changes, native Back dismisses drawer, TalkBack label and 48dp targets are correct.
 - [ ] Split panes (180/240/320dp), large fonts (1.3x/2x), phone/landscape/tablet, light/dark and PDF/Canvas layouts have no overlap.
