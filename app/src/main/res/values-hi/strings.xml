@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hindi UI: key actions and daily workflows. Other labels use the reviewed English defaults. -->
+    <string name="create_note">नया नोट बनाएँ</string>
+    <string name="paper_format_title">कागज़ का आकार और दिशा</string>
+    <string name="note_preview_title">पूर्वावलोकन</string>
+    <string name="note_template_gallery_title">कागज़ और कवर के टेम्पलेट</string>
+    <string name="library_title">मेरी लाइब्रेरी</string>
+    <string name="library_start_hint">अपने नोट इस डिवाइस पर रखें या दूसरा फ़ोल्डर चुनें। खाते की ज़रूरत नहीं है।</string>
+    <string name="pen_saved_styles">सहेजी गई पेन शैलियाँ</string>
+    <string name="pen_style_label">शैली %1$d · मोटाई %2$.1f</string>
+    <string name="pen_style_save">मौजूदा शैली सहेजें</string>
+    <string name="pen_style_remove">शैली %1$d हटाएँ</string>
+    <string name="pen_style_limit">तीन शैलियाँ सहेजी गई हैं। नई शैली सहेजने के लिए एक हटाएँ।</string>
+
+    <!-- Main drawing tools and compact toolbar -->
+    <string name="tool_pen">पेन</string>
+    <string name="tool_dashed">डैश वाला पेन</string>
+    <string name="tool_calligraphy">सुलेख पेन</string>
+    <string name="tool_speed">स्पीड पेन</string>
+    <string name="tool_taper">पतला होता स्ट्रोक</string>
+    <string name="tool_highlighter">हाइलाइटर</string>
+    <string name="tool_eraser">रबड़</string>
+    <string name="tool_pan">पैन करें</string>
+    <string name="tool_select">चुनें</string>
+    <string name="tool_lasso">लैसो चयन</string>
+    <string name="tool_screenshot">स्क्रीनशॉट</string>
+    <string name="tool_wand">मिटने वाली स्याही</string>
+    <string name="tool_tape">टेप</string>
+    <string name="tool_shape">आकृति</string>
+    <string name="tool_ruler">रूलर</string>
+    <string name="tool_text">टेक्स्ट</string>
+    <string name="tool_text_box">टेक्स्ट बॉक्स</string>
+    <string name="tool_markup">PDF टेक्स्ट पर निशान</string>
+    <string name="tool_image">चित्र</string>
+    <string name="toolbar_home">होम</string>
+    <string name="toolbar_title">शीर्षक</string>
+    <string name="toolbar_sidebar">साइडबार</string>
+    <string name="undo">पहले जैसा करें</string>
+    <string name="redo">फिर से करें</string>
+    <string name="toolbar_page_nav">पेज नेविगेशन</string>
+    <string name="toolbar_styles">शैलियाँ</string>
+    <string name="toolbar_margins">हाशिए</string>
+    <string name="toolbar_view">देखने का तरीका</string>
+    <string name="toolbar_zoom">ज़ूम</string>
+    <string name="toolbar_fit">फिट करें</string>
+    <string name="toolbar_zoom_lock">ज़ूम लॉक</string>
+    <string name="toolbar_fullscreen">पूरी स्क्रीन</string>
+    <string name="toolbar_colours">रंग</string>
+    <string name="toolbar_waypoints">सहेजे गए स्थान</string>
+    <string name="toolbar_minimap">छोटा नक्शा</string>
+    <string name="toolbar_tab_notes">नोट्स</string>
+    <string name="toolbar_tab_canvas">कैनवास</string>
+    <string name="toolbar_favorites_title">पसंदीदा ड्रॉइंग टूल</string>
+    <string name="toolbar_expand_all_tools">सभी ड्रॉइंग टूल दिखाएँ</string>
+    <string name="toolbar_collapse_to_favorites">ड्रॉइंग टूल समेटें</string>
+    <string name="toolbar_drag_handle">फ़्लोटिंग टूलबार खींचें</string>
+    <string name="toolbar_move_left">टूलबार बाएँ ले जाएँ</string>
+    <string name="toolbar_move_right">टूलबार दाएँ ले जाएँ</string>
+    <string name="toolbar_move_up">टूलबार ऊपर ले जाएँ</string>
+    <string name="toolbar_move_down">टूलबार नीचे ले जाएँ</string>
+    <string name="toolbar_move_reset">टूलबार की जगह रीसेट करें</string>
+    <string name="toolbar_size_compact">छोटा</string>
+    <string name="toolbar_size_regular">सामान्य</string>
+    <string name="toolbar_size_comfortable">बड़ा</string>
+    <string name="toolbar_docked">किनारे पर लगा</string>
+    <string name="toolbar_floating">फ़्लोटिंग</string>
+    <string name="pref_toolbar">टूलबार</string>
+    <string name="pref_toolbar_style">शैली</string>
+    <string name="pref_toolbar_position">स्थान</string>
+    <string name="pref_toolbar_size">आकार</string>
+    <string name="canvas_all_tools">सभी टूल</string>
+    <string name="canvas_eraser_tool_hint">रबड़ का आकार और मोड बदलने के लिए फिर टैप करें</string>
+    <string name="canvas_eraser_settings">रबड़ का आकार और मोड</string>
+    <string name="canvas_pen_settings">पेन की मोटाई और दबाव</string>
+    <string name="canvas_page_before">मौजूदा पेज से पहले नया पेज जोड़ें</string>
+    <string name="canvas_page_after">मौजूदा पेज के बाद नया पेज जोड़ें</string>
+    <string name="canvas_page_end">अंत में नया पेज जोड़ें</string>
+
+    <!-- Pen, eraser and properties -->
+    <string name="caption_colour">रंग</string>
+    <string name="caption_pressure">दबाव</string>
+    <string name="caption_sensitivity">संवेदनशीलता</string>
+    <string name="caption_multiplier">गुणक</string>
+    <string name="caption_speed">गति</string>
+    <string name="caption_width">मोटाई</string>
+    <string name="caption_scale">पैमाना</string>
+    <string name="caption_dash">डैश</string>
+    <string name="caption_gap">अंतर</string>
+    <string name="caption_intensity">तीव्रता</string>
+    <string name="caption_straight_line">सीधी रेखा</string>
+    <string name="caption_inverse">उल्टा</string>
+    <string name="caption_neon">नियॉन</string>
+    <string name="caption_size">आकार</string>
+    <string name="caption_thickness">मोटाई</string>
+    <string name="caption_switch_back">पिछले टूल पर लौटें</string>
+    <string name="title_eraser">रबड़</string>
+    <string name="eraser_stroke">पूरा स्ट्रोक</string>
+    <string name="eraser_area">चुना हुआ हिस्सा</string>
+    <string name="eraser_marker">सिर्फ़ हाइलाइटर</string>
+    <string name="eraser_tape">सिर्फ़ टेप</string>
+    <string name="eraser_shape">सिर्फ़ आकृतियाँ</string>
+    <string name="eraser_connector">सिर्फ़ कनेक्टर</string>
+    <string name="title_select">चुनें</string>
+    <string name="title_shape">आकृति</string>
+    <string name="shape_line">रेखा</string>
+    <string name="shape_arrow">तीर</string>
+    <string name="shape_rectangle">आयत</string>
+    <string name="shape_ellipse">दीर्घवृत्त</string>
+    <string name="shape_circle">वृत्त</string>
+    <string name="shape_triangle">त्रिभुज</string>
+    <string name="shape_square">वर्ग</string>
+    <string name="shape_polygon">बहुभुज</string>
+    <string name="shape_star">तारा</string>
+    <string name="shape_heart">दिल</string>
+    <string name="shape_cloud">बादल</string>
+    <string name="caption_fill_colour">भरने का रंग</string>
+    <string name="caption_opacity_percent">अपारदर्शिता %1$d%%</string>
+    <string name="caption_page_colour">पेज का रंग</string>
+    <string name="caption_pattern">पैटर्न</string>
+    <string name="caption_pattern_colour">पैटर्न का रंग</string>
+    <string name="caption_template">टेम्पलेट</string>
+    <string name="caption_accent_colour">मुख्य रंग</string>
+    <string name="pattern_lines">रेखाएँ</string>
+    <string name="pattern_dots">बिंदु</string>
+    <string name="pattern_grid">ग्रिड</string>
+    <string name="tape_straight">सीधा</string>
+    <string name="tape_freehand">मुक्तहस्त</string>
+    <string name="tape_solid">ठोस</string>
+    <string name="tape_stripes">धारियाँ</string>
+    <string name="tape_reveal_all">सब दिखाएँ</string>
+    <string name="tape_cover_all">सब ढकें</string>
+
+    <!-- Navigation, everyday commands and editor -->
+    <string name="side_panel">साइड पैनल</string>
+    <string name="previous_page">पिछला पेज</string>
+    <string name="next_page">अगला पेज</string>
+    <string name="zoom_out">ज़ूम घटाएँ</string>
+    <string name="zoom_in">ज़ूम बढ़ाएँ</string>
+    <string name="rename_note">नोट का नाम बदलें</string>
+    <string name="rename">नाम बदलें</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="close_pane">यह पैनल बंद करें</string>
+    <string name="editor_header_note">नोट</string>
+    <string name="editor_header_canvas">कैनवास</string>
+    <string name="paste_image">चित्र चिपकाएँ</string>
+    <string name="insert_image">चित्र डालें</string>
+    <string name="insert_image_ellipsis">चित्र डालें…</string>
+    <string name="stickers">स्टिकर</string>
+    <string name="add_stickers">स्टिकर जोड़ें…</string>
+    <string name="no_stickers">अभी कोई स्टिकर नहीं है।</string>
+    <string name="sticker">स्टिकर</string>
+    <string name="fit_page">पूरा पेज फिट करें</string>
+    <string name="fit_width">पेज की चौड़ाई फिट करें</string>
+    <string name="fit_height">पेज की ऊँचाई फिट करें</string>
+    <string name="err_rename_note">नोट का नाम नहीं बदला जा सका।</string>
+    <string name="untitled">बिना शीर्षक</string>
+    <string name="audio_play">चलाएँ</string>
+    <string name="audio_pause">रोकें</string>
+    <string name="audio_close">बंद करें</string>
+    <string name="audio_save">ऑडियो फ़ाइल में सहेजें…</string>
+    <string name="audio_name">नाम</string>
+    <string name="rename_recording">रिकॉर्डिंग का नाम बदलें</string>
+    <string name="save_as">इस नाम से सहेजें</string>
+    <string name="save_as_ellipsis">इस नाम से सहेजें…</string>
+    <string name="share_ellipsis">शेयर करें…</string>
+    <string name="share_as_image">चित्र की तरह शेयर करें</string>
+    <string name="insert_pdf">PDF डालें</string>
+    <string name="erase_page">पेज मिटाएँ</string>
+    <string name="clear_selection">चयन हटाएँ</string>
+    <string name="add_bookmark">बुकमार्क जोड़ें</string>
+    <string name="rename_bookmark">बुकमार्क का नाम बदलें</string>
+    <string name="bookmark_options">बुकमार्क विकल्प</string>
+    <string name="no_bookmarks">— कोई बुकमार्क नहीं —</string>
+    <string name="add">जोड़ें</string>
+    <string name="page_n">पेज %1$d</string>
+    <string name="bring_to_front">सबसे आगे लाएँ</string>
+    <string name="bring_forward">एक स्तर आगे लाएँ</string>
+    <string name="send_backward">एक स्तर पीछे भेजें</string>
+    <string name="send_to_back">सबसे पीछे भेजें</string>
+    <string name="arrange">क्रम बदलें</string>
+    <string name="duplicate">प्रतिलिपि बनाएँ</string>
+    <string name="change_style">शैली बदलें</string>
+    <string name="lock">लॉक करें</string>
+    <string name="unlock">लॉक हटाएँ</string>
+    <string name="paste_here">यहाँ चिपकाएँ</string>
+    <string name="paste_markdown">Markdown की तरह चिपकाएँ</string>
+    <string name="paste_code">कोड की तरह चिपकाएँ</string>
+    <string name="copy_as_image">चित्र की तरह कॉपी करें</string>
+    <string name="colour_drop_not_closed">यह हिस्सा बंद आकृति नहीं है।</string>
+
+    <!-- Note creation, PDF reading and export -->
+    <string name="pdf_reader_tools">PDF पढ़ें और टिप्पणियाँ जोड़ें</string>
+    <string name="pdf_read_mode">पढ़ें (पैन)</string>
+    <string name="pdf_finger_inking_enabled">उँगली से लिखना चालू</string>
+    <string name="pdf_finger_inking_disabled">उँगली से लिखना बंद</string>
+    <string name="pdf_finger_inking_enable">उँगली से लिखना चालू करें</string>
+    <string name="pdf_finger_inking_disable">उँगली से लिखना बंद करें</string>
+    <string name="pdf_annotate_mode">टिप्पणी करें</string>
+    <string name="pdf_search_text">PDF में टेक्स्ट खोजें</string>
+    <string name="page_export_title">पेज निर्यात करें</string>
+    <string name="page_export_open">पेज निर्यात करें</string>
+    <string name="page_export_format">फ़ाइल का प्रकार</string>
+    <string name="page_export_pdf">शेयर करने योग्य PDF</string>
+    <string name="page_export_png">PNG चित्र</string>
+    <string name="page_export_pages">निर्यात करने वाले पेज</string>
+    <string name="page_export_this_page">पेज %1$d</string>
+    <string name="page_export_selected">चुने हुए (%1$d)</string>
+    <string name="page_export_all">सभी (%1$d)</string>
+    <string name="page_export_custom">चुनी हुई सीमा</string>
+    <string name="page_export_range_label">पेज नंबर</string>
+    <string name="page_export_range_error">1 से %1$d के बीच मान्य पेज नंबर डालें।</string>
+    <string name="page_export_destination">सहेजें या शेयर करें</string>
+    <string name="page_export_count">निर्यात होने वाले पेज: %1$d</string>
+    <string name="page_position_count">पेज %1$d / %2$d</string>
+    <string name="page_selected_count">%1$d चुने गए</string>
+    <string name="move_page_up">पेज ऊपर ले जाएँ</string>
+    <string name="move_page_down">पेज नीचे ले जाएँ</string>
+    <string name="save_selected_pages_pdf">चुने हुए पेज PDF में सहेजें</string>
+
+    <!-- Library, grouping and recent files -->
+    <string name="kind_folders">फ़ोल्डर</string>
+    <string name="kind_notes">नोट्स</string>
+    <string name="kind_pdf_notes">PDF नोट्स</string>
+    <string name="kind_canvases">कैनवास</string>
+    <string name="kind_note">नोट</string>
+    <string name="kind_pdf_note">PDF नोट</string>
+    <string name="kind_canvas">कैनवास</string>
+    <string name="hue_black">काला</string>
+    <string name="hue_white">सफ़ेद</string>
+    <string name="hue_grey">स्लेटी</string>
+    <string name="hue_red">लाल</string>
+    <string name="hue_orange">नारंगी</string>
+    <string name="hue_yellow">पीला</string>
+    <string name="hue_green">हरा</string>
+    <string name="hue_teal">हरा-नीला</string>
+    <string name="hue_blue">नीला</string>
+    <string name="hue_purple">बैंगनी</string>
+    <string name="hue_pink">गुलाबी</string>
+    <string name="no_colour">कोई रंग नहीं</string>
+    <string name="layout_grid">ग्रिड</string>
+    <string name="layout_gallery">गैलरी</string>
+    <string name="layout_list">सूची</string>
+    <string name="layout_columns">कॉलम</string>
+    <string name="layout_timeline">समयरेखा</string>
+    <string name="group_date">तारीख</string>
+    <string name="group_kind">प्रकार</string>
+    <string name="no_grouping">बिना समूह</string>
+    <string name="grouped_by_date">तारीख के अनुसार</string>
+    <string name="grouped_by_kind">प्रकार के अनुसार</string>
+    <string name="grouped_by_colour">रंग के अनुसार</string>
+    <string name="folders_on_top">ऊपर</string>
+    <string name="folders_mixed">साथ में</string>
+    <string name="folders_hidden">छिपाएँ</string>
+    <string name="sort_created">बनाने की तारीख</string>
+    <string name="select_all">सभी चुनें</string>
+    <string name="close_view_options">दृश्य विकल्प बंद करें</string>
+    <string name="opt_layout">लेआउट</string>
+    <string name="opt_rows">पंक्तियाँ</string>
+    <string name="rows_comfortable">खुली जगह वाला</string>
+    <string name="rows_compact">सघन</string>
+    <string name="opt_tile_size">टाइल का आकार</string>
+    <string name="opt_place_by">फ़ाइलों का क्रम</string>
+    <string name="opt_thumbnail">छोटा पूर्वावलोकन</string>
+    <string name="thumb_top">पेज का ऊपरी हिस्सा</string>
+    <string name="thumb_page">पूरा पेज</string>
+    <string name="opt_show_on_tiles">टाइल पर दिखाएँ</string>
+    <string name="show_page_count">पेजों की संख्या</string>
+    <string name="show_time">समय</string>
+    <string name="colour_code">रंग संकेत</string>
+    <string name="opt_group_by">समूह बनाएँ</string>
+    <string name="sort_z_to_a">Z से A</string>
+    <string name="sort_a_to_z">A से Z</string>
+    <string name="largest_first">सबसे बड़ी पहले</string>
+    <string name="smallest_first">सबसे छोटी पहले</string>
+    <string name="newest_first">सबसे नई पहले</string>
+    <string name="oldest_first">सबसे पुरानी पहले</string>
+    <string name="n_selected">%1$d चुने गए</string>
+    <string name="modified">बदला गया</string>
+    <string name="created">बनाया गया</string>
+    <string name="recent">हाल की फ़ाइलें</string>
+    <string name="see_all">सभी देखें</string>
+    <string name="pinned">पिन की हुई</string>
+    <string name="pinned_to_sidebar">साइडबार में पिन किया गया</string>
+    <string name="in_folder">%1$s में</string>
+    <string name="more_for">%1$s के और विकल्प</string>
+
+    <!-- Core settings, common controls and confirmation -->
+    <string name="default_choice">डिफ़ॉल्ट</string>
+    <string name="default_for_new_notes">नए नोट्स के लिए डिफ़ॉल्ट</string>
+    <string name="default_for_all_notes">सभी नोट्स के लिए डिफ़ॉल्ट</string>
+    <string name="customize">अनुकूलित करें</string>
+    <string name="reset">रीसेट करें</string>
+    <string name="none">कोई नहीं</string>
+    <string name="off">बंद</string>
+    <string name="go">जाएँ</string>
+    <string name="all_pages">सभी पेज</string>
+    <string name="current_page">मौजूदा पेज</string>
+    <string name="title_styles">शैलियाँ</string>
+    <string name="title_margins">हाशिए</string>
+    <string name="title_view">दृश्य</string>
+    <string name="title_zoom">ज़ूम</string>
+    <string name="title_go_to_page">पेज पर जाएँ</string>
+    <string name="view_single">एक पेज</string>
+    <string name="view_double">दो पेज</string>
+    <string name="view_cover">कवर</string>
+    <string name="caption_vertical_scrolling">ऊपर-नीचे स्क्रॉल करें</string>
+    <string name="caption_free_movement">पेज स्वतंत्र रूप से खिसकाएँ</string>
+    <string name="caption_viewing_mode">देखने का तरीका</string>
+    <string name="caption_pdf_filters">PDF रंग फ़िल्टर</string>
+    <string name="caption_min_zoom">न्यूनतम ज़ूम</string>
+    <string name="caption_max_zoom">अधिकतम ज़ूम</string>
+    <string name="decrease_setting">%1$s घटाएँ</string>
+    <string name="increase_setting">%1$s बढ़ाएँ</string>
+    <string name="filter_contrast">कंट्रास्ट</string>
+    <string name="filter_invert">उल्टे रंग</string>
+    <string name="filter_brightness">चमक</string>
+    <string name="filter_sepia">सेपिया</string>
+    <string name="filter_multiply">गुणा</string>
+    <string name="filter_screen">स्क्रीन</string>
+    <string name="page_size_custom">मनचाहा आकार</string>
+    <string name="edge_left">बायाँ</string>
+    <string name="edge_right">दायाँ</string>
+    <string name="edge_top">ऊपर</string>
+    <string name="edge_bottom">नीचे</string>
+    <string name="edge_auto">अपने-आप</string>
+    <string name="pref_home_explorer">होम और फ़ाइलें</string>
+    <string name="pref_default_layout">डिफ़ॉल्ट लेआउट</string>
+    <string name="pref_switcher_layouts">उपलब्ध लेआउट</string>
+    <string name="pref_sidebar_sections">साइडबार के हिस्से</string>
+    <string name="pref_home_opens_to">होम पर यह दिखाएँ</string>
+    <string name="last_folder">पिछला फ़ोल्डर</string>
+    <string name="recent_and_pinned">हाल की और पिन की हुई फ़ाइलें</string>
+    <string name="pref_tapping_file">फ़ाइल पर टैप करने से</string>
+    <string name="tap_opens">फ़ाइल खुलती है</string>
+    <string name="tap_previews">पूर्वावलोकन दिखता है</string>
+    <string name="pref_keep_deleted">हटाई गई फ़ाइलें रखें</string>
+    <string name="until_emptied">खाली करने तक</string>
+    <string name="pref_colour_names">रंगों के नाम</string>
+    <string name="name_a_colour">रंग का नाम दें</string>
+    <string name="pref_per_folder_views">हर फ़ोल्डर का दृश्य याद रखें</string>
+    <string name="pref_show_folder_counts">फ़ोल्डर में फ़ाइलों की संख्या दिखाएँ</string>
+    <string name="pref_show_extensions">फ़ाइल एक्सटेंशन दिखाएँ (.xnote, .xcanvas)</string>
+    <string name="pref_dates">तारीखें</string>
+    <string name="material_system_colours">सिस्टम के रंग</string>
+    <string name="material_custom_colour">मनचाहा रंग चुनें</string>
+    <string name="material_style">शैली</string>
+    <string name="material_tone">रंग मोड</string>
+    <string name="material_single_tone">एक रंग</string>
+    <string name="material_dual_tone">दो रंग</string>
+    <string name="material_surface_colour">पृष्ठभूमि का रंग</string>
+    <string name="material_colour_presets">पहले से बने रंग</string>
+    <string name="material_custom">मनचाहा</string>
+    <string name="material_contrast">कंट्रास्ट %1$s</string>
+    <string name="pref_corners">कोने</string>
+    <string name="corners_sharp">नुकीले</string>
+    <string name="corners_rounded">गोल</string>
+    <string name="corners_soft">नरम</string>
+
+    <!-- About, text formatting and accessibility -->
+    <string name="app_tagline">Android के लिए हस्तलिखित नोट्स और ड्रॉइंग ऐप</string>
+    <string name="project_maintainer">Aaditya Kumar द्वारा रखरखाव</string>
+    <string name="open_maintainer_github">Aaditya Kumar की GitHub प्रोफ़ाइल खोलें</string>
+    <string name="copy_version">वर्शन कॉपी करें</string>
+    <string name="help_make_better">NotesTaking App को बेहतर बनाने में मदद करें</string>
+    <string name="report_bug">समस्या की रिपोर्ट करें</string>
+    <string name="request_feature">नए फ़ीचर का अनुरोध करें</string>
+    <string name="star_on_github">GitHub पर स्टार दें</string>
+    <string name="mit_license">MIT लाइसेंस</string>
+    <string name="version_n">वर्शन %1$s</string>
+    <string name="version_copied">वर्शन कॉपी हो गया</string>
+    <string name="checkbox_item">चेकबॉक्स</string>
+    <string name="bold">गाढ़ा</string>
+    <string name="italic">तिरछा</string>
+    <string name="underline">रेखांकित</string>
+    <string name="strikethrough">बीच से काटा हुआ</string>
+    <string name="ordered_list">क्रमांकित सूची</string>
+    <string name="bullet_list">बुलेट सूची</string>
+    <string name="alignment">संरेखण</string>
+    <string name="indent">अंदर खिसकाएँ</string>
+    <string name="outdent">बाहर खिसकाएँ</string>
+    <string name="code_block">कोड ब्लॉक</string>
+    <string name="heading">शीर्षक</string>
+    <string name="body_text">मुख्य टेक्स्ट</string>
+    <string name="heading_n">शीर्षक %1$d</string>
+    <string name="smaller">छोटा</string>
+    <string name="larger">बड़ा</string>
+    <string name="font">फ़ॉन्ट</string>
+    <string name="mono_font">मोनो फ़ॉन्ट</string>
+    <string name="size_pt">आकार (pt)</string>
+    <string name="colour">रंग</string>
+    <string name="auto">अपने-आप</string>
+    <string name="margins_mm">हाशिए (मिमी)</string>
+    <string name="insert_date">तारीख</string>
+
+    <!-- Dates, counts and time-related labels -->
+    <string-array name="months">
+        <item>जनवरी</item><item>फ़रवरी</item><item>मार्च</item><item>अप्रैल</item>
+        <item>मई</item><item>जून</item><item>जुलाई</item><item>अगस्त</item>
+        <item>सितंबर</item><item>अक्टूबर</item><item>नवंबर</item><item>दिसंबर</item>
+    </string-array>
+    <string-array name="months_short">
+        <item>जन</item><item>फ़र</item><item>मार्च</item><item>अप्रै</item>
+        <item>मई</item><item>जून</item><item>जुल</item><item>अग</item>
+        <item>सित</item><item>अक्टू</item><item>नवं</item><item>दिसं</item>
+    </string-array>
+    <string-array name="weekdays_short">
+        <item>सोम</item><item>मंगल</item><item>बुध</item><item>गुरु</item>
+        <item>शुक्र</item><item>शनि</item><item>रवि</item>
+    </string-array>
+    <plurals name="days_ago"><item quantity="one">%d दिन पहले</item><item quantity="other">%d दिन पहले</item></plurals>
+    <plurals name="folders_count"><item quantity="one">%d फ़ोल्डर</item><item quantity="other">%d फ़ोल्डर</item></plurals>
+    <plurals name="files_count"><item quantity="one">%d फ़ाइल</item><item quantity="other">%d फ़ाइलें</item></plurals>
+    <plurals name="items_count"><item quantity="one">%d आइटम</item><item quantity="other">%d आइटम</item></plurals>
+    <plurals name="pages_count"><item quantity="one">%d पेज</item><item quantity="other">%d पेज</item></plurals>
+    <plurals name="days_count"><item quantity="one">%d दिन</item><item quantity="other">%d दिन</item></plurals>
+    <plurals name="delete_items_confirm"><item quantity="one">%d आइटम हटाएँ? इसे वापस नहीं लाया जा सकता।</item><item quantity="other">%d आइटम हटाएँ? इन्हें वापस नहीं लाया जा सकता।</item></plurals>
+    <plurals name="moved_items_to_trash"><item quantity="one">%d आइटम ट्रैश में भेजा गया</item><item quantity="other">%d आइटम ट्रैश में भेजे गए</item></plurals>
+    <plurals name="err_move_items_to_trash"><item quantity="one">%d आइटम ट्रैश में नहीं भेजा जा सका।</item><item quantity="other">%d आइटम ट्रैश में नहीं भेजे जा सके।</item></plurals>
+    <plurals name="paste_items"><item quantity="one">%d आइटम चिपकाएँ</item><item quantity="other">%d आइटम चिपकाएँ</item></plurals>
+    <plurals name="paste_items_here"><item quantity="one">यहाँ %d आइटम चिपकाएँ</item><item quantity="other">यहाँ %d आइटम चिपकाएँ</item></plurals>
+    <plurals name="notes_created_in"><item quantity="one">%2$s में %1$d नोट बनाया गया</item><item quantity="other">%2$s में %1$d नोट बनाए गए</item></plurals>
+    <plurals name="notes_saved_in"><item quantity="one">%2$s में %1$d नोट सहेजा गया</item><item quantity="other">%2$s में %1$d नोट सहेजे गए</item></plurals>
+    <plurals name="move_items_to"><item quantity="one">%d आइटम यहाँ ले जाएँ</item><item quantity="other">%d आइटम यहाँ ले जाएँ</item></plurals>
+    <plurals name="exported_pdfs"><item quantity="one">%d PDF निर्यात हुआ।</item><item quantity="other">%d PDF निर्यात हुए।</item></plurals>
+    <plurals name="imported_pdfs"><item quantity="one">%d PDF आयात हुआ</item><item quantity="other">%d PDF आयात हुए</item></plurals>
+    <plurals name="saved_images"><item quantity="one">%d चित्र सहेजा गया।</item><item quantity="other">%d चित्र सहेजे गए।</item></plurals>
+    <plurals name="export_writing_pages"><item quantity="one">%d पेज लिखा जा रहा है…</item><item quantity="other">%d पेज लिखे जा रहे हैं…</item></plurals>
+    <plurals name="export_writing_items"><item quantity="one">%d आइटम लिखा जा रहा है…</item><item quantity="other">%d आइटम लिखे जा रहे हैं…</item></plurals>
+    <plurals name="share_n_notes"><item quantity="one">%d नोट शेयर करें</item><item quantity="other">%d नोट शेयर करें</item></plurals>
+    <plurals name="trash_deleted_after"><item quantity="one">%d दिन बाद आइटम हमेशा के लिए हटा दिए जाएँगे।</item><item quantity="other">%d दिन बाद आइटम हमेशा के लिए हटा दिए जाएँगे।</item></plurals>
+</resources>

@@ -102,9 +102,10 @@ android {
         compose = true
     }
 
-    // Lists every values-* translation in the manifest so Android 13+ offers a per-app language.
+    // Offer English and Hindi in Android's app-language settings, including library resources.
     androidResources {
         generateLocaleConfig = true
+        localeFilters += listOf("en", "hi")
     }
 }
 

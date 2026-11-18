@@ -121,22 +121,68 @@ strings = ET.parse(RES / "values/strings.xml").getroot()
 lookup = {node.get("name"): node.text for node in strings if node.tag == "string"}
 require(lookup.get("app_name") == "NotesTaking App", "Incorrect launcher display name")
 
-# All translatable default strings must have explicit Simplified Chinese values.
-# English fallback text is retained for entries whose Chinese translation is pending.
-zh_strings = ET.parse(RES / "values-b+zh+Hans/strings.xml").getroot()
-zh_keys = {node.get("name") for node in zh_strings if node.tag == "string"}
-zh_plural_keys = {node.get("name") for node in zh_strings if node.tag == "plurals"}
-for plural in zh_strings:
-    if plural.tag == "plurals":
-        require(any(item.tag == "item" and item.get("quantity") == "other" for item in plural),
-                "Missing Chinese plural 'other' form: " + str(plural.get("name")))
-for node in strings:
-    if node.tag == "string" and node.get("translatable") != "false":
-        require(node.get("name") in zh_keys,
-                "Missing Chinese fallback string: " + str(node.get("name")))
-    if node.tag == "plurals" and node.get("translatable") != "false":
-        require(node.get("name") in zh_plural_keys,
-                "Missing Chinese plural resource: " + str(node.get("name")))
+# English is the default; Hindi must cover every translatable key without changing
+# Android format placeholders, plural forms or string-array lengths.
+hi_files = sorted((RES / "values-hi").glob("*.xml"))
+require(bool(hi_files), "Hindi UI locale resources are missing")
+require(not list(RES.glob("values-zh*")) and not list(RES.glob("values-b+zh*")),
+        "Chinese UI locale must not be packaged")
+require("generateLocaleConfig = true" in read("app/build.gradle.kts"),
+        "Android per-app language choices must be generated")
+require('localeFilters += listOf("en", "hi")' in read("app/build.gradle.kts"),
+        "Only English and Hindi should be packaged, including library locales")
+require("unqualifiedResLocale=en-US" in read("app/src/main/res/resources.properties"),
+        "Default English locale must remain explicit")
+
+if hi_files:
+    hi_resources = [item for file in hi_files for item in ET.parse(file).getroot()]
+    defaults = {(item.tag, item.get("name")): item for item in strings}
+    seen_hindi = set()
+    critical = {"create_note", "library_title", "tool_pen", "tool_eraser",
+                "tool_highlighter", "caption_size", "undo", "redo", "cancel",
+                "rename_note", "save_as", "toolbar_tab_notes", "toolbar_tab_canvas",
+                "canvas_all_tools", "pref_toolbar", "kind_canvas", "editor_header_canvas"}
+    translated = set()
+
+    def format_tokens(value):
+        # Match Android positional and plain printf tokens without translating them.
+        return sorted(re.findall(r"%(?:\d+\$)?[-+#0, .]*\d*(?:\.\d+)?[a-zA-Z%]",
+                                 "".join(value.itertext())))
+
+    for item in hi_resources:
+        key = (item.tag, item.get("name"))
+        require(key not in seen_hindi, "Duplicate Hindi resource " + str(key))
+        seen_hindi.add(key)
+        source = defaults.get(key)
+        require(source is not None, "Unknown Hindi resource " + str(key))
+        if source is None:
+            continue
+        require(source.get("translatable") != "false",
+                "Non-translatable resource overridden in Hindi: " + str(key))
+        if item.tag == "string":
+            translated.add(item.get("name"))
+            require(format_tokens(item) == format_tokens(source),
+                    "Hindi formatting tokens differ: " + str(key))
+        elif item.tag == "plurals":
+            variants = {child.get("quantity"): child for child in source}
+            require(any(child.get("quantity") == "other" for child in item),
+                    "Hindi plural missing 'other': " + str(key))
+            for child in item:
+                original = variants.get(child.get("quantity"))
+                require(original is not None and format_tokens(child) == format_tokens(original),
+                        "Hindi plural format mismatch: " + str(key) + "/" +
+                        str(child.get("quantity")))
+        elif item.tag == "string-array":
+            require(len(item) == len(source), "Hindi array length differs: " + str(key))
+            for translated_item, english_item in zip(item, source):
+                require(format_tokens(translated_item) == format_tokens(english_item),
+                        "Hindi array format mismatch: " + str(key))
+    require(critical.issubset(translated),
+            "Missing essential Hindi controls: " + str(sorted(critical - translated)))
+    expected_hindi = {(item.tag, item.get("name")) for item in strings
+                      if item.get("translatable") != "false"}
+    require(seen_hindi == expected_hindi,
+            "Missing Hindi resources: " + str(sorted(expected_hindi - seen_hindi)))
 
 renderer = read("app/src/main/java/com/notestaking/app/platform/AndroidRenderer.kt")
 require("if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n            nativeBlend(blend)?.let" in renderer,

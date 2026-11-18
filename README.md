@@ -10,6 +10,10 @@ This fork is maintained by **Aaditya Kumar**.
 - GitHub: https://github.com/Aaditya-kumar-singh
 - Project repository: https://github.com/Aaditya-kumar-singh/NotesTaking-App
 
+## Interface languages
+
+The app offers **English (default)** and **Hindi**. Chinese is no longer offered as an app language. On Android 13+, select your preferred language in **Settings > Apps > NotesTaking App > Language**; older devices follow the system language. Hindi has translations for every string resource; wording, screen layout and accessibility still require real-device review. Notes and PDFs in other languages remain readable.
+
 ## Build requirements
 
 - JDK 17

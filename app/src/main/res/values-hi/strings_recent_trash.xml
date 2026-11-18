@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Recent files, calendar and library navigation -->
+    <string name="hours_ago">%1$d घंटे पहले</string>
+    <string name="day_month">%1$d %2$s</string>
+    <string name="day_month_year">%1$d %2$s %3$d</string>
+    <string name="date_with_time">%1$s, %2$s</string>
+    <string name="clock_12h">%1$d:%2$02d %3$s</string>
+    <string name="am">पूर्वाह्न</string>
+    <string name="pm">अपराह्न</string>
+    <string name="opened_ago">%1$s पहले खोला गया</string>
+    <string name="pinch_hint">टाइलों का आकार बदलने के लिए ग्रिड पर दो उँगलियों से पिंच करें</string>
+    <string name="view_every_folder">हर फ़ोल्डर में यही दृश्य रखें</string>
+    <string name="view_every_folder_hint">बंद होने पर हर फ़ोल्डर अपना दृश्य याद रखता है</string>
+    <string name="pick_note_hint">यहाँ देखने के लिए नोट चुनें</string>
+    <string name="previous_month">पिछला महीना</string>
+    <string name="next_month">अगला महीना</string>
+    <string name="nothing_created_in">%1$s में कुछ नहीं बनाया गया।</string>
+    <string name="nothing_saved_in">%1$s में कुछ नहीं सहेजा गया।</string>
+    <string name="open">खोलें</string>
+    <string name="close_preview">पूर्वावलोकन बंद करें</string>
+    <string name="where_label">कहाँ</string>
+    <string name="no_folders_here">यहाँ कोई फ़ोल्डर नहीं है।</string>
+
+    <!-- Trash: preserve destructive-action warnings -->
+    <string name="trash">ट्रैश</string>
+    <string name="empty_trash">ट्रैश खाली करें</string>
+    <string name="trash_off_hint">ट्रैश बंद है। फ़ाइलें हटाने पर हमेशा के लिए मिट जाएँगी। पहले से ट्रैश में मौजूद आइटम खाली करने तक रहेंगे।</string>
+    <string name="trash_forever_hint">ट्रैश खाली करने तक आइटम यहीं रहेंगे।</string>
+    <string name="change">बदलें</string>
+    <string name="trash_no_root">पहले नोट रखने के लिए फ़ोल्डर चुनें।</string>
+    <string name="trash_empty">ट्रैश खाली है।</string>
+    <string name="trash_was_in">पहले यहाँ था</string>
+    <string name="trash_deleted">हटाया गया</string>
+    <string name="trash_removed_in">यहाँ से हटाया गया</string>
+    <string name="empty_trash_confirm">ट्रैश खाली करें?</string>
+    <string name="empty_trash_body">ट्रैश की सभी फ़ाइलें हमेशा के लिए मिट जाएँगी। यह वापस नहीं हो सकता।</string>
+    <string name="delete_permanently_confirm">हमेशा के लिए हटाएँ?</string>
+    <string name="restore">वापस लाएँ</string>
+    <string name="delete_permanently">हमेशा के लिए हटाएँ</string>
+    <string name="trash_no_match">ट्रैश में “%1$s” से मिलता कुछ नहीं है।</string>
+    <string name="the_top_folder">सबसे ऊपर का फ़ोल्डर</string>
+    <string name="restored_item">“%1$s” वापस लाया गया</string>
+    <string name="err_restore_item">“%1$s” वापस नहीं लाया जा सका</string>
+    <string name="deleted_item">“%1$s” हमेशा के लिए हटाया गया</string>
+    <string name="err_delete_item">“%1$s” हटाया नहीं जा सका</string>
+    <string name="trash_emptied">ट्रैश खाली कर दिया गया</string>
+    <string name="err_empty_trash">सब कुछ नहीं हटाया जा सका। कुछ आइटम बचे हो सकते हैं।</string>
+    <string name="restore_hint">वापस लाने पर आइटम उसके पुराने फ़ोल्डर में जाएगा। फ़ोल्डर न होने पर %1$s में जाएगा।</string>
+    <string name="delete_permanently_body">“%1$s” हमेशा के लिए मिट जाएगा। इसे वापस नहीं लाया जा सकता।</string>
+    <string name="trash_row_sub">%1$s · %2$s से · %3$s</string>
+    <string name="never">कभी नहीं</string>
+
+    <!-- Appearance and custom colours -->
+    <string name="pref_home_explorer_help">होम और फ़ाइल ब्राउज़र कैसे दिखते और काम करते हैं। फ़ाइल ब्राउज़र से हर फ़ोल्डर का लेआउट अलग भी चुन सकते हैं।</string>
+    <string name="material_system_fallback">इस डिवाइस पर डिफ़ॉल्ट मुख्य रंग इस्तेमाल होगा।</string>
+    <string name="material_indigo">जामुनी नीला</string>
+    <string name="material_amber">अंबर</string>
+    <string name="material_paper_ink">कागज़ और स्याही</string>
+    <string name="material_morning">सुबह</string>
+    <string name="material_evening">शाम</string>
+    <string name="material_sea">समुद्र</string>
+    <string name="material_forest">जंगल</string>
+    <string name="material_earth">धरती</string>
+    <string name="material_lavender">लैवेंडर</string>
+    <string name="material_lake">झील</string>
+    <string name="material_desert">रेगिस्तान</string>
+    <string name="material_untinted_surfaces">इस शैली में पृष्ठभूमि पर कोई रंगत नहीं लगती। आपका चुना पृष्ठभूमि रंग दूसरी शैलियों के लिए बना रहेगा।</string>
+    <string name="material_style_soft">हल्का</string>
+    <string name="material_style_vivid">चटख</string>
+    <string name="material_style_original">मूल</string>
+    <string name="material_style_playful">चंचल</string>
+    <string name="material_style_fresh">ताज़ा</string>
+    <string name="material_style_clean">सादा</string>
+    <string name="material_style_muted">मंद</string>
+    <string name="material_style_grayscale">श्वेत-श्याम</string>
+    <string name="material_style_soft_description">हल्के रंगों का मेल।</string>
+    <string name="material_style_vivid_description">ज़्यादा गहरे मुख्य रंग।</string>
+    <string name="material_style_original_description">पढ़ने में आसानी रखते हुए चुने हुए रंग के करीब।</string>
+    <string name="material_style_playful_description">चुने हुए रंग से प्रेरित कुछ अलग मुख्य रंग।</string>
+    <string name="material_style_fresh_description">हल्की रंगीन पृष्ठभूमि के साथ बदले हुए मुख्य रंग।</string>
+    <string name="material_style_clean_description">सादी पृष्ठभूमि के साथ रंगीन मुख्य भाग।</string>
+    <string name="material_style_muted_description">सादी पृष्ठभूमि पर हल्के रंग।</string>
+    <string name="material_style_grayscale_description">कोई रंगत नहीं। आपका चुना रंग दूसरी शैलियों के लिए बना रहेगा।</string>
+
+    <!-- Annotation list and safe version-history recovery -->
+    <string name="annotation_list_tab">टिप्पणियाँ</string>
+    <string name="annotation_list_count">टिप्पणियाँ (%1$d)</string>
+    <string name="annotation_list_empty_current">इस पेज पर कोई टिप्पणी नहीं है।</string>
+    <string name="annotation_list_empty_all">इस नोट में कोई टिप्पणी नहीं है।</string>
+    <string name="version_history_title">पुराने संस्करण</string>
+    <string name="version_history_hint">इस नोट की निजी प्रतियाँ। अधिकतम 4 संस्करण, कुल 128 MB। ज़रूरत पड़ने पर पुराने संस्करण हटाए जाते हैं।</string>
+    <string name="version_history_save">मौजूदा संस्करण सहेजें</string>
+    <string name="version_history_checking">संस्करण जाँचा जा रहा है…</string>
+    <string name="version_history_empty">अभी कोई संस्करण सहेजा नहीं गया है।</string>
+    <string name="version_history_entry_preview">%1$d KB · पूर्वावलोकन</string>
+    <string name="version_history_preview_summary">पूर्वावलोकन: %1$s · %2$d पेज</string>
+    <string name="version_history_preview_hint">%1$s को सहेजा गया था। पुनर्स्थापित करने पर बिना सहेजी नई प्रतिलिपि खुलेगी।</string>
+    <string name="version_history_restore_as_copy">प्रतिलिपि के रूप में वापस लाएँ</string>
+    <string name="version_history_confirm_title">यह संस्करण वापस लाएँ?</string>
+    <string name="version_history_confirm_body">पहले मौजूदा नोट को एक और निजी संस्करण के रूप में सहेजा जाएगा। चुना हुआ संस्करण नई, बिना सहेजी प्रतिलिपि के रूप में खुलेगा। मूल नोट नहीं बदलेगा।</string>
+    <string name="version_history_restore_copy">प्रतिलिपि वापस लाएँ</string>
+    <string name="version_history_error_save">संस्करण सहेजा नहीं जा सका। नोट बदला नहीं गया।</string>
+    <string name="version_history_error_missing">सहेजा गया संस्करण गायब है या खराब हो गया है।</string>
+    <string name="version_history_error_unreadable">यह संस्करण अब पढ़ा नहीं जा सकता।</string>
+    <string name="version_history_error_preserve">वापस लाना रद्द हुआ: मौजूदा नोट सुरक्षित नहीं रखा जा सका।</string>
+    <string name="version_history_error_changed">वापस लाना रद्द हुआ: नोट बदल गया है।</string>
+    <string name="version_history_success">बिना सहेजी प्रतिलिपि के रूप में वापस लाया गया। इसे रखने के लिए इस नाम से सहेजें चुनें।</string>
+</resources>
