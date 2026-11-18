@@ -79,11 +79,9 @@ internal fun LayoutCoordinates.tooltipPaneRect(): IntRect {
 }
 
 /**
- * Names [content] on pen/mouse hover or hardware-keyboard focus: an inverse chip that fades in after a short
- * wait, or at once while the pointer moves on from a neighbour whose tip was showing. [hint] is a
- * dimmer second line for a gesture the control hides; [shortcut] shows beside the name only while a
- * hardware keyboard is attached. A press hides the tip until the pointer leaves, so a tapped button
- * doesn't name itself again under the pen.
+ * Shows a label for [content] on stylus/mouse hover or keyboard focus. Nearby tips appear sooner
+ * when moving across the toolbar. [hint] adds guidance; [shortcut] appears with a hardware keyboard.
+ * Pressing the control hides the tip until the next pointer visit.
  */
 @Composable
 internal fun Tooltip(

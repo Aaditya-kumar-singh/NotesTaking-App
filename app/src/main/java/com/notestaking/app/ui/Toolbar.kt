@@ -174,7 +174,7 @@ fun Toolbar(
     onTakePhoto: () -> Unit = {},
     headerChromeVisible: Boolean = false,
 ) {
-    // The five stroke tools use the designed vector drawables (res/drawable/ic_stroke_*),
+    // The six stroke tools use the designed vector drawables (res/drawable/ic_stroke_*),
     // tinted at the call site like every other icon; the rest use the built-in line set.
     val toolIcons: Map<Tool, ImageVector> = mapOf(
         Tool.PEN to ImageVector.vectorResource(R.drawable.ic_stroke_regular),
