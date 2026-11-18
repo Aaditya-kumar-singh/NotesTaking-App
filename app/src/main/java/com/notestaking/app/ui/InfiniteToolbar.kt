@@ -2,13 +2,19 @@ package com.notestaking.app.ui
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -96,6 +103,7 @@ fun InfiniteToolbar(
     // Keep critical failures visible alongside Close Pane, even when toolbar items scroll.
     ToolbarFrame(
         armed = editor.tool,
+        compactControls = { columns, expand -> B101CanvasQuickTools(editor, toolIcons, columns, expand) },
         collapsed = { expand ->
             ToolbarIcon(
                 toolIcons[editor.tool] ?: NotesTakingIcons.edit,
@@ -277,6 +285,106 @@ fun InfiniteToolbar(
         }
 
         Spacer(Modifier.padding(horizontal = 2.dp))
+    }
+}
+
+/** Six fixed actions use the editor's live tool configuration; More opens the B100 toolbar. */
+@Composable
+private fun B101CanvasQuickTools(
+    editor: InfiniteEditor,
+    icons: Map<Tool, ImageVector>,
+    columns: Int,
+    expand: () -> Unit,
+) {
+    var subtypeOpen by remember { mutableStateOf(false) }
+    var widthOpen by remember { mutableStateOf(false) }
+    var penOpen by remember { mutableStateOf(false) }
+    var eraserOpen by remember { mutableStateOf(false) }
+    var lastStroke by remember(editor) { mutableStateOf(Tool.PEN) }
+    LaunchedEffect(editor.tool) { if (editor.tool.isStroke) lastStroke = editor.tool }
+    val stroke = editor.tool.takeIf { it.isStroke } ?: lastStroke
+    val widthTool = if (editor.tool == Tool.ERASER) Tool.ERASER else stroke
+    val currentWidth = editor.toolConfig(widthTool).baseWidth
+    val penTypes = listOf(Tool.PEN, Tool.DASHED, Tool.CALLIGRAPHY, Tool.SPEED, Tool.TAPER, Tool.HIGHLIGHTER)
+    val actions: List<@Composable () -> Unit> = listOf(
+        {
+            Box {
+                ToolbarIcon(
+                    icons[Tool.PEN] ?: NotesTakingIcons.edit,
+                    stringResource(R.string.tool_pen),
+                    active = editor.tool == Tool.PEN,
+                    reportSelection = true,
+                    hint = stringResource(R.string.tip_tap_for_settings),
+                ) {
+                    if (editor.tool == Tool.PEN) penOpen = true else editor.armTool(Tool.PEN)
+                }
+                if (penOpen) ToolConfigPopup(editor, Tool.PEN) { penOpen = false }
+            }
+        },
+        {
+            Box {
+                ToolbarIcon(
+                    NotesTakingIcons.eraser,
+                    eraserToolbarDescription(editor),
+                    active = editor.tool == Tool.ERASER,
+                    reportSelection = true,
+                    hint = stringResource(R.string.tip_tap_for_settings),
+                ) {
+                    if (editor.tool == Tool.ERASER) eraserOpen = true else editor.armTool(Tool.ERASER)
+                }
+                if (eraserOpen) EraserConfigPopup(editor) { eraserOpen = false }
+            }
+        },
+        {
+            Box {
+                ToolbarIcon(
+                    icons[stroke] ?: NotesTakingIcons.edit,
+                    stringResource(stroke.labelRes),
+                    active = editor.tool.isStroke,
+                    reportSelection = true,
+                ) { subtypeOpen = true }
+                DropdownMenu(expanded = subtypeOpen, onDismissRequest = { subtypeOpen = false }) {
+                    penTypes.forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(type.labelRes)) },
+                            onClick = { subtypeOpen = false; editor.armTool(type) },
+                        )
+                    }
+                }
+            }
+        },
+        {
+            Box {
+                ToolbarIcon(
+                    NotesTakingIcons.sliders,
+                    "${stringResource(R.string.caption_size)}: ${"%.1f".format(currentWidth)}",
+                ) { widthOpen = true }
+                Text(
+                    "%.1f".format(currentWidth),
+                    modifier = Modifier.align(Alignment.BottomCenter).clearAndSetSemantics {},
+                    style = MaterialTheme.typography.labelSmall,
+                )
+                if (widthOpen) {
+                    if (widthTool == Tool.ERASER) EraserConfigPopup(editor) { widthOpen = false }
+                    else ToolConfigPopup(editor, widthTool) { widthOpen = false }
+                }
+            }
+        },
+        {
+            ToolbarIcon(
+                NotesTakingIcons.undo,
+                stringResource(R.string.undo),
+                enabled = editor.canUndo,
+            ) { editor.undo() }
+        },
+        {
+            ToolbarIcon(NotesTakingIcons.more, stringResource(R.string.canvas_all_tools), onClick = expand)
+        },
+    )
+    Column {
+        actions.indices.chunked(columns.coerceIn(1, 3)).forEach { row ->
+            Row { row.forEach { actions[it]() } }
+        }
     }
 }
 
