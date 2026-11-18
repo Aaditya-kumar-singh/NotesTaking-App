@@ -47,13 +47,8 @@ private val CANVAS_TOOL_OF: Map<ToolbarItem, Tool> = mapOf(
 )
 
 /**
- * The infinite canvas's chrome. A separate bar from the paged [Toolbar] because most of that one
- * addresses pages, viewing modes, pagination and text, none of which exist here; but it is built
- * from the same pieces, so the two look like one app rather than two.
- *
- * It draws from its own [com.notestaking.app.core.tools.ToolbarLayout], arranged in Preferences exactly as
- * the paged bar is. Its own, not the paged one: page navigation means nothing here and a waypoint
- * means nothing there, so the two layouts hold different items and are stored apart.
+ * Infinite canvas toolbar. It shares controls with the paged [Toolbar], but keeps a separate
+ * saved layout for canvas-specific actions such as waypoints.
  */
 @Composable
 fun InfiniteToolbar(
@@ -89,8 +84,7 @@ fun InfiniteToolbar(
     var penOpen by remember { mutableStateOf<Tool?>(null) }
     var selectOpen by remember { mutableStateOf(false) }
     var tapeOpen by remember { mutableStateOf(false) }
-    // Which swatch has the colour picker open, as on the paged bar: tapping the armed swatch again
-    // opens it, so the five colours are both the ink and the way to change it.
+    // The selected swatch opens its colour picker when tapped again.
     var switcherIndex by remember { mutableStateOf<Int?>(null) }
 
     val failureMessage = infiniteCanvasFailureMessage(

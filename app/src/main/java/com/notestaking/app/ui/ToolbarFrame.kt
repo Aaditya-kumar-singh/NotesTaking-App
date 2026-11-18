@@ -161,9 +161,9 @@ internal fun ColumnScope.ToolbarAround(
 }
 
 /**
- * The strip both toolbars are laid out in: a row along the top or bottom, a column down either
- * side. [content] scrolls when long; [trailing] scrolls in short docked panes and floating bars,
- * but pins in full-size docked bars. [pinned] (split-pane Close) stays fixed at the end.
+ * Shared toolbar strip: horizontal at top/bottom and vertical at either side.
+ * Tool actions scroll; [trailing] actions also scroll in narrow panes or floating bars.
+ * [pinned] actions remain reachable at the end of the strip.
  */
 @Composable
 internal fun ToolbarFrame(
