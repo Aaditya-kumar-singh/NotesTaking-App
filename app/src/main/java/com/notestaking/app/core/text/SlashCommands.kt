@@ -125,10 +125,9 @@ object SlashCommands {
     fun ready(q: Query, entry: Entry): Boolean = !entry.needsArg || q.arg.isNotEmpty()
 
     /**
-     * The offset of the slash to drop because "//" was just typed: the escape hatch
-     * for a literal slash where the menu would otherwise open. Pure, so the caller
-     * can flush its burst before deleting. Null when the pair is not a menu trigger
-     * anyway, which is what leaves "http://" alone.
+     * Returns the extra slash's offset when "//" escapes the command menu.
+     * Returns null for non-command text, including "http://". The caller can
+     * finish the input batch before removing the extra slash.
      */
     fun escapeAt(flow: TextFlow, pos: FlowPos): Int? {
         val para = flow.paragraphs.getOrNull(pos.para) ?: return null
