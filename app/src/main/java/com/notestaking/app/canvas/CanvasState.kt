@@ -1194,11 +1194,15 @@ class CanvasState(
                 pendingInk.remove(page)
                 val meanwhile = repairedMeanwhile.remove(page)
                 // A queued render can finish after a fast scroll evicts its page.
-                if (gen == cacheGen && page in cacheBand().keep) {
+                val keep = cacheBand().keep
+                if (gen == cacheGen && page in keep) {
                     caches[page] = entry
                     staleInk.remove(page)
                     // The build painted from what it read then; a repair since, as a playhead crossing ink, would be lost.
                     meanwhile?.let { repaintCached(entry, page, it) }
+                } else if (page !in keep) {
+                    // Discarded workers can build stroke ribbons after the last cache prune.
+                    releaseGeometryExcept(keep)
                 }
                 // Repaint either way. A build the page outgrew mid-flight (a margin drag bumps the
                 // generation on every tick) is discarded here, and the draw loop is what schedules
