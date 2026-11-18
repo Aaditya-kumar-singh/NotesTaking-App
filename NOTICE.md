@@ -5,6 +5,10 @@ Original software copyright: Copyright (c) 2026 Shardul Vikram Singh.
 Original project: https://github.com/shardulvs/xnotes-android
 Original software license: MIT. The full original MIT notice is retained in LICENSE.
 
+Current fork maintainer: Aaditya Kumar (https://github.com/Aaditya-kumar-singh).
+Current repository: https://github.com/Aaditya-kumar-singh/NotesTaking-App.
+Maintaining this fork does not transfer copyright in the original XNotes code.
+
 NotesTaking App changes include package and application identity, JNI names, UI wording, resource names and project documentation.
 This attribution does not imply sponsorship, affiliation, or endorsement by the original project author.
 

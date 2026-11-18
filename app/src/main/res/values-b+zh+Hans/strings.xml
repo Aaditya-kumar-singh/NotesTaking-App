@@ -772,6 +772,8 @@
 
     <!-- About -->
     <string name="app_tagline">Android 手写笔记与素描应用</string>
+    <string name="project_maintainer">由 Aaditya Kumar 维护</string>
+    <string name="open_maintainer_github">打开 Aaditya Kumar 的 GitHub 主页</string>
     <string name="copy_version">复制版本号</string>
     <string name="help_make_better">帮助改进 NotesTaking App</string>
     <string name="report_bug">报告问题</string>

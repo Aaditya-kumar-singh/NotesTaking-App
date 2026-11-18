@@ -60,6 +60,16 @@ require(TEST.is_dir(), "Missing renamed test package")
 require(not (SRC / "java/com/xnotes").exists(), "Obsolete source namespace still exists")
 require((ROOT / "LICENSE").is_file(), "Original license must be preserved")
 require((ROOT / "NOTICE.md").is_file(), "Derivative attribution is required")
+require("Copyright (c) 2026 Shardul Vikram Singh" in read("LICENSE"), "Original MIT attribution was changed")
+require("Aaditya Kumar" in read("README.md") and
+        "https://github.com/Aaditya-kumar-singh" in read("README.md"),
+        "Maintainer and official GitHub profile missing")
+require("Aaditya Kumar" in read("NOTICE.md") and
+        "https://github.com/Aaditya-kumar-singh/NotesTaking-App" in read("NOTICE.md"),
+        "Current project credit missing from NOTICE")
+require("R.string.project_maintainer" in read("app/src/main/java/com/notestaking/app/ui/AboutPane.kt") and
+        "https://github.com/Aaditya-kumar-singh" in read("app/src/main/java/com/notestaking/app/ui/AboutPane.kt"),
+        "About screen current maintainer link missing")
 require((SRC / "cpp/pdfium/LICENSE").is_file(), "PDFium licensing must be preserved")
 require((SRC / "cpp/tree-sitter/LICENSE").is_file(), "Tree-sitter licensing must be preserved")
 require((SRC / "resources/com/notestaking/app/core/text/emoji.tsv").is_file(),

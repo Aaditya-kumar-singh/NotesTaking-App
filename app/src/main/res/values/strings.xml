@@ -899,6 +899,8 @@
 
     <!-- About -->
     <string name="app_tagline">A handwriting notes and sketching app for Android</string>
+    <string name="project_maintainer">Maintained by Aaditya Kumar</string>
+    <string name="open_maintainer_github">Open Aaditya Kumar’s GitHub profile</string>
     <string name="copy_version">Copy version</string>
     <string name="help_make_better">Help make NotesTaking App better</string>
     <string name="report_bug">Report a bug</string>

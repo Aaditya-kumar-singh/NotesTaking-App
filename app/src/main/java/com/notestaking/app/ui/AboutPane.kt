@@ -33,8 +33,10 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,12 +45,12 @@ import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
 
-/** NotesTaking App identity. No old project funding/repository links are promoted here.
- * MIT attribution remains visible and the full copyright notice remains in LICENSE. */
+/** Current project details, followed by the required credit for the original MIT-licensed code. */
 @Composable
 fun AboutPane() {
     val palette = LocalPalette.current
     val ctx = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val version = remember {
         runCatching {
             val pi = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
@@ -85,7 +87,16 @@ fun AboutPane() {
                     }
                 }
             }
-            Spacer(Modifier.height(30.dp))
+            Spacer(Modifier.height(24.dp))
+            Text(stringResource(R.string.project_maintainer),
+                color = palette.text.toComposeColor(), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text("github.com/Aaditya-kumar-singh",
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.open_maintainer_github)) {
+                    uriHandler.openUri("https://github.com/Aaditya-kumar-singh")
+                }.padding(8.dp),
+                color = palette.accent.toComposeColor(), fontSize = 13.sp,
+                textDecoration = TextDecoration.Underline)
+            Spacer(Modifier.height(22.dp))
             Text("Open-source credits", color = palette.text.toComposeColor(),
                 fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Spacer(Modifier.height(10.dp))

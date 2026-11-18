@@ -3,6 +3,13 @@
 Android note-taking, handwriting, stylus, drawing, PDF reading and annotation app.
 Built with Kotlin, Jetpack Compose, bundled Tree-sitter and PDFium.
 
+## Maintainer
+
+This fork is maintained by **Aaditya Kumar**.
+
+- GitHub: https://github.com/Aaditya-kumar-singh
+- Project repository: https://github.com/Aaditya-kumar-singh/NotesTaking-App
+
 ## Build requirements
 
 - JDK 17
@@ -29,7 +36,7 @@ See [NOTICE.md](NOTICE.md) for details.
 
 All GitHub Actions automation is stored in [`.github/workflows/`](.github/workflows/). The workflows validate the project, build debug APKs, run tests and lint, scan Java/Kotlin code, monitor dependencies, and support manually approved signed releases. See the [GitHub workflow setup guide](docs/github/WORKFLOWS.md) for repository settings, required release secrets, and the full CI/CD process.
 
-The workflow files are local until this project is uploaded to a new GitHub repository. They do not initialize Git or publish anything by themselves.
+The project is hosted on GitHub at [Aaditya-kumar-singh/NotesTaking-App](https://github.com/Aaditya-kumar-singh/NotesTaking-App). CI verifies submitted code; a successful CI run does not replace on-device testing.
 
 ## Project state
 
