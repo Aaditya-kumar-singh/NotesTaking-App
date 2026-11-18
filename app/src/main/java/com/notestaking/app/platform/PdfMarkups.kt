@@ -20,7 +20,8 @@ import java.util.TimeZone
 /**
  * Writes a page's text markups into an export as text markup annotations, which other viewers
  * list, open and edit. Each draws through its own appearance stream ([MarkupAnnotation]), so it
- * looks as it does in xnotes; a note goes in /Contents, with no popup and no author.
+ * matches the note editor's appearance. Annotation notes go in /Contents without
+ * adding a popup or author field.
  */
 internal object PdfMarkups {
 
