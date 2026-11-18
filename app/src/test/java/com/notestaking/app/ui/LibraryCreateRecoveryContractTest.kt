@@ -61,8 +61,13 @@ class LibraryCreateRecoveryContractTest {
             "onImportPdf()",
         )) assertTrue("Missing menu action: $action", menu.contains(action))
 
-        assertTrue("Overflow must still expose the shared menu",
-            backstage.contains("NewItemMenuItems({ moreOpen = false }, onCreateMode, calls.importPdf)"))
+        val overflow = between(backstage,
+            "ExplorerIcon(NotesTakingIcons.more, stringResource(R.string.more)) { moreOpen = true }",
+            "HorizontalDivider(color = palette.border.toComposeColor())")
+        assertTrue("Overflow must still expose the shared menu", overflow.contains("NewItemMenuItems("))
+        assertTrue("Overflow must close before creating", overflow.contains("{ moreOpen = false }, onCreateMode, calls.importPdf,"))
+        assertTrue("Quick Scratch action must reach the shared menu", overflow.contains("onQuickScratch = quickScratch"))
+        assertTrue("Quick Scratch must be disabled while creating or selecting", overflow.contains("quickScratchEnabled = !creatingQuickScratch && selection.isEmpty()"))
     }
 
     @Test

@@ -1541,7 +1541,6 @@ private fun EditorPaneHeader(
         else -> stringResource(R.string.editor_header_note)
     }
     var renaming by remember(editor) { mutableStateOf(false) }
-    var showingFullTitle by remember(editor) { mutableStateOf(false) }
     BoxWithConstraints(Modifier.fillMaxWidth().background(palette.bg.toComposeColor())) {
         val showDetails = maxWidth >= 320.dp
         Row(
@@ -1554,9 +1553,7 @@ private fun EditorPaneHeader(
             }
             Column(
                 Modifier.weight(1f).height(48.dp)
-                    .clickable(onClickLabel = if (editor.canvasOpen) null else stringResource(R.string.rename_note)) {
-                        if (editor.canvasOpen) showingFullTitle = true else renaming = true
-                    }
+                    .clickable(onClickLabel = stringResource(R.string.rename_note)) { renaming = true }
                     .padding(horizontal = 8.dp),
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             ) {
@@ -1580,23 +1577,33 @@ private fun EditorPaneHeader(
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(palette.border.toComposeColor()))
 
-    if (renaming && !editor.canvasOpen) {
-        var name by remember(editor) { mutableStateOf(editor.title) }
+    if (renaming) {
+        var name by remember(editor) { mutableStateOf(editor.visibleDocumentTitle) }
+        var renameBusy by remember(editor) { mutableStateOf(false) }
         val failure = stringResource(R.string.err_rename_note)
         val confirm = {
-            if (name.isNotBlank()) {
-                renaming = false
-                if (!editor.renameCurrentDocument(name)) editor.message = failure
+            if (name.isNotBlank() && !renameBusy) {
+                if (editor.canvasOpen) {
+                    renameBusy = true
+                    editor.renameCurrentCanvasDocument(name) { ok ->
+                        renameBusy = false
+                        if (ok) renaming = false else editor.message = failure
+                    }
+                } else {
+                    renaming = false
+                    if (!editor.renameCurrentDocument(name)) editor.message = failure
+                }
             }
         }
         val focus = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         com.notestaking.app.ui.AlertDialog(
-            onDismissRequest = { renaming = false },
+            onDismissRequest = { if (!renameBusy) renaming = false },
             title = { Text(stringResource(R.string.rename_note)) },
             text = {
                 OutlinedTextField(
                     value = name, onValueChange = { name = it }, singleLine = true,
+                    enabled = !renameBusy,
                     label = { Text(stringResource(R.string.toolbar_title)) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { confirm() }),
@@ -1604,26 +1611,13 @@ private fun EditorPaneHeader(
                 )
             },
             confirmButton = {
-                TextButton(onClick = confirm, enabled = name.isNotBlank()) {
+                TextButton(onClick = confirm, enabled = name.isNotBlank() && !renameBusy) {
                     Text(stringResource(R.string.rename))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { renaming = false }) {
+                TextButton(onClick = { renaming = false }, enabled = !renameBusy) {
                     Text(stringResource(R.string.cancel))
-                }
-            },
-        )
-    }
-    if (showingFullTitle) {
-        // Canvas rename still belongs to the underlying editor API; never rename its hidden paged buffer.
-        com.notestaking.app.ui.AlertDialog(
-            onDismissRequest = { showingFullTitle = false },
-            title = { Text(stringResource(R.string.toolbar_title)) },
-            text = { Text(title) },
-            confirmButton = {
-                TextButton(onClick = { showingFullTitle = false }) {
-                    Text(stringResource(R.string.done))
                 }
             },
         )

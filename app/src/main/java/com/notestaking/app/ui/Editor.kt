@@ -4959,7 +4959,16 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             if (autosaveUri == docUri) autosaveUri = resultUri
             title = state.document.title
         }
+        val canvas = infiniteOrNull?.document?.takeIf { canvasOpen && it.path == docUri }
+        canvas?.let {
+            it.path = resultUri
+            it.displayName = newName
+            if (canvasAutosaveUri == docUri) canvasAutosaveUri = resultUri
+            invalidateThumb(resultUri)
+            refreshContent()
+        }
         onDocumentMoved(docUri, resultUri, newName)
+        if (canvas != null) rememberStamp(resultUri)
         return true
     }
 
@@ -5025,6 +5034,28 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             state.document.displayName = fileName
             title = state.document.title
             true
+        }
+    }
+
+    /** Rename the visible canvas only after any pending autosave finishes; never touch the hidden paged note. */
+    fun renameCurrentCanvasDocument(rawName: String, onDone: (Boolean) -> Unit) {
+        if (!canvasOpen || rawName.isBlank()) { onDone(false); return }
+        val doc = infiniteOrNull?.document ?: run { onDone(false); return }
+        val fileName = "${com.notestaking.app.platform.DocumentNames.stem(rawName)}.xcanvas"
+        val uri = doc.path
+        if (uri == null) {
+            doc.displayName = fileName
+            doc.dirty = true
+            refreshContent()
+            onDone(true)
+            return
+        }
+        // External files are not autosave-bound: renaming them in place could strand unsaved ink.
+        if (canvasAutosaveUri != uri) { onDone(false); return }
+        infinite.commitText()
+        flushCanvasThen(showOverlay = true) { saved ->
+            onDone(saved && canvasOpen && infiniteOrNull?.document === doc &&
+                doc.path == uri && renameDocument(uri, fileName))
         }
     }
 
