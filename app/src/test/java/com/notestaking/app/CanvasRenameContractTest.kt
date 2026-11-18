@@ -40,9 +40,10 @@ class CanvasRenameContractTest {
         assertTrue(canvasRename.contains("canvasAutosaveUri != uri"))
         assertTrue(canvasRename.contains("flushCanvasThen(showOverlay = true)"))
         assertTrue(canvasRename.contains("doc.path == uri && renameDocument(uri, fileName)"))
-        assertTrue(backingRename.contains("it.path = resultUri"))
-        assertTrue(backingRename.contains("it.displayName = finalName"))
-        assertTrue(backingRename.contains("canvasAutosaveUri = resultUri"))
+        assertTrue(backingRename.contains("CanvasDocumentBinding.followMove("))
+        assertTrue(backingRename.contains("canvas, docUri, resultUri, finalName, canvasAutosaveUri"))
+        assertTrue(backingRename.contains("canvasDebounceJob?.cancel()"))
+        assertTrue(backingRename.contains("saveCanvasSession()"))
         assertTrue(backingRename.contains("onDocumentMoved(docUri, resultUri, finalName)"))
         assertTrue(backingRename.contains("DocumentNames.canvasRename(originalName, newName)"))
     }
