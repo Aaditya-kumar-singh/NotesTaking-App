@@ -150,9 +150,9 @@ class CanvasSessionStoreTest {
         }
     }
 
-    @Test fun legacyRecoverySlotSurvivesCanvasAliasRenameAndFailedMetadataUpdate() {
-        val dir = Files.createTempDirectory("notestaking-canvas-alias-recovery").toFile()
-        val images = Files.createTempDirectory("notestaking-canvas-alias-images").toFile()
+    @Test fun blockedFullSaveKeepsLegacyCanvasUntilRenameRetry() {
+        val dir = Files.createTempDirectory("notestaking-legacy-canvas-retry").toFile()
+        val images = Files.createTempDirectory("notestaking-legacy-canvas-images").toFile()
         try {
             val store = CanvasSessionStore(dir, codec(), images)
             val legacy = InfiniteDocument(dpi = 144).apply {
@@ -162,43 +162,70 @@ class CanvasSessionStoreTest {
             }
             assertTrue(store.save(legacy, writeDocument = true))
             val slot = dir.resolve("canvas.xcanvas")
-            val originalBytes = slot.readBytes()
+            val lastGoodArchive = slot.readBytes()
             val sidecar = dir.resolve("canvas-session.json")
-            val originalSidecar = sidecar.readBytes()
+            val lastGoodMetadata = sidecar.readBytes()
 
-            // The user-visible filename changes, but the recovery archive keeps its old slot.
+            // Ordinary rename must keep the old extension, even if the UI proposes the new one.
+            val renamedName = DocumentNames.canvasRename("Board.xcanvas", "Renamed Board.ntcanvas")
+            assertEquals("Renamed Board.xcanvas", renamedName)
             val renamed = InfiniteDocument(dpi = 300).apply {
-                path = "content://test.documents/tree/root/document/root%2FBoard.ntcanvas"
-                displayName = "Board.ntcanvas"
+                path = "content://test.documents/tree/root/document/root%2FRenamed%20Board.xcanvas"
+                displayName = renamedName
                 dirty = true
             }
-            assertTrue(store.save(renamed, writeDocument = false))
-            assertArrayEquals(originalBytes, slot.readBytes())
-            assertFalse(dir.resolve("canvas.ntcanvas").exists())
-            val afterRename = store.load()!!
-            assertEquals(144, afterRename.dpi) // Metadata-only saves do not replace ink or pages.
-            assertEquals(renamed.path, afterRename.path)
-            assertEquals("Board.ntcanvas", afterRename.displayName)
-
-            // A rejected update must preserve the last complete archive and metadata.
-            val renamedSidecar = sidecar.readBytes()
             assertTrue(sidecar.delete())
-            assertTrue(sidecar.mkdir())
-            val rejected = InfiniteDocument().apply {
-                path = "content://test.documents/tree/root/document/root%2FAnother.ntcanvas"
-                displayName = "Another.ntcanvas"
-            }
-            assertFalse(store.save(rejected, writeDocument = false))
-            assertArrayEquals(originalBytes, slot.readBytes())
+            assertTrue(sidecar.mkdir()) // Simulate a blocked sidecar before the full save begins.
+            assertFalse(store.save(renamed, writeDocument = true))
+            assertArrayEquals(lastGoodArchive, slot.readBytes())
             assertTrue(sidecar.isDirectory)
+
+            // Restore the disposable test sidecar to simulate removal of the storage fault.
             assertTrue(sidecar.delete())
-            sidecar.writeBytes(renamedSidecar)
-            assertEquals(renamed.path, store.load()!!.path)
-            assertTrue(store.save(rejected, writeDocument = false))
-            assertEquals(rejected.path, store.load()!!.path)
-            assertArrayEquals(originalBytes, slot.readBytes())
+            sidecar.writeBytes(lastGoodMetadata)
+            val recovered = store.load()!!
+            assertEquals(144, recovered.dpi)
+            assertEquals(legacy.path, recovered.path)
+            assertEquals(legacy.displayName, recovered.displayName)
+
+            assertTrue(store.save(renamed, writeDocument = true))
+            val reopened = store.load()!!
+            assertEquals(300, reopened.dpi)
+            assertEquals(renamed.path, reopened.path)
+            assertEquals("Renamed Board.xcanvas", reopened.displayName)
+            assertTrue(SafeFileWriter.hasNativeManifest(slot))
+            assertFalse(dir.resolve("canvas.ntcanvas").exists())
             assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
-            assertFalse(originalSidecar.contentEquals(renamedSidecar))
+        } finally {
+            dir.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
+    @Test fun newCanvasUsesLegacyPrivateRecoverySlotDuringMetadataOnlySave() {
+        val dir = Files.createTempDirectory("notestaking-new-canvas-recovery").toFile()
+        val images = Files.createTempDirectory("notestaking-new-canvas-images").toFile()
+        try {
+            val store = CanvasSessionStore(dir, codec(), images)
+            val created = InfiniteDocument(dpi = 144).apply {
+                path = "content://test.documents/tree/root/document/root%2FBoard.ntcanvas"
+                displayName = "Board.ntcanvas"
+            }
+            assertTrue(store.save(created, writeDocument = true))
+            val slot = dir.resolve("canvas.xcanvas")
+            val archive = slot.readBytes()
+            val renamed = InfiniteDocument(dpi = 300).apply {
+                path = "content://test.documents/tree/root/document/root%2FBoard%20Two.ntcanvas"
+                displayName = "Board Two.ntcanvas"
+            }
+            assertTrue(store.save(renamed, writeDocument = false))
+            val reopened = store.load()!!
+            assertEquals(144, reopened.dpi) // Metadata-only save does not rewrite the canvas.
+            assertEquals(renamed.path, reopened.path)
+            assertEquals(renamed.displayName, reopened.displayName)
+            assertArrayEquals(archive, slot.readBytes())
+            assertFalse(dir.resolve("canvas.ntcanvas").exists())
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
         } finally {
             dir.deleteRecursively()
             images.deleteRecursively()

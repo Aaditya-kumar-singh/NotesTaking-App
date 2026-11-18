@@ -4969,12 +4969,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             title = state.document.title
         }
         val canvas = infiniteOrNull?.document?.takeIf { canvasOpen && it.path == docUri }
+        canvasAutosaveUri = com.notestaking.app.platform.CanvasDocumentBinding.followMove(
+            canvas, docUri, resultUri, finalName, canvasAutosaveUri,
+        )
         canvas?.let {
-            it.path = resultUri
-            it.displayName = finalName
-            if (canvasAutosaveUri == docUri) canvasAutosaveUri = resultUri
             invalidateThumb(resultUri)
             refreshContent()
+            canvasDebounceJob?.cancel()
+            if (it.dirty) scheduleCanvasAutosave()
+            saveCanvasSession()
         }
         onDocumentMoved(docUri, resultUri, finalName)
         if (canvas != null) rememberStamp(resultUri)
@@ -5314,7 +5317,18 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
             state.document.path = newUri.toString()
             if (autosaveUri == sourceUri) autosaveUri = newUri.toString()
         }
-        newUri?.let { onDocumentMoved(sourceUri, it.toString()) }
+        newUri?.let { updated ->
+            val movedCanvas = infiniteOrNull?.document?.path == sourceUri
+            canvasAutosaveUri = com.notestaking.app.platform.CanvasDocumentBinding.followMove(
+                infiniteOrNull?.document, sourceUri, updated.toString(), null, canvasAutosaveUri,
+            )
+            if (movedCanvas && canvasOpen) {
+                canvasDebounceJob?.cancel()
+                if (infiniteOrNull?.document?.dirty == true) scheduleCanvasAutosave()
+                saveCanvasSession()
+            }
+            onDocumentMoved(sourceUri, updated.toString())
+        }
         newUri != null
     }.getOrDefault(false)
 
@@ -6183,7 +6197,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val sidecarId = findChildDocId(tree, parentDocId, SIDECAR_DIR, dir = true) ?: return@runCatching true
         val map = readSidecarColors(tree, sidecarId).toMutableMap()
         val c = map.remove(oldName) ?: return@runCatching true
-        map[newName] = c
+        map[com.notestaking.app.platform.DocumentNames.canvasRename(oldName, newName)] = c
         writeSidecarColors(tree, sidecarId, map)
     }.getOrDefault(false)
 
