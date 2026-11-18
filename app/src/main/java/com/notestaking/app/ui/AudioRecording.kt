@@ -50,7 +50,7 @@ interface AudioHost : AudioOwner, RecordOwner
 
 /**
  * The one recording in the app, for one editor. Recorded time counts only while it runs, so a
- * pause leaves no gap in the moments ink is given. It carries on with xnotes off screen, under
+ * pause leaves no gap in the moments ink is given. It carries on with NotesTaking App off screen, under
  * [RecordingService]. Stop, or closing the note, places it; only Discard throws it away, and
  * even that can be undone for a few seconds.
  */

@@ -5,7 +5,7 @@ Built with Kotlin, Jetpack Compose, bundled Tree-sitter and PDFium.
 
 ## Maintainer
 
-This fork is maintained by **Aaditya Kumar**.
+**NotesTaking App** is developed and maintained by **Aaditya Kumar**. Original additions and branding for this edition are copyright (c) 2026 Aaditya Kumar. The original XNotes code and third-party components retain their own licenses.
 
 - GitHub: https://github.com/Aaditya-kumar-singh
 - Project repository: https://github.com/Aaditya-kumar-singh/NotesTaking-App

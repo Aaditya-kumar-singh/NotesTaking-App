@@ -90,6 +90,10 @@ fun AboutPane() {
             Spacer(Modifier.height(24.dp))
             Text(stringResource(R.string.project_maintainer),
                 color = palette.text.toComposeColor(), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(stringResource(R.string.project_copyright),
+                color = palette.textDim.toComposeColor(), fontSize = 12.sp,
+                textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
             Text("github.com/Aaditya-kumar-singh",
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.open_maintainer_github)) {
                     uriHandler.openUri("https://github.com/Aaditya-kumar-singh")
@@ -97,10 +101,10 @@ fun AboutPane() {
                 color = palette.accent.toComposeColor(), fontSize = 13.sp,
                 textDecoration = TextDecoration.Underline)
             Spacer(Modifier.height(22.dp))
-            Text("Open-source credits", color = palette.text.toComposeColor(),
+            Text(stringResource(R.string.open_source_credits), color = palette.text.toComposeColor(),
                 fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Spacer(Modifier.height(10.dp))
-            Text("Based on the MIT-licensed XNotes project by Shardul Vikram Singh.",
+            Text(stringResource(R.string.source_project_credit),
                 color = palette.textDim.toComposeColor(), fontSize = 12.sp,
                 textAlign = TextAlign.Center)
             Spacer(Modifier.height(8.dp))

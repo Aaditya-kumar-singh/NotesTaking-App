@@ -120,6 +120,17 @@ class BrandArtworkMotionContractTest {
     fun iconAttributionAndDefaultPaletteContrastHaveTraceableSources() {
         val notice = source("NOTICE.md")
         assertTrue(notice.contains("derivative of XNotes"))
+        assertTrue(notice.contains("Copyright (c) 2026 Aaditya Kumar"))
+        assertTrue(notice.contains("Original software copyright: Copyright (c) 2026 Shardul Vikram Singh"))
+        assertTrue(file("LICENSE").readText().contains("Copyright (c) 2026 Shardul Vikram Singh"))
+        assertTrue(source("README.md").contains("copyright (c) 2026 Aaditya Kumar"))
+        val about = ui("ui/AboutPane.kt")
+        assertTrue(about.contains("stringResource(R.string.project_copyright)"))
+        assertTrue(about.contains("stringResource(R.string.source_project_credit)"))
+        for (locale in listOf("values", "values-hi")) {
+            assertTrue(resource("$locale/strings.xml").contains("<string name=\"project_copyright\">"))
+            assertTrue(resource("$locale/strings.xml").contains("<string name=\"source_project_credit\">"))
+        }
         assertTrue(notice.contains("MIT"))
         assertTrue(file("LICENSE").length() > 200)
         val icons = ui("ui/icons/NotesTakingIcons.kt")

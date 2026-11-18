@@ -291,7 +291,7 @@ class MainActivity : ComponentActivity() {
         editor?.persist()
     }
 
-    // Playback never goes on with xnotes off screen; a split window that only lost focus is still on it.
+    // Playback never goes on with NotesTaking App off screen; a split window that only lost focus is still on it.
     override fun onStop() {
         super.onStop()
         com.notestaking.app.ui.AudioPlayback.pause()
@@ -597,7 +597,7 @@ private fun EditorScreen(
     }
 
     // Recording asks for the microphone the first time, and on Android 13 and later for notifications
-    // too, since the recording shows one while xnotes is off screen. Refusing notifications still records.
+    // too, since the recording shows one while NotesTaking App is off screen. Refusing notifications still records.
     var pendingRecordPane by remember { mutableStateOf<Editor?>(null) }
     // Notifications are asked for once a run when only they are missing; the system stops asking after two refusals anyway.
     var askedNotifications by remember { mutableStateOf(false) }

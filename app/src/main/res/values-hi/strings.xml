@@ -359,7 +359,10 @@
 
     <!-- About, text formatting and accessibility -->
     <string name="app_tagline">Android के लिए हस्तलिखित नोट्स और ड्रॉइंग ऐप</string>
-    <string name="project_maintainer">Aaditya Kumar द्वारा रखरखाव</string>
+    <string name="project_maintainer">Aaditya Kumar द्वारा विकसित और संचालित</string>
+    <string name="project_copyright">कॉपीराइट © 2026 Aaditya Kumar (NotesTaking App के नए काम और ब्रांडिंग)</string>
+    <string name="open_source_credits">ओपन-सोर्स लाइसेंस</string>
+    <string name="source_project_credit">Shardul Vikram Singh के MIT लाइसेंस वाले XNotes प्रोजेक्ट पर आधारित।</string>
     <string name="open_maintainer_github">Aaditya Kumar की GitHub प्रोफ़ाइल खोलें</string>
     <string name="copy_version">वर्शन कॉपी करें</string>
     <string name="help_make_better">NotesTaking App को बेहतर बनाने में मदद करें</string>
