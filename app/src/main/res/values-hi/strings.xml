@@ -52,6 +52,7 @@
     <string name="toolbar_tab_notes">नोट्स</string>
     <string name="toolbar_tab_canvas">कैनवास</string>
     <string name="toolbar_favorites_title">पसंदीदा ड्रॉइंग टूल</string>
+    <string name="toolbar_pen_type">पेन का प्रकार: %1$s</string>
     <string name="toolbar_expand_all_tools">सभी ड्रॉइंग टूल दिखाएँ</string>
     <string name="toolbar_collapse_to_favorites">ड्रॉइंग टूल समेटें</string>
     <string name="toolbar_drag_handle">फ़्लोटिंग टूलबार खींचें</string>
