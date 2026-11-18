@@ -296,11 +296,12 @@ internal fun canvasSizeTool(tool: Tool): Tool? = when {
 
 /** Six fixed actions use the editor's live tool configuration; More opens the B100 toolbar. */
 @Composable
-private fun B101CanvasQuickTools(
+internal fun B101CanvasQuickTools(
     editor: InfiniteEditor,
     icons: Map<Tool, ImageVector>,
     columns: Int,
     expand: () -> Unit,
+    showMore: Boolean = true,
 ) {
     var subtypeOpen by remember { mutableStateOf(false) }
     var widthOpen by remember { mutableStateOf(false) }
@@ -390,11 +391,26 @@ private fun B101CanvasQuickTools(
             ToolbarIcon(NotesTakingIcons.more, stringResource(R.string.canvas_all_tools), onClick = expand)
         },
     )
+    val visibleActions = if (showMore) actions else actions.dropLast(1)
     Column {
-        actions.indices.chunked(columns.coerceIn(1, 3)).forEach { row ->
-            Row { row.forEach { actions[it]() } }
+        visibleActions.indices.chunked(columns.coerceIn(1, 3)).forEach { row ->
+            Row { row.forEach { visibleActions[it]() } }
         }
     }
+}
+
+/** Fixed Canvas actions for the floating dock; the dock supplies its own More button. */
+@Composable
+internal fun B101FloatingCanvasQuickTools(editor: InfiniteEditor, columns: Int) {
+    val icons = mapOf(
+        Tool.PEN to ImageVector.vectorResource(R.drawable.ic_stroke_regular),
+        Tool.DASHED to ImageVector.vectorResource(R.drawable.ic_stroke_dashed),
+        Tool.CALLIGRAPHY to ImageVector.vectorResource(R.drawable.ic_stroke_calligraphy),
+        Tool.SPEED to ImageVector.vectorResource(R.drawable.ic_stroke_speed),
+        Tool.TAPER to ImageVector.vectorResource(R.drawable.ic_stroke_taper),
+        Tool.HIGHLIGHTER to ImageVector.vectorResource(R.drawable.ic_stroke_highlighter),
+    )
+    B101CanvasQuickTools(editor, icons, columns, expand = {}, showMore = false)
 }
 
 /** Preserve both failure messages while occupying just one pinned toolbar slot. */

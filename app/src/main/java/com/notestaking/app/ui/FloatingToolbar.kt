@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -57,6 +58,21 @@ import com.notestaking.app.ui.icons.NotesTakingIcons
 import com.notestaking.app.ui.theme.LocalPalette
 import com.notestaking.app.ui.theme.toComposeColor
 import kotlin.math.roundToInt
+
+/** Columns available to fixed Canvas controls inside a floating toolbar. */
+internal val LocalFloatingCanvasColumns = compositionLocalOf { 1 }
+
+/** Put the drag grip above the actions when a split pane cannot fit both side by side. */
+internal fun floatingGripStacks(paneWidthDp: Float, vertical: Boolean): Boolean =
+    vertical || paneWidthDp < 280f
+
+/** The floating strip reserves space for its More button and the draggable grip. */
+internal fun floatingCanvasColumns(paneWidthDp: Float, buttonDp: Float, vertical: Boolean): Int {
+    if (vertical) return 1
+    val reserved = 16f + (buttonDp + 8f) +
+        (if (floatingGripStacks(paneWidthDp, false)) 0f else 56f)
+    return compactCanvasColumns(paneWidthDp - reserved, buttonDp, pinnedButtons = 0)
+}
 
 /** Keep the expand control reachable when the pane is too short for the mandatory first favorite. */
 internal fun floatingFavoritesFit(axisDp: Int, count: Int, buttonDp: Int): Boolean =
@@ -126,6 +142,8 @@ internal fun MovableFloatingToolbar(
             buttonDp = buttonDp,
         )
         val showFavorites = floatingFavoritesFit(length.value.toInt(), count, buttonDp)
+        val narrow = floatingGripStacks(paneWidth.value, look.position.vertical)
+        val canvasColumns = floatingCanvasColumns(paneWidth.value, buttonDp.toFloat(), look.position.vertical)
 
         fun nudge(dx: Float, dy: Float): Boolean {
             if ((dx != 0f && travelX == 0f) || (dy != 0f && travelY == 0f)) return false
@@ -228,7 +246,11 @@ internal fun MovableFloatingToolbar(
                     .border(1.dp, palette.border.toComposeColor(), shape)
                 CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
                     val content: @Composable () -> Unit = {
-                        if (showFavorites) favorites(count)
+                        if (showFavorites || narrow) {
+                            CompositionLocalProvider(LocalFloatingCanvasColumns provides canvasColumns) {
+                                favorites(if (showFavorites) count else 0)
+                            }
+                        }
                         ToolbarIcon(NotesTakingIcons.chevronUp, stringResource(R.string.toolbar_expand_all_tools)) {
                             expanded = true
                         }
@@ -253,6 +275,15 @@ internal fun MovableFloatingToolbar(
                 if (look.position.vertical) {
                     Column(
                         Modifier.heightIn(max = (paneHeight - 16.dp).coerceIn(48.dp, 600.dp)),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        grip()
+                        shownBar()
+                    }
+                } else if (narrow) {
+                    Column(
+                        Modifier.widthIn(max = (paneWidth - 16.dp).coerceAtLeast(48.dp)),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {

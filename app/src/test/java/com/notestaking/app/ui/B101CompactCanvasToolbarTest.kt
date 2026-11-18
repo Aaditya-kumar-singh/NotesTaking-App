@@ -36,6 +36,37 @@ class B101CompactCanvasToolbarTest {
         }
     }
 
+    @Test fun floatingWidthsReserveTheGripAndMoreWithoutHorizontalScrolling() {
+        val expected = mapOf(180f to 1, 240f to 2, 320f to 3, 360f to 3)
+        for ((width, columns) in expected) {
+            assertEquals(columns, floatingCanvasColumns(width, 48f, vertical = false))
+            val remaining = width - 16f - 56f -
+                (if (floatingGripStacks(width, false)) 0f else 56f)
+            assertTrue(columns * 56f <= remaining)
+            assertTrue((5 + columns - 1) / columns in 2..5)
+        }
+        assertTrue(floatingGripStacks(180f, false))
+        assertTrue(floatingGripStacks(240f, false))
+        assertTrue(!floatingGripStacks(320f, false))
+        assertEquals(1, floatingCanvasColumns(360f, 48f, vertical = true))
+    }
+
+    @Test fun floatingRendererUsesRealEditorAndRetainsSeparateMoreAction() {
+        val relative = "src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt"
+        val file = listOf(File(relative), File("app/$relative")).firstOrNull { it.isFile }
+        val code = requireNotNull(file).readText()
+        val renderer = code.substringAfter("internal fun B101FloatingCanvasQuickTools(")
+            .substringBefore("/** Preserve both failure messages")
+        assertTrue(renderer.contains("B101CanvasQuickTools(editor, icons, columns, expand = {}, showMore = false)"))
+        val floating = "src/main/java/com/notestaking/app/ui/FloatingToolbar.kt"
+        val floatingFile = listOf(File(floating), File("app/$floating")).firstOrNull { it.isFile }
+        val layout = requireNotNull(floatingFile).readText()
+        assertTrue(layout.contains("LocalFloatingCanvasColumns provides canvasColumns"))
+        assertTrue(layout.contains("if (expanded)"))
+        assertTrue(layout.contains("BackHandler(enabled = expanded)"))
+        assertTrue(layout.contains("grip()"))
+    }
+
     @Test fun existingPenEraserUndoAndMoreActionsAreWiredToRealEditor() {
         val relative = "src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt"
         val file = listOf(File(relative), File("app/$relative")).firstOrNull { it.isFile }
