@@ -82,8 +82,15 @@ require('rootProject.name = "NotesTakingApp"' in read("settings.gradle.kts"),
         "Gradle project name mismatch")
 require('NOTE("xnote")' in read("app/src/main/java/com/notestaking/app/core/util/DocumentKind.kt"),
         "Legacy notebook format was modified")
-require('CANVAS("xcanvas")' in read("app/src/main/java/com/notestaking/app/core/util/DocumentKind.kt"),
-        "Legacy canvas format was modified")
+require('CANVAS("ntcanvas", "xcanvas")' in
+        read("app/src/main/java/com/notestaking/app/core/util/DocumentKind.kt"),
+        "New Canvas suffix or legacy .xcanvas recognition is missing")
+require('const val FORMAT = "xcanvas"' in
+        read("app/src/main/java/com/notestaking/app/format/CanvasCodec.kt"),
+        "Legacy Canvas ZIP manifest format marker was changed")
+require('File(dir, "canvas.xcanvas")' in
+        read("app/src/main/java/com/notestaking/app/platform/CanvasSessionStore.kt"),
+        "Existing Canvas recovery slot was changed")
 require('const val FORMAT = "xnotes-settings"' in
         read("app/src/main/java/com/notestaking/app/settings/SettingsBackup.kt"),
         "Legacy settings backup format was modified")

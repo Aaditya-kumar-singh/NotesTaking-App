@@ -391,7 +391,7 @@ private fun EditorScreen(
         }
     }
 
-    // Infinite canvases use their own native .xcanvas codec; never write them as .xnote.
+    // Canvas files use their own native ZIP codec, including legacy .xcanvas; never write them as .xnote.
     val createCanvasLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->

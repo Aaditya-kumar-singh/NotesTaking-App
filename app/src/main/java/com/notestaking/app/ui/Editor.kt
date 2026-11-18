@@ -4667,7 +4667,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         }
     }
 
-    /** Creates a blank `.xcanvas` under [parentDocId]; returns its URI, or null. IO — call off-thread. */
+    /** Creates a blank Canvas with the current file extension; returns its URI or null. IO, call off-thread. */
     fun createBlankCanvasFile(treeUri: String, parentDocId: String, rawName: String): String? {
         val name = uniqueDocumentName(treeUri, parentDocId, rawName, com.notestaking.app.core.util.DocumentKind.CANVAS)
         return createNoteFile(treeUri, parentDocId, name) {
@@ -5050,7 +5050,7 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
     fun renameCurrentCanvasDocument(rawName: String, onDone: (Boolean) -> Unit) {
         if (!canvasOpen || rawName.isBlank()) { onDone(false); return }
         val doc = infiniteOrNull?.document ?: run { onDone(false); return }
-        val fileName = "${com.notestaking.app.platform.DocumentNames.stem(rawName)}.xcanvas"
+        val fileName = "${com.notestaking.app.platform.DocumentNames.stem(rawName)}${com.notestaking.app.core.util.DocumentKind.CANVAS.suffix}"
         val uri = doc.path
         if (uri == null) {
             doc.displayName = fileName

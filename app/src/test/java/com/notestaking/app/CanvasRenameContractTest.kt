@@ -1,5 +1,6 @@
 package com.notestaking.app
 
+import com.notestaking.app.core.util.DocumentKind
 import com.notestaking.app.platform.DocumentNames
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -15,11 +16,12 @@ class CanvasRenameContractTest {
     }
 
     @Test fun canvasRenameAlwaysKeepsItsNativeFileExtension() {
-        for (raw in listOf("Drawing", "Drawing.xcanvas", "Drawing.xnote")) {
-            assertEquals("Drawing.xcanvas", "${DocumentNames.stem(raw)}.xcanvas")
+        for (raw in listOf("Drawing", "Drawing.xcanvas", "Drawing.ntcanvas", "Drawing.xnote")) {
+            assertEquals("Drawing.ntcanvas", "${DocumentNames.stem(raw)}${DocumentKind.CANVAS.suffix}")
         }
-        assertEquals("_CON.xcanvas", "${DocumentNames.stem("CON")}.xcanvas")
-        assertFalse("${DocumentNames.stem("../draft")}.xcanvas".contains('/'))
+        assertEquals("_CON.ntcanvas", "${DocumentNames.stem("CON")}${DocumentKind.CANVAS.suffix}")
+        assertFalse("${DocumentNames.stem("../draft")}${DocumentKind.CANVAS.suffix}".contains('/'))
+        assertEquals("Renamed.xcanvas", DocumentNames.canvasRename("Old.xcanvas", "Renamed.ntcanvas"))
     }
 
     @Test fun headerAllowsCanvasTitleEditingWithoutOpeningPagedRename() {
@@ -39,8 +41,9 @@ class CanvasRenameContractTest {
         assertTrue(canvasRename.contains("flushCanvasThen(showOverlay = true)"))
         assertTrue(canvasRename.contains("doc.path == uri && renameDocument(uri, fileName)"))
         assertTrue(backingRename.contains("it.path = resultUri"))
-        assertTrue(backingRename.contains("it.displayName = newName"))
+        assertTrue(backingRename.contains("it.displayName = finalName"))
         assertTrue(backingRename.contains("canvasAutosaveUri = resultUri"))
-        assertTrue(backingRename.contains("onDocumentMoved(docUri, resultUri, newName)"))
+        assertTrue(backingRename.contains("onDocumentMoved(docUri, resultUri, finalName)"))
+        assertTrue(backingRename.contains("DocumentNames.canvasRename(originalName, newName)"))
     }
 }

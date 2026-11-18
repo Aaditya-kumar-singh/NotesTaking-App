@@ -340,7 +340,7 @@
     <string name="name_a_colour">रंग का नाम दें</string>
     <string name="pref_per_folder_views">हर फ़ोल्डर का दृश्य याद रखें</string>
     <string name="pref_show_folder_counts">फ़ोल्डर में फ़ाइलों की संख्या दिखाएँ</string>
-    <string name="pref_show_extensions">फ़ाइल एक्सटेंशन दिखाएँ (.xnote, .xcanvas)</string>
+    <string name="pref_show_extensions">फ़ाइल एक्सटेंशन दिखाएँ (.xnote, .ntcanvas, पुराना .xcanvas)</string>
     <string name="pref_dates">तारीखें</string>
     <string name="material_system_colours">सिस्टम के रंग</string>
     <string name="material_custom_colour">मनचाहा रंग चुनें</string>
