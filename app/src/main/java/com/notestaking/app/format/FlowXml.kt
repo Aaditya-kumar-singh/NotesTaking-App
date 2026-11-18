@@ -25,7 +25,7 @@ import org.w3c.dom.Node
 /**
  * Reads/writes the flow as `flow.xml` inside the `.xnote` bundle, speaking the
  * ODF text vocabulary (text:p / text:span / text:list, fo:* style properties in
- * automatic styles) so the dialect is interchange-friendly; xnotes-specific
+ * automatic styles) so the dialect is interchange-friendly; NotesTaking-specific
  * facts an ODF reader has no slot for (list kind, checkbox state, code language,
  * indent level, flow margins/defaults) ride `xnotes:*` foreign attributes, which
  * conformant readers ignore. Writing is a hand-rolled deterministic serializer;

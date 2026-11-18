@@ -16,10 +16,10 @@ import androidx.core.content.ContextCompat
 import com.notestaking.app.R
 
 /**
- * Keeps the microphone live while xnotes is off screen. Android silences any app that is not in
- * front unless a foreground service of type microphone runs, and that service must show itself:
- * the Recording notification, with Pause or Resume and Stop. The recording itself is
- * [com.notestaking.app.ui.AudioRecording]'s; this only holds the process in front and relays the buttons.
+ * Keeps microphone recording active when NotesTaking is in the background. Android requires
+ * a microphone foreground service and a visible recording notification with its controls.
+ * Recording is owned by [com.notestaking.app.ui.AudioRecording]; this service forwards
+ * Pause, Resume and Stop actions from the notification.
  */
 class RecordingService : Service() {
 

@@ -20,7 +20,8 @@ import java.io.FileNotFoundException
  * ids are paths relative to the root ("root", "root/sub", "root/sub/note.xnote"), so they stay
  * valid even if the backing directory ever moves. The framework requires a DocumentsProvider to
  * be exported and MANAGE_DOCUMENTS-protected; with no DOCUMENTS_PROVIDER intent filter it stays
- * out of the system file picker, so only xnotes reaches it. Its files go on app uninstall.
+ * out of the system file picker; the app accesses it through its own document URIs.
+ * These private files are deleted when the app is uninstalled.
  */
 class AppStorageDocumentsProvider : DocumentsProvider() {
 
