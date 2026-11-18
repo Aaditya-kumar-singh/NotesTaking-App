@@ -43,6 +43,11 @@ VECTOR_MARK = (
       f'android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="{INK_PATH}"/>\n'
     + "</vector>\n"
 )
+VECTOR_LOADER = VECTOR_MARK.replace(
+    f'    <path android:fillColor="#00000000" android:strokeColor="{INK}" ',
+    f'    <path android:name="inkTrail" android:trimPathEnd="0" android:fillColor="#00000000" android:strokeColor="{INK}" ',
+)
+
 VECTOR_MONO = (
     VECTOR_HEAD
     + f'    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" '
@@ -119,6 +124,7 @@ def save_icon(target: Path, image: Image.Image) -> None:
 def main() -> None:
     vector_dir = RES / "drawable"
     (vector_dir / "ic_brand_mark.xml").write_text(VECTOR_MARK, encoding="utf-8")
+    (vector_dir / "notestaking_loader_vector.xml").write_text(VECTOR_LOADER, encoding="utf-8")
     (vector_dir / "ic_launcher_monochrome.xml").write_text(VECTOR_MONO, encoding="utf-8")
     brand = ROOT / "design" / "brand"
     brand.mkdir(parents=True, exist_ok=True)
@@ -137,12 +143,12 @@ def main() -> None:
         round_icon.putalpha(mask)
         save_icon(folder / "ic_launcher_round.png", round_icon)
 
-    # Keep the app's existing 24-frame loading contract and animate the ink stroke.
+    # Retain historical raster frames for existing artwork checks; launch now uses a vector stroke.
     for frame in range(24):
         progress = frame / 23
         save_icon(RES / "drawable-nodpi" / f"notestaking_frame_{frame:02d}.png",
                   draw_mark(540, background=True, progress=progress))
-    print("Generated SVG, two Android vectors, 15 launcher PNGs and 24 loader frames")
+    print("Generated SVG, three Android vectors, 15 launcher PNGs and 24 legacy loader frames")
 
 
 if __name__ == "__main__":

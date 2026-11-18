@@ -1,6 +1,7 @@
 package com.notestaking.app.ui
 
-import android.graphics.drawable.AnimationDrawable
+import android.animation.ValueAnimator
+import android.graphics.drawable.AnimatedVectorDrawable
 import android.widget.ImageView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,10 +17,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.notestaking.app.R
 
 /**
- * Fullscreen launch animation: the frame-by-frame ink trail loader
- * ([R.drawable.notestaking_loader] — a 24-frame ~1.6s [AnimationDrawable]) centred on a
- * deep navy stage that matches the launcher artwork, so
- * there's no edge seam. Shown while the session restores, then faded out.
+ * Frame-paced vector ink reveal on the navy launch stage. The stroke animates continuously
+ * instead of swapping 24 PNGs at 67 ms intervals; the system's reduced-motion setting
+ * shows the finished brand mark, and the animation stops when the loader leaves the UI.
  */
 @Composable
 fun NotesTakingLoader(modifier: Modifier = Modifier) {
@@ -32,9 +32,20 @@ fun NotesTakingLoader(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         AndroidView(
-            factory = { ctx -> ImageView(ctx).apply { setImageResource(R.drawable.notestaking_loader) } },
-            update = { iv -> (iv.drawable as? AnimationDrawable)?.let { if (!it.isRunning) it.start() } },
+            factory = { ctx ->
+                ImageView(ctx).apply {
+                    setImageResource(
+                        if (ValueAnimator.areAnimatorsEnabled()) R.drawable.notestaking_loader
+                        else R.drawable.ic_brand_mark
+                    )
+                }
+            },
             modifier = Modifier.size(side),
+            onReset = null,
+            onRelease = { view -> (view.drawable as? AnimatedVectorDrawable)?.stop() },
+            update = { view ->
+                (view.drawable as? AnimatedVectorDrawable)?.let { if (!it.isRunning) it.start() }
+            },
         )
     }
 }

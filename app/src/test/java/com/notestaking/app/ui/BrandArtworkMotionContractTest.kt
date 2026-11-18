@@ -98,22 +98,36 @@ class BrandArtworkMotionContractTest {
     }
 
     @Test
-    fun loaderUsesBrandStageWithFiniteFramesButNeedsReducedMotionReview() {
+    fun loaderDrawsContinuousBrandInkAndHonorsReducedMotion() {
         val loader = resource("drawable/notestaking_loader.xml")
-        val frameRefs = Regex("@drawable/notestaking_frame_\\d{2}").findAll(loader).map { it.value }.toList()
-        assertEquals(24, frameRefs.size)
-        assertEquals(24, frameRefs.distinct().size)
-        assertEquals(24, Regex("android:duration=\"67\"").findAll(loader).count())
-        assertTrue(loader.contains("android:oneshot=\"false\""))
+        assertTrue(loader.contains("<animated-vector"))
+        assertTrue(loader.contains("android:drawable=\"@drawable/notestaking_loader_vector\""))
+        assertTrue(loader.contains("android:name=\"inkTrail\""))
+        assertTrue(loader.contains("android:animation=\"@animator/notestaking_ink_draw\""))
+        assertFalse(loader.contains("notestaking_frame_"))
+        val vector = resource("drawable/notestaking_loader_vector.xml")
+        assertTrue(vector.contains("android:name=\"inkTrail\""))
+        assertTrue(vector.contains("android:trimPathEnd=\"0\""))
+        assertTrue(vector.contains("M33,24 H63 L79,40 V79 Q79,84 74,84 H33 Q29,84 29,80 V28 Q29,24 33,24 Z"))
+        assertTrue(vector.contains("M39,71 C44,62 50,78 57,70 C63,62 67,60 72,63"))
+        val animator = resource("animator/notestaking_ink_draw.xml")
+        assertTrue(animator.contains("android:propertyName=\"trimPathEnd\""))
+        assertTrue(animator.contains("android:repeatCount=\"infinite\""))
+        assertTrue(animator.contains("android:repeatMode=\"reverse\""))
+        assertTrue(animator.contains("android:interpolator=\"@android:interpolator/accelerate_decelerate\""))
+        assertTrue(source("tools/branding/generate_assets.py").contains("notestaking_loader_vector.xml"))
         val composable = ui("ui/NotesTakingLoader.kt")
         assertTrue(composable.contains("R.drawable.notestaking_loader"))
         assertTrue(composable.contains("colorResource(R.color.loader_bg)"))
         assertTrue(composable.contains("if (!it.isRunning) it.start()"))
+        assertTrue(composable.contains("ValueAnimator.areAnimatorsEnabled()"))
+        assertTrue(composable.contains("R.drawable.ic_brand_mark"))
+        assertTrue(composable.contains("onRelease = { view -> (view.drawable as? AnimatedVectorDrawable)?.stop() }"))
         assertTrue(composable.contains("minOf(shortEdge * 0.55f, 288f).dp"))
         val startup = ui("MainActivity.kt")
         assertTrue(startup.contains("com.notestaking.app.ui.NotesTakingLoader()"))
         assertTrue(startup.contains("visible = !ready"))
-        // The looping drawable has no explicit system reduced-motion check; flag, do not simulate.
+        // Rendering cadence and the reduced-motion fallback still need real-device acceptance.
     }
 
     @Test
