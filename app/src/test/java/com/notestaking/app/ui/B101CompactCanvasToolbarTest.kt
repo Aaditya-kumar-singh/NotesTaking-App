@@ -62,6 +62,11 @@ class B101CompactCanvasToolbarTest {
         val renderer = code.substringAfter("internal fun B101FloatingCanvasQuickTools(")
             .substringBefore("/** Preserve both failure messages")
         assertTrue(renderer.contains("B101CanvasQuickTools(editor, icons, columns, expand = {}, showMore = false)"))
+        val dockFile = listOf(File("src/main/java/com/notestaking/app/ui/FavoriteToolDock.kt"),
+            File("app/src/main/java/com/notestaking/app/ui/FavoriteToolDock.kt")).firstOrNull { it.isFile }
+        val dock = requireNotNull(dockFile).readText()
+        assertTrue(dock.contains("if (host is InfiniteEditor)"))
+        assertTrue(dock.contains("B101FloatingCanvasQuickTools(host, LocalFloatingCanvasColumns.current)"))
         val floating = "src/main/java/com/notestaking/app/ui/FloatingToolbar.kt"
         val floatingFile = listOf(File(floating), File("app/$floating")).firstOrNull { it.isFile }
         val layout = requireNotNull(floatingFile).readText()

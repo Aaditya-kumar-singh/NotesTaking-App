@@ -35,6 +35,10 @@ internal fun FavoriteToolDock(
     maxVisible: Int,
     onSelect: (Tool) -> Unit,
 ) {
+    if (host is InfiniteEditor) {
+        B101FloatingCanvasQuickTools(host, LocalFloatingCanvasColumns.current)
+        return
+    }
     var settingsFor by remember { mutableStateOf<Tool?>(null) }
     val pdfEditor = (host as? Editor)?.takeIf { it.hasPdf }
     // Reserve one slot for Read/Annotate so a narrow floating dock never clips its grip.
