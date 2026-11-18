@@ -728,7 +728,7 @@ private fun EditorScreen(
     /** Open the "Save as" picker for [target], remembering which pane its result belongs to. */
     fun launchSaveAs(target: Editor) {
         savePane = target
-        if (target.canvasOpen) createCanvasLauncher.launch("${target.visibleDocumentTitle}.xcanvas")
+        if (target.canvasOpen) createCanvasLauncher.launch("${target.visibleDocumentTitle}${com.notestaking.app.core.util.DocumentKind.CANVAS.suffix}")
         else createLauncher.launch("${target.visibleDocumentTitle}.xnote")
     }
 

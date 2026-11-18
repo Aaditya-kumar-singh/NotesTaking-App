@@ -632,8 +632,8 @@ fun PreferencesPane(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Chip("xnote", selected = !canvasTab) { showTab(false) }
-                Chip("xcanvas", selected = canvasTab) { showTab(true) }
+                Chip(stringResource(R.string.toolbar_tab_notes), selected = !canvasTab) { showTab(false) }
+                Chip(stringResource(R.string.toolbar_tab_canvas), selected = canvasTab) { showTab(true) }
                 Spacer(Modifier.weight(1f))
                 TextButton(
                     onClick = {
