@@ -29,7 +29,7 @@ class ToolbarDrawerKeyboardContractTest {
         val frame = source("ToolbarFrame.kt")
         val drawer = between(frame, "internal fun ToolbarFrame(", "val surface =")
         assertTrue(drawer.contains("rememberSaveable { mutableStateOf(false) }"))
-        val backHandler = between(drawer, "BackHandler(enabled =", "val availableAxisPx")
+        val backHandler = drawer.lineSequence().first { it.contains("BackHandler(enabled =") }
         assertTrue(backHandler.contains("!look.floating"))
         assertTrue(backHandler.contains("collapsed != null || compactControls != null"))
         assertTrue(backHandler.contains("&& drawerOpen"))
