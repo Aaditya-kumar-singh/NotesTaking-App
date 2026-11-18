@@ -230,6 +230,11 @@ class InfiniteDocumentTest {
         assertEquals("Untitled", InfiniteDocument().title)
         assertEquals("plan", InfiniteDocument(path = "/x/plan.xcanvas").title)
         assertEquals("real", InfiniteDocument(path = "/x/plan.xcanvas", displayName = "real.xcanvas").title)
+        assertEquals("plan", InfiniteDocument(path = "/x/plan.ntcanvas").title)
+        assertEquals("real", InfiniteDocument(path = "/x/plan.ntcanvas", displayName = "real.ntcanvas").title)
+        assertEquals("OLD", InfiniteDocument(path = "/x/OLD.XCANVAS").title)
+        assertEquals("NEW", InfiniteDocument(path = "/x/NEW.NTCANVAS").title)
+        assertEquals("legacy", InfiniteDocument(path = "/x/plan.ntcanvas", displayName = "legacy.xcanvas").title)
     }
 
     @Test fun theCanvasHandlesFarFlungContent() {

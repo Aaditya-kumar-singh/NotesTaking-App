@@ -362,6 +362,14 @@ Read [the current three-chat protocol](../../github/THREE_GPT_APK_WORKFLOW.md), 
 - **Cross-lane names deferred:** `FlowInput` is called by A-owned `ui/Editor.kt`, and C-owned canvas/core declarations used by editor, export, storage and UI lanes remain public API. A/B or coordinator-owned usage, persisted schemas and native resource identifiers require coordinated review before any broad rename. No JNI, vendor code, resource, or storage namespace edits.
 - Audit method: searched C-owned `core/**`, `canvas/**` and related test sources for historic brand names, compatibility markers and unclear comments; inspected exact definitions and callers before selecting the bounded change. This is a targeted naming audit, not proof that every internal identifier is obsolete. Kotlin/JUnit, Android CI, device and behavior verification remain unrun.
 
+## MIG-01-C — .ntcanvas default with .xcanvas legacy recognition (Issue #33)
+
+- Issue-only authorization: #6972601370, registered Chat C `C-20261117-2335-gpt6-geometry`, existing clean branch and base `b17f547051df42496293fc52b3a049f14baf4bc4`. This is not a new A-Z task claim.
+- Changed `core/util/DocumentKind.kt`: `CANVAS.extension` and `suffix` now use `ntcanvas` for new filenames, with case-insensitive `xcanvas` alias recognized by `ofName`, `isDocument`, `stripSuffix`, and `withSuffix`. Existing canvas names retain their exact suffix/casing, avoiding `Board.xcanvas.ntcanvas`; `NOTE("xnote")` unchanged. `withSuffix` still appends a suffix when asked to name a *different* document kind; A's rename handling owns preserving old formats and deciding explicit conversion.
+- Added `core/util/DocumentKindTest.kt` for new, old and uppercase filename recognition, idempotent naming, note compatibility, unknown extensions. Extended `core/infinite/InfiniteDocumentTest.kt` title cases for legacy/new/case variants; `InfiniteDocument.title` already uses `Paths.stem`, so no production change needed.
+- Critical dependency: C's existing `tools/ci/check_project.py:75-76` requires the exact old source string `CANVAS("xcanvas")` and reports `ERROR: Legacy canvas format was modified` when the new canonical suffix is applied. This is an expected stale assertion, *not* evidence that the `CanvasCodec.FORMAT` binary/JSON identity changed. The coordinator alone may revise the checker to require `CANVAS("ntcanvas", "xcanvas")`, separately assert that `CanvasCodec.FORMAT == "xcanvas"`, and run exact-SHA CI. Chat C did not modify the protected checker.
+- No changes to `CanvasCodec.FORMAT`, `canvas.xcanvas` recovery storage slot, native JSON keys, shared Android UI/resources, A-owned renames, or actual user files. Kotlin/JUnit, device reopening, legacy SAF rename/collision tests and GitHub CI remain unrun. Privacy, ownership and whitespace checks pass; the structural checker blocks source-level green status until coordinator integration.
+
 ## Handoff template
 
 - Task ID / batch / parent SHA:
