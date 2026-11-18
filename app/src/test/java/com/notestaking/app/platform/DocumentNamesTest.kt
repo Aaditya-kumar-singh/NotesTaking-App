@@ -12,7 +12,7 @@ class DocumentNamesTest {
         assertEquals("Study notes.xnote", DocumentNames.unique(" .Study: notes?.xnote ", DocumentKind.NOTE, emptySet()))
         assertEquals("पढ़ाई नोट्स.xnote", DocumentNames.unique("पढ़ाई नोट्स", DocumentKind.NOTE, emptySet()))
         assertEquals("untitled.xnote", DocumentNames.unique(" /\\:*?<>| ", DocumentKind.NOTE, emptySet()))
-        assertEquals("Draft.xcanvas", DocumentNames.unique("Draft.XCANVAS", DocumentKind.CANVAS, emptySet()))
+        assertEquals("Draft${DocumentKind.CANVAS.suffix}", DocumentNames.unique("Draft.XCANVAS", DocumentKind.CANVAS, emptySet()))
         assertEquals("abc.xnote", DocumentNames.unique("ab\u007fc", DocumentKind.NOTE, emptySet()))
     }
 
@@ -32,8 +32,29 @@ class DocumentNamesTest {
         val chosen = DocumentNames.unique("notes.XNOTE", DocumentKind.NOTE, existing)
         assertEquals("notes_3.xnote", chosen)
         assertFalse(existing.any { it.equals(chosen, ignoreCase = true) })
-        assertEquals("notes.xcanvas", DocumentNames.unique("notes", DocumentKind.CANVAS, existing))
+        assertEquals("notes${DocumentKind.CANVAS.suffix}", DocumentNames.unique("notes", DocumentKind.CANVAS, existing))
         assertEquals("untitled_2.xnote", DocumentNames.unique("", DocumentKind.NOTE, listOf("untitled.xnote", "untitled_1.xnote")))
+    }
+
+    @Test fun canvasAliasesShareVisibleTitlesWithoutOverwritingLegacyFiles() {
+        val existing = listOf("Board.xcanvas", "board_1.NTCANVAS", "Other.xnote")
+        assertEquals("Board_2${DocumentKind.CANVAS.suffix}",
+            DocumentNames.unique("Board.ntcanvas", DocumentKind.CANVAS, existing))
+        assertEquals("BOARD_2${DocumentKind.CANVAS.suffix}",
+            DocumentNames.unique("BOARD.XCANVAS", DocumentKind.CANVAS, existing))
+        assertEquals("Other${DocumentKind.CANVAS.suffix}",
+            DocumentNames.unique("Other", DocumentKind.CANVAS, existing))
+        assertEquals("Board_2${DocumentKind.CANVAS.suffix}",
+            DocumentNames.unique("Board.xcanvas.ntcanvas", DocumentKind.CANVAS, existing))
+        assertTrue(DocumentNames.sameCanvasTitle("Board.XCANVAS", "board.ntcanvas"))
+        assertFalse(DocumentNames.sameCanvasTitle("Board.xnote", "Board.ntcanvas"))
+    }
+
+    @Test fun ordinaryCanvasRenameKeepsTheOriginalExtension() {
+        assertEquals("New Board.xcanvas", DocumentNames.canvasRename("Board.xcanvas", "New Board.ntcanvas"))
+        assertEquals("New Board.XCANVAS", DocumentNames.canvasRename("Board.XCANVAS", "New Board"))
+        assertEquals("New Board.ntcanvas", DocumentNames.canvasRename("Board.ntcanvas", "New Board.xcanvas"))
+        assertEquals("Study.xnote", DocumentNames.canvasRename("Old.xnote", "Study.xnote"))
     }
 
     @Test fun filenamesStayUnderProviderByteLimitEvenWithLongUnicodeAndSuffixes() {

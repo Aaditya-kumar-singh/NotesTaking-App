@@ -32,16 +32,48 @@ internal object DocumentNames {
         return if (safe.substringBefore('.').uppercase() in reserved) "_$safe" else safe
     }
 
-    fun unique(raw: String, kind: DocumentKind, taken: Collection<String>): String {
-        val base = stem(raw)
-        val existing = taken.mapTo(HashSet()) { it.lowercase() }
-        val extension = kind.suffix
-        var name = "$base$extension"
-        var index = 1
-        while (name.lowercase() in existing) {
-            name = "${base}_${index++}$extension"
+    private val canvasSuffixes = listOf(".xcanvas", ".ntcanvas")
+
+    private fun canvasStem(name: String): String? {
+        var base = name
+        var found = false
+        while (true) {
+            val suffix = canvasSuffixes.firstOrNull { base.endsWith(it, ignoreCase = true) }
+                ?: return base.takeIf { found }
+            base = base.dropLast(suffix.length)
+            found = true
         }
-        return name
+    }
+
+    fun unique(raw: String, kind: DocumentKind, taken: Collection<String>): String {
+        val base = stem(if (kind == DocumentKind.CANVAS) canvasStem(raw.trim()) ?: raw else raw)
+        val existing = if (kind == DocumentKind.CANVAS) {
+            taken.mapNotNullTo(HashSet()) { canvasStem(it)?.lowercase() }
+        } else {
+            taken.mapTo(HashSet()) { it.lowercase() }
+        }
+        val extension = kind.suffix
+        var index = 1
+        var candidate = base
+        while (if (kind == DocumentKind.CANVAS) candidate.lowercase() in existing
+            else "$candidate$extension".lowercase() in existing) {
+            candidate = "${base}_${index++}"
+        }
+        return "$candidate$extension"
+    }
+
+    /** Keep a legacy canvas extension on ordinary rename, even when the UI proposes the new suffix. */
+    fun canvasRename(original: String, requested: String): String {
+        val suffix = canvasSuffixes.firstOrNull { original.endsWith(it, ignoreCase = true) } ?: return requested
+        val base = canvasStem(requested) ?: requested
+        return "$base${original.takeLast(suffix.length)}"
+    }
+
+    /** Canvas aliases share one visible name when file extensions are hidden. */
+    fun sameCanvasTitle(first: String, second: String): Boolean {
+        val a = canvasStem(first) ?: return false
+        val b = canvasStem(second) ?: return false
+        return a.equals(b, ignoreCase = true)
     }
 
     fun validRename(name: String): Boolean =

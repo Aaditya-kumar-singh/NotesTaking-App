@@ -4946,28 +4946,37 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         if (!com.notestaking.app.platform.DocumentNames.validRename(newName)) return false
         val root = browseRoot
         val parent = parentDocIdOf(docUri)
-        if (root != null && parent != null && browseChildren(root, parent).any {
-            it.name.equals(newName, ignoreCase = true) && documentKey(it.documentUri) != documentKey(docUri)
+        val siblings = if (root != null && parent != null) browseChildren(root, parent) else emptyList()
+        val current = siblings.firstOrNull { documentKey(it.documentUri) == documentKey(docUri) }
+        val originalName = current?.takeUnless { it.isDir }?.name
+            ?: state.document.takeIf { it.path == docUri }?.displayName
+        val finalName = if (originalName != null)
+            com.notestaking.app.platform.DocumentNames.canvasRename(originalName, newName) else newName
+        if (!com.notestaking.app.platform.DocumentNames.validRename(finalName)) return false
+        if (siblings.any {
+            documentKey(it.documentUri) != documentKey(docUri) &&
+                (it.name.equals(finalName, ignoreCase = true) ||
+                    com.notestaking.app.platform.DocumentNames.sameCanvasTitle(it.name, finalName))
         }) return false
         val result = runCatching {
-            android.provider.DocumentsContract.renameDocument(appContext.contentResolver, android.net.Uri.parse(docUri), newName)
+            android.provider.DocumentsContract.renameDocument(appContext.contentResolver, android.net.Uri.parse(docUri), finalName)
         }
         val resultUri = result.getOrNull()?.toString() ?: return false
         if (state.document.path == docUri) {
             state.document.path = resultUri
-            state.document.displayName = newName
+            state.document.displayName = finalName
             if (autosaveUri == docUri) autosaveUri = resultUri
             title = state.document.title
         }
         val canvas = infiniteOrNull?.document?.takeIf { canvasOpen && it.path == docUri }
         canvas?.let {
             it.path = resultUri
-            it.displayName = newName
+            it.displayName = finalName
             if (canvasAutosaveUri == docUri) canvasAutosaveUri = resultUri
             invalidateThumb(resultUri)
             refreshContent()
         }
-        onDocumentMoved(docUri, resultUri, newName)
+        onDocumentMoved(docUri, resultUri, finalName)
         if (canvas != null) rememberStamp(resultUri)
         return true
     }
@@ -6426,7 +6435,15 @@ class Editor(context: Context, val pane: Pane = Pane.PRIMARY) : ToolPopupHost, S
         val dest = item.path.fold<String, String?>(rootId) { at, name -> at?.let { findChildDocId(tree, it, name, dir = true) } } ?: rootId
         var uri = android.net.Uri.parse(item.entry.documentUri)
         var name = item.entry.name
-        val taken = childRows(tree, dest).mapTo(HashSet()) { it.second.lowercase() }
+        val siblings = childRows(tree, dest).map { it.second }
+        val taken = siblings.mapTo(HashSet()) { it.lowercase() }
+        if (!item.entry.isDir && (name.endsWith(".xcanvas", true) || name.endsWith(".ntcanvas", true))) {
+            for (sibling in siblings) {
+                if (sibling.endsWith(".xcanvas", true) || sibling.endsWith(".ntcanvas", true)) {
+                    taken += com.notestaking.app.platform.DocumentNames.canvasRename(name, sibling).lowercase()
+                }
+            }
+        }
         if (name.lowercase() in taken) {
             name = freeName(name, taken, splitExtension = !item.entry.isDir)
             uri = android.provider.DocumentsContract.renameDocument(resolver, uri, name) ?: return@runCatching false
