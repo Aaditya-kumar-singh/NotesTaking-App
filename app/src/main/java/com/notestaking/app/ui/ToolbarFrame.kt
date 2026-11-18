@@ -97,6 +97,22 @@ internal fun toolbarScrollsTrailing(
     return floating || availableAxisDp < reserved + (if (pinnedButtons > 0) 1f else 0f)
 }
 
+/** Fit fixed quick actions beside pinned warnings without needing horizontal scrolling. */
+internal fun compactCanvasColumns(
+    availableDp: Float,
+    buttonDp: Float,
+    pinnedButtons: Int,
+    vertical: Boolean = false,
+): Int {
+    if (vertical) return 1
+    val usable = availableDp - pinnedButtons.coerceAtLeast(0) * (buttonDp + 8f) - 8f
+    return when {
+        usable >= 3 * (buttonDp + 8f) -> 3
+        usable >= 2 * (buttonDp + 8f) -> 2
+        else -> 1
+    }
+}
+
 /** Selecting a different tool dismisses the palette; reselecting the same one opens its settings. */
 internal fun drawingDrawerDismissOnSelection(previous: Any?, selected: Any?): Boolean = previous != selected
 
@@ -172,6 +188,7 @@ internal fun ToolbarFrame(
     pinned: (@Composable () -> Unit)? = null,
     pinnedButtons: Int = 1,
     collapsed: (@Composable (expand: () -> Unit) -> Unit)? = null,
+    compactControls: (@Composable (columns: Int, expand: () -> Unit) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val look = LocalToolbarLook.current
@@ -187,10 +204,17 @@ internal fun ToolbarFrame(
             previousArmed = armed
         }
     }
-    BackHandler(enabled = !look.floating && collapsed != null && drawerOpen) { drawerOpen = false }
+    BackHandler(enabled = !look.floating && (collapsed != null || compactControls != null) && drawerOpen) { drawerOpen = false }
+    var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
+    val availableAxisDp = with(LocalDensity.current) { availableAxisPx.toDp().value }
+    val quickColumns = compactCanvasColumns(availableAxisDp, bar.button.value, pinnedButtons, look.position.vertical)
+    val quickRows = (6 + quickColumns - 1) / quickColumns
+    val quickVisible = compactControls != null && !drawerOpen && !look.floating
     val drawingStrip: @Composable () -> Unit = {
         if (collapsed == null || look.floating) {
             content()
+        } else if (quickVisible) {
+            compactControls?.invoke(quickColumns) { drawerOpen = true }
         } else if (drawerOpen) {
             ToolbarIcon(NotesTakingIcons.chevronDown, stringResource(R.string.toolbar_collapse_to_favorites)) { drawerOpen = false }
             content()
@@ -199,13 +223,11 @@ internal fun ToolbarFrame(
             collapsed { drawerOpen = true }
         }
     }
-    var availableAxisPx by remember(look.position) { mutableIntStateOf(0) }
     var paneBounds by remember(look.position, look.floating) { mutableStateOf<IntRect?>(null) }
     // The docked strip's layout parent spans its owning editor pane, even for side rails.
     val measurePane = if (look.floating) Modifier else Modifier.onGloballyPositioned { c ->
         c.parentCoordinates?.tooltipPaneRect()?.let { if (it != paneBounds) paneBounds = it }
     }
-    val availableAxisDp = with(LocalDensity.current) { availableAxisPx.toDp().value }
     val scrollTrailing = toolbarScrollsTrailing(look.floating, availableAxisDp, bar.button.value, pinnedButtons)
     val palette = LocalPalette.current
     val shape = MaterialTheme.shapes.extraLarge
@@ -263,14 +285,14 @@ internal fun ToolbarFrame(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     drawingStrip()
-                    if (scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
+                    if (scrollTrailing && (drawerOpen || (collapsed == null && compactControls == null) || look.floating)) trailing?.invoke()
                 }
-                if (!scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
+                if (!scrollTrailing && (drawerOpen || (collapsed == null && compactControls == null) || look.floating)) trailing?.invoke()
                 pinned?.invoke()
             }
         } else {
             Row(
-                stretch.height(bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.width }.then(measurePane),
+                stretch.height(if (quickVisible) bar.button * quickRows + 8.dp else bar.thickness).then(surface).onSizeChanged { availableAxisPx = it.width }.then(measurePane),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
@@ -282,9 +304,9 @@ internal fun ToolbarFrame(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     drawingStrip()
-                    if (scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
+                    if (scrollTrailing && (drawerOpen || (collapsed == null && compactControls == null) || look.floating)) trailing?.invoke()
                 }
-                if (!scrollTrailing && (drawerOpen || collapsed == null || look.floating)) trailing?.invoke()
+                if (!scrollTrailing && (drawerOpen || (collapsed == null && compactControls == null) || look.floating)) trailing?.invoke()
                 pinned?.invoke()
             }
         }
