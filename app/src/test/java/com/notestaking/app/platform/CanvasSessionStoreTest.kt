@@ -150,6 +150,61 @@ class CanvasSessionStoreTest {
         }
     }
 
+    @Test fun legacyRecoverySlotSurvivesCanvasAliasRenameAndFailedMetadataUpdate() {
+        val dir = Files.createTempDirectory("notestaking-canvas-alias-recovery").toFile()
+        val images = Files.createTempDirectory("notestaking-canvas-alias-images").toFile()
+        try {
+            val store = CanvasSessionStore(dir, codec(), images)
+            val legacy = InfiniteDocument(dpi = 144).apply {
+                path = "content://test.documents/tree/root/document/root%2FBoard.xcanvas"
+                displayName = "Board.xcanvas"
+                dirty = true
+            }
+            assertTrue(store.save(legacy, writeDocument = true))
+            val slot = dir.resolve("canvas.xcanvas")
+            val originalBytes = slot.readBytes()
+            val sidecar = dir.resolve("canvas-session.json")
+            val originalSidecar = sidecar.readBytes()
+
+            // The user-visible filename changes, but the recovery archive keeps its old slot.
+            val renamed = InfiniteDocument(dpi = 300).apply {
+                path = "content://test.documents/tree/root/document/root%2FBoard.ntcanvas"
+                displayName = "Board.ntcanvas"
+                dirty = true
+            }
+            assertTrue(store.save(renamed, writeDocument = false))
+            assertArrayEquals(originalBytes, slot.readBytes())
+            assertFalse(dir.resolve("canvas.ntcanvas").exists())
+            val afterRename = store.load()!!
+            assertEquals(144, afterRename.dpi) // Metadata-only saves do not replace ink or pages.
+            assertEquals(renamed.path, afterRename.path)
+            assertEquals("Board.ntcanvas", afterRename.displayName)
+
+            // A rejected update must preserve the last complete archive and metadata.
+            val renamedSidecar = sidecar.readBytes()
+            assertTrue(sidecar.delete())
+            assertTrue(sidecar.mkdir())
+            val rejected = InfiniteDocument().apply {
+                path = "content://test.documents/tree/root/document/root%2FAnother.ntcanvas"
+                displayName = "Another.ntcanvas"
+            }
+            assertFalse(store.save(rejected, writeDocument = false))
+            assertArrayEquals(originalBytes, slot.readBytes())
+            assertTrue(sidecar.isDirectory)
+            assertTrue(sidecar.delete())
+            sidecar.writeBytes(renamedSidecar)
+            assertEquals(renamed.path, store.load()!!.path)
+            assertTrue(store.save(rejected, writeDocument = false))
+            assertEquals(rejected.path, store.load()!!.path)
+            assertArrayEquals(originalBytes, slot.readBytes())
+            assertTrue(dir.listFiles()!!.none { it.name.endsWith(".staged") })
+            assertFalse(originalSidecar.contentEquals(renamedSidecar))
+        } finally {
+            dir.deleteRecursively()
+            images.deleteRecursively()
+        }
+    }
+
     @Test fun reportsFailureWithoutRemovingBlockedCanvasSlot() {
         val sessionDir = Files.createTempDirectory("notestaking-canvas-block").toFile()
         val imageDir = Files.createTempDirectory("notestaking-canvas-images").toFile()
