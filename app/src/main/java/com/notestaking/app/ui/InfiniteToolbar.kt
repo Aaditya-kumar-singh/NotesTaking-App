@@ -288,6 +288,12 @@ fun InfiniteToolbar(
     }
 }
 
+/** The size control applies only to ink or erasing, not selection and navigation tools. */
+internal fun canvasSizeTool(tool: Tool): Tool? = when {
+    tool == Tool.ERASER || tool.isStroke -> tool
+    else -> null
+}
+
 /** Six fixed actions use the editor's live tool configuration; More opens the B100 toolbar. */
 @Composable
 private fun B101CanvasQuickTools(
@@ -303,8 +309,9 @@ private fun B101CanvasQuickTools(
     var lastStroke by remember(editor) { mutableStateOf(Tool.PEN) }
     LaunchedEffect(editor.tool) { if (editor.tool.isStroke) lastStroke = editor.tool }
     val stroke = editor.tool.takeIf { it.isStroke } ?: lastStroke
-    val widthTool = if (editor.tool == Tool.ERASER) Tool.ERASER else stroke
-    val currentWidth = editor.toolConfig(widthTool).baseWidth
+    val widthTool = canvasSizeTool(editor.tool)
+    val currentWidth = widthTool?.let { editor.toolConfig(it).baseWidth }
+    LaunchedEffect(widthTool) { widthOpen = false }
     val penTypes = listOf(Tool.PEN, Tool.DASHED, Tool.CALLIGRAPHY, Tool.SPEED, Tool.TAPER, Tool.HIGHLIGHTER)
     val actions: List<@Composable () -> Unit> = listOf(
         {
@@ -357,14 +364,16 @@ private fun B101CanvasQuickTools(
             Box {
                 ToolbarIcon(
                     NotesTakingIcons.sliders,
-                    "${stringResource(R.string.caption_size)}: ${"%.1f".format(currentWidth)}",
+                    if (currentWidth != null) "${stringResource(R.string.caption_size)}: ${"%.1f".format(currentWidth)}"
+                    else stringResource(R.string.caption_size),
+                    enabled = widthTool != null,
                 ) { widthOpen = true }
                 Text(
-                    "%.1f".format(currentWidth),
+                    currentWidth?.let { "%.1f".format(it) } ?: "",
                     modifier = Modifier.align(Alignment.BottomCenter).clearAndSetSemantics {},
                     style = MaterialTheme.typography.labelSmall,
                 )
-                if (widthOpen) {
+                if (widthOpen && widthTool != null) {
                     if (widthTool == Tool.ERASER) EraserConfigPopup(editor) { widthOpen = false }
                     else ToolConfigPopup(editor, widthTool) { widthOpen = false }
                 }

@@ -1,6 +1,8 @@
 package com.notestaking.app.ui
 
 import com.notestaking.app.settings.ToolbarSize
+import com.notestaking.app.core.tools.Tool
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,6 +27,15 @@ class B101CompactCanvasToolbarTest {
         for (size in ToolbarSize.entries) assertTrue(barMetrics(size).button.value >= 48f)
     }
 
+    @Test fun sizeControlNeverMislabelsSelectionOrNavigationAsPenWidth() {
+        for (tool in listOf(Tool.PEN, Tool.DASHED, Tool.CALLIGRAPHY, Tool.HIGHLIGHTER, Tool.ERASER)) {
+            assertEquals(tool, canvasSizeTool(tool))
+        }
+        for (tool in listOf(Tool.SELECT, Tool.LASSO, Tool.PAN, Tool.SHAPE, Tool.TAPE)) {
+            assertNull(canvasSizeTool(tool))
+        }
+    }
+
     @Test fun existingPenEraserUndoAndMoreActionsAreWiredToRealEditor() {
         val relative = "src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt"
         val file = listOf(File(relative), File("app/$relative")).firstOrNull { it.isFile }
@@ -35,7 +46,7 @@ class B101CompactCanvasToolbarTest {
         assertTrue(quick.contains("editor.armTool(type)"))
         assertTrue(quick.contains("ToolConfigPopup(editor, widthTool)"))
         assertTrue(quick.contains("EraserConfigPopup(editor)"))
-        assertTrue(quick.contains("editor.toolConfig(widthTool).baseWidth"))
+        assertTrue(quick.contains("widthTool?.let { editor.toolConfig(it).baseWidth }"))
         assertTrue(quick.contains("editor.undo()"))
         assertTrue(quick.contains("onClick = expand"))
     }
