@@ -102,7 +102,7 @@ internal class GradientRamp private constructor(
         private fun radial(g: VectorPaint.Radial): GradientRamp? {
             val stops = normalize(g.stops) ?: return null
             if (g.r <= 1e-12) return GradientRamp(stops, SpreadMethod.PAD) { 1.0 }
-            // The spec pulls a focus outside the circle back onto it; just inside keeps it solvable.
+            // Clamp an out-of-bounds radial focus inside the circle to keep the gradient equation solvable.
             var fx = g.fx
             var fy = g.fy
             val d = hypot(fx - g.cx, fy - g.cy)

@@ -121,11 +121,9 @@ class PlacedLine(
             }
         }
         val offset = startChar + best
-        // A drawn formula carries its whole width on one character, so its interior
-        // boundaries all sit at its right edge and a tap on its left half snaps to
-        // the offset in front of it. That offset is outside the formula, which
-        // would make tapping an equation fail to open it, so a tap that actually
-        // landed within the box is nudged inside.
+        // Internal character boundaries of a formula share its right edge. A tap
+        // in its left half may resolve to the preceding offset; move that tap
+        // inside the formula so the user can open it.
         if (x > xs[best] && offset in mathStarts) return offset + 1
         return offset
     }

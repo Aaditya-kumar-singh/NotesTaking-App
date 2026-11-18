@@ -7,13 +7,12 @@ import java.util.Collections
 import java.util.IdentityHashMap
 
 /**
- * Keeps connectors joined to what a gesture moves. Built as the gesture starts; every frame puts
- * each connector back where the gesture began and places it again. A connector whose glued ends are
- * all on what moves rides along whole, as if it were selected. Any other glued to what moves keeps
- * its route and only its moved ends go along, the route mended where an end now leaves the wrong way
- * ([com.notestaking.app.core.shapes.Elbow.fitStart]), with no thought for what it crosses. A moving connector
- * glued to something that stays keeps that end where it is and bends. Connectors glued to connectors
- * follow in turn, so T-junctions hold.
+ * Keeps connectors attached while a gesture moves their targets. Each frame restores their
+ * starting geometry before applying the current gesture transform. A connector attached only
+ * to moving items travels with them; a connector joining moving and stationary items bends
+ * to keep both endpoints attached. [com.notestaking.app.core.shapes.Elbow.fitStart] adjusts
+ * orthogonal routes without checking obstacles. Connectors attached to other connectors
+ * update in order, preserving T-junctions.
  */
 class GlueFollow private constructor(
     private val moving: Set<CanvasItem>,
@@ -85,15 +84,15 @@ class GlueFollow private constructor(
 
     /** Put [c]'s ends back on their targets as they now are, and mend its route where an end moved. */
     private fun reattach(c: ConnectorItem, role: Role, moved: Affine, shown: (CanvasItem) -> Affine?) {
-        val s = place(c.start, role, moved, shown)
-        val e = place(c.end, role, moved, shown)
-        if (s == null && e == null) return
-        if (s != null) c.start = s.end
-        if (e != null) c.end = e.end
+        val startPlacement = place(c.start, role, moved, shown)
+        val endPlacement = place(c.end, role, moved, shown)
+        if (startPlacement == null && endPlacement == null) return
+        if (startPlacement != null) c.start = startPlacement.end
+        if (endPlacement != null) c.end = endPlacement.end
         if (!c.routing.orthogonal) return
         var route = c.elbow
-        if (s != null) route = route.fitStart(c.start.at, c.end.at, s.ways, c.clearance, s.box)
-        if (e != null) route = route.fitEnd(c.start.at, c.end.at, e.ways, c.clearance, e.box)
+        if (startPlacement != null) route = route.fitStart(c.start.at, c.end.at, startPlacement.ways, c.clearance, startPlacement.box)
+        if (endPlacement != null) route = route.fitEnd(c.start.at, c.end.at, endPlacement.ways, c.clearance, endPlacement.box)
         c.elbow = route
     }
 
@@ -114,7 +113,7 @@ class GlueFollow private constructor(
         val points = Glue.points(t)
         fun drawnAt(i: Int) = points[i].at.let { m?.apply(it) ?: it }
         var index = end.point
-        // Moved whole, the point is wherever its old place went; a target that framed itself anew numbers it otherwise.
+        // A rigid transform can reorder attachment points; use the point nearest the transformed endpoint.
         if (rigid && carried && points.isNotEmpty()) {
             val want = moved.apply(end.at)
             if (index !in points.indices || drawnAt(index).distanceTo(want) > SAME_SPOT) {
