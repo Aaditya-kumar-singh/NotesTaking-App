@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +30,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.notestaking.app.R
 import com.notestaking.app.core.tools.Tool
@@ -371,7 +373,10 @@ internal fun B101CanvasQuickTools(
                 ) { widthOpen = true }
                 Text(
                     currentWidth?.let { "%.1f".format(it) } ?: "",
-                    modifier = Modifier.align(Alignment.BottomCenter).clearAndSetSemantics {},
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .width(LocalBar.current.button).clearAndSetSemantics {},
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelSmall,
                 )
                 if (widthOpen && widthTool != null) {

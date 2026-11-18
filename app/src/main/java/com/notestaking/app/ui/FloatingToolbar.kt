@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -245,18 +247,32 @@ internal fun MovableFloatingToolbar(
                     .background(palette.panel.toComposeColor())
                     .border(1.dp, palette.border.toComposeColor(), shape)
                 CompositionLocalProvider(LocalBar provides barMetrics(look.size).copy(vertical = look.position.vertical)) {
-                    val content: @Composable () -> Unit = {
+                    val favoriteActions: @Composable () -> Unit = {
                         if (showFavorites || narrow) {
                             CompositionLocalProvider(LocalFloatingCanvasColumns provides canvasColumns) {
                                 favorites(if (showFavorites) count else 0)
                             }
                         }
+                    }
+                    val moreButton: @Composable () -> Unit = {
                         ToolbarIcon(NotesTakingIcons.chevronUp, stringResource(R.string.toolbar_expand_all_tools)) {
                             expanded = true
                         }
                     }
-                    if (look.position.vertical) Column(surface) { content() }
-                    else Row(surface, verticalAlignment = Alignment.CenterVertically) { content() }
+                    // Scroll tools in short panes; keep the More button fixed and reachable.
+                    val reservedHeight = if (narrow) 72.dp else 16.dp
+                    val maxBarHeight = (paneHeight - reservedHeight).coerceAtLeast(48.dp)
+                    if (look.position.vertical) {
+                        Column(surface.heightIn(max = maxBarHeight), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { favoriteActions() }
+                            moreButton()
+                        }
+                    } else {
+                        Row(surface.heightIn(max = maxBarHeight), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { favoriteActions() }
+                            moreButton()
+                        }
+                    }
                 }
             }
         }

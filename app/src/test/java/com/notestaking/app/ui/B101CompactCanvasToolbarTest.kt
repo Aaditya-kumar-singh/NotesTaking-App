@@ -49,6 +49,10 @@ class B101CompactCanvasToolbarTest {
         assertTrue(floatingGripStacks(240f, false))
         assertTrue(!floatingGripStacks(320f, false))
         assertEquals(1, floatingCanvasColumns(360f, 48f, vertical = true))
+        val comfortable = mapOf(180f to 1, 240f to 2, 320f to 2, 360f to 3)
+        for ((width, columns) in comfortable) {
+            assertEquals(columns, floatingCanvasColumns(width, 56f, vertical = false))
+        }
     }
 
     @Test fun floatingRendererUsesRealEditorAndRetainsSeparateMoreAction() {
@@ -65,19 +69,30 @@ class B101CompactCanvasToolbarTest {
         assertTrue(layout.contains("if (expanded)"))
         assertTrue(layout.contains("BackHandler(enabled = expanded)"))
         assertTrue(layout.contains("grip()"))
+        assertTrue(layout.contains("val reservedHeight = if (narrow) 72.dp else 16.dp"))
+        assertTrue(layout.contains("val maxBarHeight = (paneHeight - reservedHeight).coerceAtLeast(48.dp)"))
+        val collapsed = layout.substringAfter("val favoriteActions: @Composable () -> Unit = {")
+            .substringBefore("CompositionLocalProvider(LocalTipPaneBounds")
+        assertTrue(collapsed.contains("Box(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { favoriteActions() }"))
+        assertTrue(collapsed.contains("moreButton()"))
     }
 
     @Test fun existingPenEraserUndoAndMoreActionsAreWiredToRealEditor() {
         val relative = "src/main/java/com/notestaking/app/ui/InfiniteToolbar.kt"
         val file = listOf(File(relative), File("app/$relative")).firstOrNull { it.isFile }
         val code = requireNotNull(file).readText()
-        val quick = code.substringAfter("private fun B101CanvasQuickTools(").substringBefore("/** Preserve both failure messages")
+        val quick = code.substringAfter("internal fun B101CanvasQuickTools(", missingDelimiterValue = "")
+            .substringBefore("/** Fixed Canvas actions for the floating dock")
+        assertTrue("Quick toolbar implementation must exist", quick.isNotBlank())
         assertTrue(quick.contains("editor.armTool(Tool.PEN)"))
         assertTrue(quick.contains("editor.armTool(Tool.ERASER)"))
         assertTrue(quick.contains("editor.armTool(type)"))
         assertTrue(quick.contains("ToolConfigPopup(editor, widthTool)"))
         assertTrue(quick.contains("EraserConfigPopup(editor)"))
         assertTrue(quick.contains("widthTool?.let { editor.toolConfig(it).baseWidth }"))
+        assertTrue(quick.contains(".width(LocalBar.current.button).clearAndSetSemantics {}"))
+        assertTrue(quick.contains("maxLines = 1"))
+        assertTrue(quick.contains("overflow = TextOverflow.Ellipsis"))
         assertTrue(quick.contains("editor.undo()"))
         assertTrue(quick.contains("onClick = expand"))
     }

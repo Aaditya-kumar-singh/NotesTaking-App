@@ -52,7 +52,8 @@ class ToolbarDrawerKeyboardContractTest {
         assertTrue(floating.contains("CompositionLocalProvider(LocalDrawingToolSelected provides { expanded = false })"))
         assertTrue(floating.contains("ToolbarIcon(NotesTakingIcons.chevronUp, stringResource(R.string.toolbar_expand_all_tools))"))
         assertTrue(floating.contains("ToolbarIcon(NotesTakingIcons.chevronDown, stringResource(R.string.toolbar_collapse_to_favorites))"))
-        assertTrue(floating.contains("if (showFavorites) favorites(count)"))
+        assertTrue(floating.contains("LocalFloatingCanvasColumns provides canvasColumns"))
+        assertTrue(floating.contains("favorites(if (showFavorites) count else 0)"))
         assertTrue(floating.contains("if (look.position.vertical)"))
         assertFalse(floating.contains("AndroidView("))
     }
